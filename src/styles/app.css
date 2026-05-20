@@ -1,0 +1,750 @@
+/* ============================================================
+   FitJournal — app shell & screen styles
+   ============================================================ */
+
+/* ---- Shell ------------------------------------------------- */
+.fj-app {
+  display: flex;
+  height: 100%;
+}
+
+.fj-sidebar {
+  width: 248px;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: var(--space-4) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fj-sidebar__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-4);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.fj-logo-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.fj-logo-text {
+  font: var(--text-heading);
+  font-weight: 700;
+}
+.fj-nav__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 9px var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.fj-nav__item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text);
+}
+.fj-nav__item--active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+.fj-main {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+}
+.fj-screen {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-6) var(--space-8);
+}
+
+/* ---- Sections & generic ------------------------------------ */
+.fj-section {
+  margin-bottom: var(--space-6);
+}
+.fj-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.fj-section__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--text-heading);
+}
+.fj-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.fj-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fj-muted {
+  color: var(--color-text-muted);
+  font: var(--text-caption);
+}
+.fj-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+/* ---- Date navigation --------------------------------------- */
+.fj-datenav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fj-datenav__btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+.fj-datenav__btn:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+.fj-datenav__label {
+  min-width: 168px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---- Weight banner ----------------------------------------- */
+.fj-weight-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.fj-weight-banner__main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.fj-weight-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fj-weight-input {
+  width: 130px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  padding: 2px 0;
+}
+.fj-weight-input:focus {
+  border-bottom-color: var(--color-accent);
+}
+.fj-weight-compare {
+  display: flex;
+  gap: var(--space-5);
+}
+.fj-weight-compare__item {
+  text-align: center;
+}
+.fj-weight-compare__label {
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-dim);
+}
+.fj-weight-compare__value {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+.fj-down {
+  color: var(--color-success);
+}
+.fj-up {
+  color: var(--color-warning);
+}
+
+/* ---- Cardio ------------------------------------------------ */
+.fj-cardio-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.fj-cardio-tab {
+  flex: 1;
+  padding: var(--space-3);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.fj-cardio-tab--active {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background: var(--color-accent-soft);
+}
+.fj-cardio-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+.fj-cardio-entry__name {
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 96px;
+}
+.fj-cardio-entry__stats {
+  display: flex;
+  gap: var(--space-5);
+  margin-left: auto;
+}
+
+/* ---- Exercise / data tables -------------------------------- */
+.fj-table {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.fj-table__row {
+  display: grid;
+  grid-template-columns: 2.4fr 1fr 1fr 1fr 44px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 12px var(--space-4);
+  border-top: 1px solid var(--color-border-soft);
+}
+.fj-table__row:first-child {
+  border-top: none;
+}
+.fj-table__head {
+  background: rgba(255, 255, 255, 0.03);
+}
+.fj-table__head span {
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-dim);
+}
+.fj-cell-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+  font-size: 14px;
+}
+.fj-cell-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fj-cell-value small {
+  color: var(--color-text-dim);
+  font-weight: 400;
+}
+
+/* Muscle-group tags — a deliberate fixed category palette. */
+.fj-muscle-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.fj-muscle-tag[data-muscle='chest'] {
+  background: rgba(255, 159, 10, 0.16);
+  color: #ff9f0a;
+}
+.fj-muscle-tag[data-muscle='back'] {
+  background: rgba(10, 132, 255, 0.18);
+  color: #409cff;
+}
+.fj-muscle-tag[data-muscle='legs'] {
+  background: rgba(48, 209, 88, 0.16);
+  color: #30d158;
+}
+.fj-muscle-tag[data-muscle='shoulders'] {
+  background: rgba(255, 214, 10, 0.16);
+  color: #ffd60a;
+}
+.fj-muscle-tag[data-muscle='arms'] {
+  background: rgba(191, 90, 242, 0.18);
+  color: #bf5af2;
+}
+.fj-muscle-tag[data-muscle='abs'] {
+  background: rgba(255, 69, 58, 0.16);
+  color: #ff453a;
+}
+
+/* ---- Icon button ------------------------------------------- */
+.fj-icon-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.fj-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text);
+}
+.fj-icon-btn--danger:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+/* ---- Streak ------------------------------------------------ */
+.fj-streak {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.fj-streak__count {
+  font: var(--text-title);
+  font-variant-numeric: tabular-nums;
+}
+.fj-streak__count span {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+/* ---- Chart ------------------------------------------------- */
+.fj-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  height: 168px;
+  padding: var(--space-4) 0 0;
+}
+.fj-chart__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+.fj-chart__bar {
+  width: 100%;
+  max-width: 38px;
+  border-radius: 6px 6px 0 0;
+  background: var(--color-accent);
+  transition: height var(--dur) var(--ease);
+}
+.fj-chart__label {
+  font: var(--text-micro);
+  color: var(--color-text-dim);
+}
+
+/* ---- Muscle balance bars ----------------------------------- */
+.fj-mbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.fj-mbar__label {
+  width: 84px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+.fj-mbar__track {
+  flex: 1;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.fj-mbar__fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 6px;
+  transition: width var(--dur) var(--ease);
+}
+.fj-mbar__fill--low {
+  background: var(--color-warning);
+}
+.fj-mbar__value {
+  width: 60px;
+  font: var(--text-caption);
+  color: var(--color-text-dim);
+  flex-shrink: 0;
+}
+
+/* ---- Insights ---------------------------------------------- */
+.fj-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-accent);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-2);
+}
+.fj-insight--success {
+  border-left-color: var(--color-success);
+}
+.fj-insight--warning {
+  border-left-color: var(--color-warning);
+}
+.fj-insight__text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* ---- History ----------------------------------------------- */
+.fj-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.fj-history-item:hover {
+  border-color: var(--color-border);
+}
+.fj-history-item__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.fj-date-box {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fj-date-box__day {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.fj-date-box__month {
+  font: var(--text-micro);
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+.fj-history-item__title {
+  font-weight: 600;
+  font-size: 14px;
+}
+.fj-history-item__sub {
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ---- Heatmap ----------------------------------------------- */
+.fj-heatmap__grid {
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
+  grid-auto-flow: column;
+  gap: 3px;
+  max-width: 540px;
+}
+.fj-heatmap__cell {
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 12px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.fj-heatmap__cell[data-level='1'] {
+  background: rgba(10, 132, 255, 0.25);
+}
+.fj-heatmap__cell[data-level='2'] {
+  background: rgba(10, 132, 255, 0.45);
+}
+.fj-heatmap__cell[data-level='3'] {
+  background: rgba(10, 132, 255, 0.7);
+}
+.fj-heatmap__cell[data-level='4'] {
+  background: var(--color-accent);
+}
+.fj-heatmap__legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--space-3);
+  font: var(--text-micro);
+  color: var(--color-text-dim);
+}
+.fj-heatmap__legend span:first-child {
+  margin-right: 2px;
+}
+
+/* ---- Template grid ----------------------------------------- */
+.fj-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+.fj-template-card {
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.fj-template-card:hover {
+  border-color: var(--color-border);
+}
+.fj-template-card__title {
+  font: var(--text-heading);
+}
+.fj-template-card__sub {
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+  margin: 2px 0 var(--space-3);
+}
+.fj-template-card__ex {
+  font: var(--text-caption);
+  color: var(--color-text-dim);
+  line-height: 1.7;
+}
+.fj-add-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 150px;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.fj-add-card:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* ---- Weekly planner ---------------------------------------- */
+.fj-plan-day {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+.fj-plan-day__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(255, 255, 255, 0.03);
+}
+.fj-plan-day__name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.fj-plan-day__body {
+  padding: var(--space-2) var(--space-4) var(--space-3);
+}
+.fj-plan-ex {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border-soft);
+  font-size: 13px;
+}
+.fj-plan-ex:first-child {
+  border-top: none;
+}
+.fj-plan-ex__name {
+  flex: 1;
+  font-weight: 500;
+}
+.fj-plan-rest {
+  padding: var(--space-3) var(--space-4);
+  font: var(--text-caption);
+  font-style: italic;
+  color: var(--color-text-dim);
+}
+
+/* ---- Recipes ----------------------------------------------- */
+.fj-recipe-card {
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.fj-recipe-card:hover {
+  border-color: var(--color-border);
+}
+.fj-recipe-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.fj-recipe-card__title {
+  font: var(--text-heading);
+}
+.fj-fav-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-dim);
+  padding: 2px;
+}
+.fj-fav-btn--on {
+  color: var(--color-warning);
+}
+.fj-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: var(--color-surface-3);
+  color: var(--color-text-muted);
+}
+.fj-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: var(--space-2) 0;
+}
+.fj-recipe-meta {
+  display: flex;
+  gap: var(--space-3);
+  font: var(--text-caption);
+  color: var(--color-text-dim);
+}
+.fj-recipe-steps {
+  padding-left: var(--space-4);
+  line-height: 1.7;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+.fj-recipe-ingredients {
+  list-style: none;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+.fj-recipe-ingredients li {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+/* ---- Settings ---------------------------------------------- */
+.fj-settings-group {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+.fj-settings-group__title {
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-muted);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(255, 255, 255, 0.03);
+}
+.fj-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border-soft);
+}
+.fj-settings-row__label {
+  font-size: 14px;
+}
+.fj-settings-row__desc {
+  font: var(--text-caption);
+  color: var(--color-text-dim);
+  margin-top: 2px;
+}

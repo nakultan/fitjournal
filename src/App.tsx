@@ -1,16 +1,13 @@
-import { Showcase } from '@/pages/Showcase'
+import { StoreProvider } from '@/data/store'
+import { AppShell } from '@/components/AppShell'
 import { InstallHint, UpdatePrompt } from '@/components'
 
-/**
- * Phase 1: the app renders the design-system showcase.
- * Phase 2 replaces this with the real navigation + screens.
- */
 export default function App() {
   return (
-    <>
-      <Showcase />
+    <StoreProvider>
+      <AppShell />
       <InstallHint />
       <UpdatePrompt />
-    </>
+    </StoreProvider>
   )
 }
