@@ -1,0 +1,390 @@
+/* ============================================================
+   FitJournal — Core component styles
+   Every class is prefixed `fj-`. Values come from tokens.css only.
+   ============================================================ */
+
+/* ---- Button ------------------------------------------------ */
+.fj-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: none;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+  white-space: nowrap;
+}
+.fj-btn:active {
+  transform: scale(0.97);
+}
+.fj-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.fj-btn--md {
+  padding: 10px 18px;
+  font-size: 14px;
+}
+.fj-btn--sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.fj-btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.fj-btn--primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+.fj-btn--secondary {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+.fj-btn--secondary:hover:not(:disabled) {
+  background: var(--color-surface-3);
+}
+.fj-btn--ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.fj-btn--ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--color-text);
+}
+.fj-btn--danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+.fj-btn--danger:hover:not(:disabled) {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+
+/* ---- Card -------------------------------------------------- */
+.fj-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.fj-card--padded {
+  padding: var(--space-5);
+}
+
+/* ---- Modal ------------------------------------------------- */
+.fj-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  z-index: 100;
+}
+.fj-modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+  padding: var(--space-6);
+  width: 460px;
+  max-width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.fj-modal__title {
+  font: var(--text-title);
+  margin-bottom: var(--space-4);
+}
+.fj-modal__body {
+  font: var(--text-body);
+  color: var(--color-text-muted);
+}
+.fj-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+/* ---- Field (Input / Select) -------------------------------- */
+.fj-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fj-field__label {
+  font: var(--text-micro);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+.fj-field__hint {
+  font: var(--text-caption);
+  color: var(--color-text-dim);
+}
+.fj-field__error {
+  font: var(--text-caption);
+  color: var(--color-danger);
+}
+.fj-input,
+.fj-select {
+  width: 100%;
+  padding: 11px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: 15px;
+  outline: none;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+.fj-input::placeholder {
+  color: var(--color-text-dim);
+}
+.fj-input:focus,
+.fj-select:focus {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+.fj-input--error {
+  border-color: var(--color-danger);
+}
+.fj-select {
+  appearance: none;
+  cursor: pointer;
+}
+
+/* ---- Toggle ------------------------------------------------ */
+.fj-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.fj-toggle-row__label {
+  font-size: 14px;
+}
+.fj-toggle {
+  position: relative;
+  width: 50px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-3);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.fj-toggle--on {
+  background: var(--color-success);
+}
+.fj-toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform var(--dur) var(--ease);
+}
+.fj-toggle--on .fj-toggle__knob {
+  transform: translateX(20px);
+}
+
+/* ---- Chip -------------------------------------------------- */
+.fj-chip {
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.fj-chip:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+.fj-chip--active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* ---- StatTile ---------------------------------------------- */
+.fj-stat {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+.fj-stat__icon {
+  font-size: 24px;
+  margin-bottom: var(--space-2);
+}
+.fj-stat__value {
+  font: var(--text-title);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+.fj-stat__label {
+  font: var(--text-micro);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  margin-top: var(--space-1);
+}
+
+/* ---- EmptyState -------------------------------------------- */
+.fj-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--space-7) var(--space-5);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+}
+.fj-empty__icon {
+  font-size: 40px;
+  margin-bottom: var(--space-1);
+}
+.fj-empty__title {
+  font: var(--text-heading);
+  color: var(--color-text);
+}
+.fj-empty__desc {
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+  max-width: 320px;
+}
+.fj-empty__action {
+  margin-top: var(--space-3);
+}
+
+/* ---- PageHeader -------------------------------------------- */
+.fj-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.fj-page-header__title {
+  font: var(--text-display);
+  letter-spacing: -0.5px;
+}
+.fj-page-header__subtitle {
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+.fj-page-header__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* ---- Toast ------------------------------------------------- */
+.fj-toaster {
+  position: fixed;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  z-index: 200;
+}
+.fj-toast {
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--shadow-modal);
+  animation: fj-toast-in var(--dur) var(--ease);
+}
+.fj-toast--success {
+  border-color: var(--color-success);
+}
+.fj-toast--warning {
+  border-color: var(--color-warning);
+}
+@keyframes fj-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* ---- Service-worker / install prompts ---------------------- */
+.fj-sw-toast,
+.fj-install-hint {
+  position: fixed;
+  left: var(--space-5);
+  bottom: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 12px 16px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  font-size: 14px;
+  z-index: 200;
+}
+.fj-install-hint {
+  border-color: var(--color-accent);
+}
+.fj-sw-toast__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ---- Showcase page (Phase 1 only) -------------------------- */
+.fj-showcase {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5);
+}
+.fj-showcase__section {
+  margin-bottom: var(--space-5);
+}
+.fj-showcase__section-label {
+  font: var(--text-micro);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  margin-bottom: var(--space-3);
+}
+.fj-showcase__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.fj-showcase__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
