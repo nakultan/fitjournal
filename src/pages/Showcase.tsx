@@ -1,6 +1,18 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import {
+  Activity,
+  CalendarDays,
+  Dumbbell,
+  Flame,
+  Plus,
+  Scale,
+  Settings,
+  TrendingUp,
+  Trophy,
+  UtensilsCrossed,
+} from 'lucide-react'
+import {
   Button,
   Card,
   Chip,
@@ -18,6 +30,18 @@ const FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'strength', label: 'Strength' },
   { id: 'cardio', label: 'Cardio' },
+]
+
+// The Lucide icons FitJournal's features will use in Phase 2.
+const ICONS = [
+  { Icon: Dumbbell, name: 'Workouts' },
+  { Icon: Activity, name: 'Cardio' },
+  { Icon: TrendingUp, name: 'Progress' },
+  { Icon: Trophy, name: 'Records' },
+  { Icon: CalendarDays, name: 'History' },
+  { Icon: Scale, name: 'Weight' },
+  { Icon: UtensilsCrossed, name: 'Recipes' },
+  { Icon: Settings, name: 'Settings' },
 ]
 
 const COLUMN = { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' } as const
@@ -44,7 +68,9 @@ export function Showcase() {
 
       <Section label="Buttons">
         <div className="fj-showcase__row">
-          <Button>Primary</Button>
+          <Button>
+            <Plus size={16} /> Add exercise
+          </Button>
           <Button variant="secondary">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
           <Button variant="danger">Danger</Button>
@@ -53,12 +79,43 @@ export function Showcase() {
         </div>
       </Section>
 
+      <Section label="Icons (Lucide)">
+        <Card>
+          <div className="fj-showcase__row" style={{ gap: 'var(--space-5)' }}>
+            {ICONS.map(({ Icon, name }) => (
+              <div
+                key={name}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 'var(--space-1)',
+                }}
+              >
+                <Icon />
+                <span style={{ font: 'var(--text-micro)', color: 'var(--color-text-dim)' }}>
+                  {name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </Section>
+
       <Section label="Stat tiles">
         <div className="fj-showcase__grid">
-          <StatTile icon="🔥" value="12" label="Day streak" />
-          <StatTile icon="🏋" value="48" label="Workouts" />
-          <StatTile icon="📈" value="1,240" label="Total sets" />
-          <StatTile icon="⚖️" value="178.4" label="Weight (lbs)" />
+          <StatTile icon={<Flame color="var(--color-warning)" />} value="12" label="Day streak" />
+          <StatTile
+            icon={<Dumbbell color="var(--color-accent)" />}
+            value="48"
+            label="Workouts"
+          />
+          <StatTile
+            icon={<TrendingUp color="var(--color-success)" />}
+            value="1,240"
+            label="Total sets"
+          />
+          <StatTile icon={<Scale />} value="178.4" label="Weight (lbs)" />
         </div>
       </Section>
 
@@ -101,7 +158,7 @@ export function Showcase() {
 
       <Section label="Empty state">
         <EmptyState
-          icon="🏅"
+          icon={<Trophy size={40} />}
           title="No records yet"
           description="Log a few workouts and your personal bests show up here automatically."
           action={<Button size="sm">Log a workout</Button>}
