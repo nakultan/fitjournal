@@ -1,57 +1,75 @@
 # FitJournal
 
-Your personal fitness journal — workouts, weight, and progress — that runs
-**fully offline** and keeps all data **on your device**.
+A personal fitness journal — workouts, weight, and progress — that runs **fully
+offline** and keeps all data **on your device**. Built as an installable PWA: a
+real desktop app that needs no internet, and that can be added to an iPhone home
+screen for free.
 
-This is the React rebuild of FitJournal, delivered as an installable **PWA**
-(Progressive Web App): a real desktop app that works with no internet, and that
-can later be added to an iPhone home screen for free.
+**Live:** https://nakultan.github.io/fitjournal/
 
 ## Status
 
-**Phase 1 — project foundations.** The app currently shows a design-system
-showcase. Real screens are rebuilt in Phase 2. See [`../ROADMAP.md`](../ROADMAP.md).
+**Phase 2 complete** — the full app is rebuilt in React and deployed. See
+[`../ROADMAP.md`](../ROADMAP.md) for the plan and what's next (Phase 3).
+
+## What it does
+
+- **Today** — log body weight, cardio, and exercises; quick-start from a template
+- **Progress** — streak, 30-day stats, an 8-week chart, automatic insights, muscle balance
+- **Records** — strength & cardio personal records, per-exercise goals, a PR timeline
+- **History** — a 13-week activity heatmap and a list of past workouts
+- **Plan** — build workout templates and assign them to a weekly schedule
+- **Recipes** — a searchable, taggable recipe collection
+- **Settings** — preferences, a data-backup export, and Apple Health import
 
 ## Running it
 
-Node.js is required (already installed on this machine).
+Node.js is required — only to *build* the app; the finished build is plain
+static files that need nothing to run.
 
 ```bash
-npm install      # one time, after cloning
-npm run dev      # start the dev server, then open the printed URL
-npm run build    # produce the offline-ready app in dist/
-npm run preview  # serve the built app locally to test it
+npm install      # one time
+npm run dev      # dev server with hot reload
+npm run build    # offline-ready production build in dist/
+npm run preview  # serve the built app locally
+npm run lint     # check code quality
+npm run format   # auto-format the code
+npm run typecheck
 ```
 
-Other scripts:
+## How it works
 
-```bash
-npm run lint       # check code quality
-npm run format     # auto-format the code
-npm run typecheck  # check TypeScript types
-```
-
-## How it's built
-
-- **React 19 + TypeScript**, bundled by **Vite**.
-- **vite-plugin-pwa** makes it installable and offline-capable.
-- Data lives in the browser **on your device** — no server, no accounts, no cloud.
+- **React 19 + TypeScript**, bundled by **Vite**; `vite-plugin-pwa` for offline
+  support and installability; **Lucide** icons.
+- **All data lives on your device** in the browser's localStorage — no server,
+  no account, no cloud. Personal records, streaks and stats are *calculated*
+  from your logged workouts, never stored separately.
+- **Back up regularly:** Settings → Export downloads a JSON copy of everything.
+  There is no cloud safety net.
 
 ## Project structure
 
 ```
 src/
-  components/   reusable UI building blocks (Button, Card, Modal, ...)
-  pages/        full screens (built out in Phase 2)
-  data/         on-device storage + data types (Phase 2)
-  lib/          small helpers
-  styles/       design tokens + global + component styles
-public/         app icons and static files
+  components/   AppShell + design-system components (Button, Card, Modal, ...)
+  pages/        the seven screens
+  data/         types, constants, storage, derived logic, the store
+  lib/          small helpers (dates, ids, class names)
+  styles/       design tokens + global + component + app styles
+public/         app icons
 ```
+
+See [`CLAUDE.md`](CLAUDE.md) for a developer's guide to the codebase.
 
 ## Offline & installing
 
-Once built and loaded, the app caches itself and works with no internet.
-On desktop Chrome/Edge an **Install** option appears in the address bar — that
-gives it its own window and icon. On iPhone (later), open it in Safari and use
-**Share → Add to Home Screen**. No App Store, no fees.
+Once loaded, the app caches itself and works with no internet. On desktop
+Chrome/Edge an **Install** option appears in the address bar — it gets its own
+window and icon. On iPhone, open it in Safari → **Share → Add to Home Screen**.
+No App Store, no fees.
+
+## Deployment
+
+Every push to `main` triggers a GitHub Actions workflow
+([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) that builds the
+app and publishes it to GitHub Pages.
