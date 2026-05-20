@@ -105,8 +105,27 @@ export function SettingsScreen() {
         </div>
         <div className="fj-settings-row">
           <div>
+            <div className="fj-settings-row__label">Weekly workout goal</div>
+            <div className="fj-settings-row__desc">How many workouts you aim for each week</div>
+          </div>
+          <input
+            className="fj-input"
+            type="number"
+            min={1}
+            max={7}
+            style={{ width: 120, textAlign: 'center' }}
+            value={prefs.weeklyGoal}
+            onChange={(e) =>
+              patch({ weeklyGoal: Math.max(1, Math.min(7, Number(e.target.value) || 1)) })
+            }
+          />
+        </div>
+        <div className="fj-settings-row">
+          <div>
             <div className="fj-settings-row__label">Daily reminder</div>
-            <div className="fj-settings-row__desc">Remind me to log my workout</div>
+            <div className="fj-settings-row__desc">
+              Show a nudge on Today when a planned workout isn't logged yet
+            </div>
           </div>
           <Toggle
             checked={prefs.dailyReminder}
@@ -115,8 +134,8 @@ export function SettingsScreen() {
         </div>
         <div className="fj-settings-row">
           <div>
-            <div className="fj-settings-row__label">Weekly summary</div>
-            <div className="fj-settings-row__desc">Show a weekly progress recap</div>
+            <div className="fj-settings-row__label">Weekly recap</div>
+            <div className="fj-settings-row__desc">Show a weekly summary at the top of Progress</div>
           </div>
           <Toggle
             checked={prefs.weeklySummary}

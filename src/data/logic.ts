@@ -2,11 +2,12 @@
  * Derived computations. Everything here is a pure function of stored data —
  * PRs, streaks, stats, insights and the heatmap are calculated, never saved.
  */
-import type { AppData, CardioType, Workout } from './types'
+import type { AppData, CardioType, DayName, Workout } from './types'
 import { CARDIO_LABELS } from './constants'
-import { addDays, dateKey, parseKey } from '@/lib/dates'
+import { addDays, dateKey, dayNameOf, parseKey } from '@/lib/dates'
 
 type Workouts = Record<string, Workout>
+type WeeklyPlan = AppData['weeklyPlan']
 
 const DAY_MS = 86_400_000
 
@@ -119,40 +120,69 @@ export interface StreakResult {
   longest: number
 }
 
-function longestStreak(workouts: Workouts): number {
-  const days = Object.keys(workouts)
+/** Does the weekly plan have at least one training day assigned? */
+function hasWeeklyPlan(weeklyPlan: WeeklyPlan): boolean {
+  return Object.values(weeklyPlan).some((p) => !!p && p.exercises.length > 0)
+}
+
+/**
+ * A planned rest day — a weekday with no training assigned. Rest days *bridge*
+ * the streak (they never break it) but don't add to the count, so resting on
+ * schedule never costs you a streak. Only meaningful once a plan exists.
+ */
+function isPlannedRest(weeklyPlan: WeeklyPlan, date: Date): boolean {
+  const plan = weeklyPlan[dayNameOf(date)]
+  return !plan || plan.exercises.length === 0
+}
+
+/** Longest run of trained days, bridging planned rest days. */
+function longestStreak(workouts: Workouts, weeklyPlan: WeeklyPlan): number {
+  const logged = Object.keys(workouts)
     .filter((k) => isLoggedWorkout(workouts[k]))
     .sort()
-  if (days.length === 0) return 0
-  let longest = 1
-  let run = 1
-  for (let i = 1; i < days.length; i++) {
-    const gap = Math.round((parseKey(days[i]).getTime() - parseKey(days[i - 1]).getTime()) / DAY_MS)
-    if (gap === 1) {
+  if (logged.length === 0) return 0
+  const planned = hasWeeklyPlan(weeklyPlan)
+  const last = parseKey(logged[logged.length - 1])
+  let longest = 0
+  let run = 0
+  for (let cur = parseKey(logged[0]); cur <= last; cur = addDays(cur, 1)) {
+    if (isLoggedWorkout(workouts[dateKey(cur)])) {
       run += 1
       longest = Math.max(longest, run)
+    } else if (planned && isPlannedRest(weeklyPlan, cur)) {
+      // rest day — bridges the run without adding to it
     } else {
-      run = 1
+      run = 0
     }
   }
   return longest
 }
 
-/** Consecutive logged days ending today (or yesterday — today still counts). */
-export function computeStreak(workouts: Workouts, reference: Date): StreakResult {
-  let cursor = new Date(reference)
-  if (!isLoggedWorkout(workouts[dateKey(cursor)])) {
-    cursor = addDays(cursor, -1)
-    if (!isLoggedWorkout(workouts[dateKey(cursor)])) {
-      return { current: 0, longest: longestStreak(workouts) }
-    }
-  }
+/**
+ * Current streak of trained days ending today (or yesterday — today still
+ * counts as "in progress"). Planned rest days keep the streak alive.
+ */
+export function computeStreak(
+  workouts: Workouts,
+  weeklyPlan: WeeklyPlan,
+  reference: Date,
+): StreakResult {
+  const planned = hasWeeklyPlan(weeklyPlan)
   let current = 0
-  while (isLoggedWorkout(workouts[dateKey(cursor)])) {
-    current += 1
+  let cursor = new Date(reference)
+  for (let i = 0; i < 400; i++) {
+    if (isLoggedWorkout(workouts[dateKey(cursor)])) {
+      current += 1
+    } else if (planned && isPlannedRest(weeklyPlan, cursor)) {
+      // rest day — the streak is safe, this day just doesn't count
+    } else if (i === 0) {
+      // today isn't logged yet — grace, the streak runs through to yesterday
+    } else {
+      break
+    }
     cursor = addDays(cursor, -1)
   }
-  return { current, longest: Math.max(current, longestStreak(workouts)) }
+  return { current, longest: Math.max(current, longestStreak(workouts, weeklyPlan)) }
 }
 
 // -------------------------------------------------------------- stats -----
@@ -272,12 +302,64 @@ export function computeInsights(data: AppData, reference: Date): Insight[] {
   const out: Insight[] = []
   const { workouts, goals } = data
 
-  const streak = computeStreak(workouts, reference)
+  const streak = computeStreak(workouts, data.weeklyPlan, reference)
   if (streak.current >= 3) {
     out.push({
       id: 'streak',
       tone: 'success',
       text: `${streak.current}-day streak — keep the momentum going.`,
+    })
+  }
+
+  // Milestones — celebrate round numbers of workouts logged.
+  const total = totalWorkoutsLogged(workouts)
+  if (WORKOUT_MILESTONES.includes(total)) {
+    out.push({
+      id: 'milestone',
+      tone: 'success',
+      text: `Milestone reached — ${total} workouts logged. That's real consistency.`,
+    })
+  } else if (total >= 5) {
+    const next = WORKOUT_MILESTONES.find((m) => m > total)
+    if (next && next - total <= 4) {
+      out.push({
+        id: 'milestone-near',
+        tone: 'info',
+        text: `${next - total} more ${next - total === 1 ? 'workout' : 'workouts'} until you reach ${next} logged.`,
+      })
+    }
+  }
+
+  // Weekly volume trend — this week's sets vs last week's.
+  const trendWeeks = computeWeeklyStats(workouts, reference, 2)
+  const prevWeek = trendWeeks[0]
+  const thisWeek = trendWeeks[1]
+  if (prevWeek.totalSets >= 12 && thisWeek.totalSets > 0) {
+    const change = Math.round(
+      ((thisWeek.totalSets - prevWeek.totalSets) / prevWeek.totalSets) * 100,
+    )
+    if (change >= 15) {
+      out.push({
+        id: 'trend-up',
+        tone: 'success',
+        text: `Training volume is up ${change}% on last week — strong momentum.`,
+      })
+    } else if (change <= -30) {
+      out.push({
+        id: 'trend-down',
+        tone: 'info',
+        text: `Volume is down ${Math.abs(change)}% on last week — a lighter week is fine, just keep showing up.`,
+      })
+    }
+  }
+
+  // Most consistent weekday.
+  const best = computeBestDay(workouts)
+  if (best && total >= 8 && best.count >= 3) {
+    out.push({
+      id: 'best-day',
+      tone: 'info',
+      text: `${best.day} is your most consistent day — ${best.count} workouts logged on it.`,
     })
   }
 
@@ -346,6 +428,98 @@ export function computeInsights(data: AppData, reference: Date): Insight[] {
   }
 
   return out
+}
+
+// -------------------------------------------------- habit & sessions -----
+
+/** Workout-count milestones worth celebrating. */
+export const WORKOUT_MILESTONES = [10, 25, 50, 100, 200, 365, 500, 1000]
+
+/** Total number of days with a logged workout, all time. */
+export function totalWorkoutsLogged(workouts: Workouts): number {
+  return Object.values(workouts).filter(isLoggedWorkout).length
+}
+
+/** The weekday the user trains most often (null until there is data). */
+export function computeBestDay(workouts: Workouts): { day: DayName; count: number } | null {
+  const tally = new Map<DayName, number>()
+  for (const dk of Object.keys(workouts)) {
+    if (!isLoggedWorkout(workouts[dk])) continue
+    const day = dayNameOf(parseKey(dk))
+    tally.set(day, (tally.get(day) ?? 0) + 1)
+  }
+  let best: { day: DayName; count: number } | null = null
+  for (const [day, count] of tally) {
+    if (!best || count > best.count) best = { day, count }
+  }
+  return best
+}
+
+export interface WeekProgress {
+  done: number
+  goal: number
+  /** 0–100, capped. */
+  pct: number
+  remaining: number
+  totalSets: number
+}
+
+/** Workouts logged in the current calendar week (Sun–Sat) measured against the goal. */
+export function computeWeekProgress(
+  workouts: Workouts,
+  reference: Date,
+  goal: number,
+): WeekProgress {
+  const start = new Date(reference)
+  start.setDate(reference.getDate() - reference.getDay())
+  let done = 0
+  let totalSets = 0
+  for (let i = 0; i < 7; i++) {
+    const w = workouts[dateKey(addDays(start, i))]
+    if (isLoggedWorkout(w)) {
+      done += 1
+      for (const e of w.exercises) totalSets += e.sets
+    }
+  }
+  const pct = goal > 0 ? Math.min(100, Math.round((done / goal) * 100)) : 0
+  return { done, goal, pct, remaining: Math.max(0, goal - done), totalSets }
+}
+
+export interface SessionSummary {
+  hasContent: boolean
+  exerciseCount: number
+  totalSets: number
+  /** Sets × reps × weight, summed across the session. */
+  totalVolume: number
+  cardioCount: number
+  cardioMinutes: number
+  /** Records broken on this day. */
+  prs: TimelineEntry[]
+}
+
+/** One day's workout rolled up for the post-workout summary. */
+export function computeSessionSummary(workouts: Workouts, dk: string): SessionSummary {
+  const w = workouts[dk]
+  const prs = computePRTimeline(workouts).filter((e) => e.date === dk)
+  let totalSets = 0
+  let totalVolume = 0
+  let cardioMinutes = 0
+  for (const e of w?.exercises ?? []) {
+    totalSets += e.sets
+    totalVolume += e.sets * e.reps * e.weight
+  }
+  for (const c of w?.cardio ?? []) {
+    cardioMinutes += c.time
+  }
+  return {
+    hasContent: isLoggedWorkout(w),
+    exerciseCount: w?.exercises.length ?? 0,
+    totalSets,
+    totalVolume,
+    cardioCount: w?.cardio.length ?? 0,
+    cardioMinutes,
+    prs,
+  }
 }
 
 // ----------------------------------------------------------- heatmap -----

@@ -226,6 +226,57 @@
   color: var(--color-accent);
 }
 
+/* ---- ProgressRing ------------------------------------------ */
+.fj-ring {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+.fj-ring__svg {
+  position: absolute;
+  inset: 0;
+}
+.fj-ring__bar {
+  transition: stroke-dashoffset var(--dur) var(--ease);
+}
+.fj-ring__label {
+  position: relative;
+  text-align: center;
+  line-height: 1.1;
+}
+
+/* ---- Confetti ---------------------------------------------- */
+.fj-confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 300;
+}
+.fj-confetti__piece {
+  position: absolute;
+  top: -20px;
+  border-radius: 2px;
+  animation-name: fj-confetti-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes fj-confetti-fall {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--fj-drift), 102vh) rotate(var(--fj-rot));
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fj-confetti {
+    display: none;
+  }
+}
+
 /* ---- StatTile ---------------------------------------------- */
 .fj-stat {
   background: var(--color-surface);

@@ -10,13 +10,14 @@ import {
   Scale,
   TrendingUp,
 } from 'lucide-react'
-import { Card, EmptyState, PageHeader, StatTile } from '@/components'
+import { Card, EmptyState, PageHeader, ProgressRing, StatTile } from '@/components'
 import { useStore } from '@/data/store-context'
 import {
   computeInsights,
   computeMuscleBalance,
   computeStreak,
   computeTotalStats,
+  computeWeekProgress,
   computeWeeklyStats,
 } from '@/data/logic'
 
@@ -29,10 +30,11 @@ const TONE_ICON = {
 export function ProgressScreen() {
   const { data } = useStore()
 
-  const { streak, stats, weekly, insights, balance } = useMemo(() => {
+  const { streak, week, stats, weekly, insights, balance } = useMemo(() => {
     const now = new Date()
     return {
-      streak: computeStreak(data.workouts, now),
+      streak: computeStreak(data.workouts, data.weeklyPlan, now),
+      week: computeWeekProgress(data.workouts, now, data.preferences.weeklyGoal),
       stats: computeTotalStats(data.workouts, now),
       weekly: computeWeeklyStats(data.workouts, now, 8),
       insights: computeInsights(data, now),
@@ -49,9 +51,44 @@ export function ProgressScreen() {
     ? Object.values(balance).reduce((a, b) => a + b, 0) / muscles.length
     : 0
 
+  const lastWeekSets = weekly[weekly.length - 2]?.totalSets ?? 0
+  const trendPct =
+    lastWeekSets > 0 ? Math.round(((week.totalSets - lastWeekSets) / lastWeekSets) * 100) : null
+
   return (
     <div className="fj-screen">
       <PageHeader title="Progress" subtitle="Your trends over time" />
+
+      {data.preferences.weeklySummary && (
+        <Card className="fj-recap" style={{ marginBottom: 'var(--space-5)' }}>
+          <ProgressRing
+            pct={week.pct}
+            size={88}
+            stroke={9}
+            color={week.done >= week.goal ? 'var(--color-success)' : 'var(--color-accent)'}
+          >
+            <span className="fj-hub__ringnum" style={{ fontSize: 19 }}>
+              {week.done}
+              <small>/{week.goal}</small>
+            </span>
+          </ProgressRing>
+          <div className="fj-recap__body">
+            <div className="fj-recap__head">Your week so far</div>
+            <div className="fj-recap__line">
+              <strong>{week.done}</strong> of <strong>{week.goal}</strong> workouts logged
+              {week.done >= week.goal
+                ? ' — goal reached. '
+                : week.remaining === 1
+                  ? ' — 1 to go. '
+                  : ` — ${week.remaining} to go. `}
+              <strong>{week.totalSets}</strong> sets this week
+              {trendPct != null && trendPct !== 0
+                ? ` (${trendPct > 0 ? '+' : ''}${trendPct}% vs last week).`
+                : '.'}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {streak.current > 0 && (
         <Card className="fj-streak" style={{ marginBottom: 'var(--space-5)' }}>

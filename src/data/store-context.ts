@@ -30,6 +30,8 @@ export interface StoreValue {
   addCardio: (dateKey: string, entry: CardioEntry) => boolean
   deleteCardio: (dateKey: string, id: string) => void
   loadTemplateIntoDay: (dateKey: string, template: Template) => void
+  /** Load the weekly plan's exercises for `day` into that date's workout. */
+  loadPlanIntoDay: (dateKey: string, day: DayName) => void
 
   // templates
   saveTemplate: (template: Template) => void

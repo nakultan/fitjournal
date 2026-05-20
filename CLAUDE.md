@@ -30,9 +30,10 @@ data/logic + data/storage  (pure functions; localStorage)
   object; `SCHEMA_VERSION` guards future migrations.
 - **`data/storage.ts`** — `loadData()` / `saveData()` / `defaultData()` /
   `exportData()`. Seeds Push/Pull/Legs templates on a fresh install.
-- **`data/logic.ts`** — *pure* derived computations: PRs, streaks, weekly &
-  total stats, muscle balance, plateaus, insights, the activity heatmap.
-  **Nothing derived is ever stored** — it is always recomputed from `workouts`.
+- **`data/logic.ts`** — *pure* derived computations: PRs, rest-day-aware
+  streaks, weekly & total stats, week-goal progress, session summaries, muscle
+  balance, plateaus, insights/milestones, the activity heatmap. **Nothing
+  derived is ever stored** — it is always recomputed from `workouts`.
 - **`data/store.tsx`** — `StoreProvider` holds `AppData` in React state,
   persists it to localStorage on every change, and exposes typed actions that
   do immutable updates. Also holds UI nav state (`page`, `viewingDateKey`).
@@ -70,6 +71,8 @@ and renders the sidebar.
 - `vite.config.ts` sets `base` to `/fitjournal/` for production (the GitHub
   Pages sub-path) and `/` for local dev.
 - Unique ids come from `lib/uid.ts`; `YYYY-MM-DD` date keys from `lib/dates.ts`.
+- `lib/feedback.ts` is the celebration helper — a synthesised Web Audio chime
+  plus a haptic tap; it degrades silently and is always safe to call.
 
 ## Data safety
 
@@ -78,6 +81,7 @@ The localStorage key `fitjournal` is effectively the database.
 
 ## Not yet built (see ROADMAP.md)
 
-Backup import/restore, automated tests, and the Phase 3 habit features
-(smarter Today hub, rest-day-aware streak, completion celebrations, weekly
-recap).
+Phases 1–3 are done. Still open: backup import/restore, automated tests,
+Phase 4 (accessibility, performance, premium-feel polish) and Phase 5 (a
+responsive mobile layout + iPhone install). OS-level scheduled reminders are
+deliberately deferred — unreliable for an offline, server-less app.

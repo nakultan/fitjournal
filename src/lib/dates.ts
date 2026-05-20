@@ -49,3 +49,8 @@ export const DAY_NAMES: DayName[] = [
   'Saturday',
   'Sunday',
 ]
+
+/** The weekday name for a date (matches the Monday-first DAY_NAMES order). */
+export function dayNameOf(d: Date): DayName {
+  return DAY_NAMES[(d.getDay() + 6) % 7]
+}

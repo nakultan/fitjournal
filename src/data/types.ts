@@ -104,6 +104,8 @@ export interface Preferences {
   weightUnit: WeightUnit
   distanceUnit: DistanceUnit
   goalWeight: number
+  /** Target number of workouts per week. */
+  weeklyGoal: number
   dailyReminder: boolean
   weeklySummary: boolean
 }

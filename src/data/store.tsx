@@ -84,6 +84,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ],
         })),
       ),
+    loadPlanIntoDay: (dateKey, day) =>
+      setData((d) => {
+        const plan = d.weeklyPlan[day]
+        if (!plan || plan.exercises.length === 0) return d
+        return withWorkout(d, dateKey, (w) => ({
+          ...w,
+          exercises: [
+            ...w.exercises,
+            ...plan.exercises.map((te) => ({
+              id: uid(),
+              name: te.name,
+              muscle: te.muscle,
+              sets: te.sets,
+              reps: te.reps,
+              weight: 0,
+            })),
+          ],
+        }))
+      }),
 
     saveTemplate: (template) =>
       setData((d) => {

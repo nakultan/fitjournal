@@ -9,13 +9,16 @@ screen for free.
 
 ## Status
 
-**Phase 2 complete** — the full app is rebuilt in React and deployed. See
-[`../ROADMAP.md`](../ROADMAP.md) for the plan and what's next (Phase 3).
+**Phase 3 complete** — habit features are in: a Today hub, rest-day-aware
+streaks, a weekly goal, and a finish-workout celebration. See
+[`../ROADMAP.md`](../ROADMAP.md) for the plan and what's next (Phase 4).
 
 ## What it does
 
-- **Today** — log body weight, cardio, and exercises; quick-start from a template
-- **Progress** — streak, 30-day stats, an 8-week chart, automatic insights, muscle balance
+- **Today** — a hub showing your streak, weekly-goal progress and today's planned
+  workout; log body weight, cardio, and exercises; finish with a celebration
+- **Progress** — a weekly recap, streak, 30-day stats, an 8-week chart, automatic
+  insights, muscle balance
 - **Records** — strength & cardio personal records, per-exercise goals, a PR timeline
 - **History** — a 13-week activity heatmap and a list of past workouts
 - **Plan** — build workout templates and assign them to a weekly schedule

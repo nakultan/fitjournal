@@ -8,6 +8,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   weightUnit: 'lbs',
   distanceUnit: 'miles',
   goalWeight: 170,
+  weeklyGoal: 4,
   dailyReminder: true,
   weeklySummary: true,
 }

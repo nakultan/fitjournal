@@ -1,30 +1,62 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
+  Bell,
+  CalendarCheck,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Dumbbell,
+  Flame,
+  Lightbulb,
+  Moon,
+  PlayCircle,
   Scale,
+  Sparkles,
   StickyNote,
   Trash2,
   Trophy,
 } from 'lucide-react'
-import { Button, Card, Chip, EmptyState, Input, Modal, PageHeader, useToast } from '@/components'
+import {
+  Button,
+  Card,
+  Chip,
+  Confetti,
+  EmptyState,
+  Input,
+  Modal,
+  PageHeader,
+  ProgressRing,
+  useToast,
+} from '@/components'
 import { useStore } from '@/data/store-context'
 import { CARDIO_LABELS, CARDIO_SPEED_UNIT, CARDIO_TYPES, MUSCLE_GROUPS } from '@/data/constants'
-import { computeStrengthPRs, exerciseKey } from '@/data/logic'
+import {
+  WORKOUT_MILESTONES,
+  computeInsights,
+  computeSessionSummary,
+  computeStreak,
+  computeStrengthPRs,
+  computeWeekProgress,
+  exerciseKey,
+  isLoggedWorkout,
+  totalWorkoutsLogged,
+} from '@/data/logic'
 import type { CardioType, MuscleGroup } from '@/data/types'
-import { addDays, dateKey, formatLong, parseKey, todayKey } from '@/lib/dates'
+import { addDays, dateKey, dayNameOf, formatLong, parseKey, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
+import { celebrate } from '@/lib/feedback'
 
 export function TodayScreen() {
   const { data, viewingDateKey, setViewingDateKey } = useStore()
   const [modalOpen, setModalOpen] = useState(false)
+  const [summaryOpen, setSummaryOpen] = useState(false)
 
   const date = parseKey(viewingDateKey)
   const workout = data.workouts[viewingDateKey]
   const strengthPRs = useMemo(() => computeStrengthPRs(data.workouts), [data.workouts])
   const isToday = viewingDateKey === todayKey()
+  const dayLogged = isLoggedWorkout(workout)
 
   const shiftDate = (days: number) => setViewingDateKey(dateKey(addDays(date, days)))
 
@@ -45,6 +77,8 @@ export function TodayScreen() {
           </div>
         }
       />
+
+      {isToday && <TodayHub />}
 
       <WeightBanner dateKey={viewingDateKey} />
 
@@ -124,8 +158,245 @@ export function TodayScreen() {
         )}
       </section>
 
+      {isToday && dayLogged && (
+        <div className="fj-finish">
+          <p className="fj-finish__hint">Done training for today?</p>
+          <Button onClick={() => setSummaryOpen(true)}>
+            <Sparkles size={16} /> Finish &amp; review workout
+          </Button>
+        </div>
+      )}
+
       <ExerciseModal open={modalOpen} dateKey={viewingDateKey} onClose={() => setModalOpen(false)} />
+      {summaryOpen && (
+        <WorkoutSummaryModal dateKey={viewingDateKey} onClose={() => setSummaryOpen(false)} />
+      )}
     </div>
+  )
+}
+
+/* ---------- Today hub ---------- */
+function TodayHub() {
+  const { data, navigate, loadPlanIntoDay } = useStore()
+  const { showToast } = useToast()
+  const todayK = todayKey()
+
+  const { streak, week, insights, dayName } = useMemo(() => {
+    const now = parseKey(todayK)
+    return {
+      streak: computeStreak(data.workouts, data.weeklyPlan, now),
+      week: computeWeekProgress(data.workouts, now, data.preferences.weeklyGoal),
+      insights: computeInsights(data, now),
+      dayName: dayNameOf(now),
+    }
+  }, [data, todayK])
+
+  const logged = isLoggedWorkout(data.workouts[todayK])
+  const plan = data.weeklyPlan[dayName]
+  const isTrainingDay = !!plan && plan.exercises.length > 0
+  const hasAnyPlan = Object.keys(data.weeklyPlan).length > 0
+  const showReminder = data.preferences.dailyReminder && !logged && isTrainingDay
+
+  const dayNum = Math.floor(parseKey(todayK).getTime() / 86_400_000)
+  const nudge = insights.length > 0 ? insights[dayNum % insights.length] : null
+
+  const goalReached = week.done >= week.goal
+  const weekMsg = goalReached
+    ? 'Weekly goal reached'
+    : `${week.remaining} workout${week.remaining === 1 ? '' : 's'} to your goal`
+
+  const startPlan = () => {
+    loadPlanIntoDay(todayK, dayName)
+    showToast(plan?.templateName ? `Loaded ${plan.templateName}` : "Loaded today's plan", 'success')
+  }
+
+  return (
+    <Card className="fj-hub">
+      {showReminder && (
+        <div className="fj-hub__reminder">
+          <Bell size={15} />
+          Time to train — you haven&apos;t logged today&apos;s workout yet.
+        </div>
+      )}
+
+      <div className="fj-hub__top">
+        <div className="fj-hub__stat">
+          <div className="fj-hub__flame">
+            <Flame size={24} />
+          </div>
+          <div>
+            <div className="fj-hub__big">{streak.current}</div>
+            <div className="fj-hub__cap">
+              day streak{streak.longest > streak.current ? ` · best ${streak.longest}` : ''}
+            </div>
+          </div>
+        </div>
+
+        <div className="fj-hub__divider" />
+
+        <div className="fj-hub__stat">
+          <ProgressRing
+            pct={week.pct}
+            size={62}
+            stroke={6}
+            color={goalReached ? 'var(--color-success)' : 'var(--color-accent)'}
+          >
+            <span className="fj-hub__ringnum">
+              {week.done}
+              <small>/{week.goal}</small>
+            </span>
+          </ProgressRing>
+          <div>
+            <div className="fj-hub__cap">this week</div>
+            <div className="fj-hub__sub">{weekMsg}</div>
+          </div>
+        </div>
+      </div>
+
+      {logged ? (
+        <div className="fj-hub__plan">
+          <div className="fj-hub__plan-icon">
+            <CheckCircle2 size={20} />
+          </div>
+          <div className="fj-hub__plan-text">
+            <div className="fj-hub__plan-title">Today&apos;s workout is logged</div>
+            <div className="fj-hub__plan-sub">
+              Nice work — review it below, or finish up when you&apos;re done.
+            </div>
+          </div>
+        </div>
+      ) : isTrainingDay ? (
+        <div className="fj-hub__plan">
+          <div className="fj-hub__plan-icon">
+            <CalendarCheck size={20} />
+          </div>
+          <div className="fj-hub__plan-text">
+            <div className="fj-hub__plan-title">
+              Today&apos;s plan · {plan?.templateName ?? 'Custom workout'}
+            </div>
+            <div className="fj-hub__plan-sub">
+              {plan?.exercises.length} exercise{plan?.exercises.length === 1 ? '' : 's'} ready to go
+            </div>
+          </div>
+          <Button size="sm" onClick={startPlan}>
+            <PlayCircle size={15} /> Start
+          </Button>
+        </div>
+      ) : (
+        <div className="fj-hub__plan">
+          <div className="fj-hub__plan-icon fj-hub__plan-icon--rest">
+            <Moon size={20} />
+          </div>
+          <div className="fj-hub__plan-text">
+            <div className="fj-hub__plan-title">{hasAnyPlan ? 'Rest day' : 'No weekly plan yet'}</div>
+            <div className="fj-hub__plan-sub">
+              {hasAnyPlan
+                ? streak.current > 0
+                  ? 'Your streak is safe — recovery is part of the work.'
+                  : 'Recover well, then come back strong.'
+                : 'Set up a weekly schedule to see your plan here.'}
+            </div>
+          </div>
+          {!hasAnyPlan && (
+            <Button size="sm" variant="secondary" onClick={() => navigate('plan')}>
+              Plan my week
+            </Button>
+          )}
+        </div>
+      )}
+
+      {nudge && (
+        <div className="fj-hub__nudge">
+          <Lightbulb size={15} />
+          <span>{nudge.text}</span>
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/* ---------- Workout summary ---------- */
+function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string; onClose: () => void }) {
+  const { data } = useStore()
+  const summary = useMemo(() => computeSessionSummary(data.workouts, dk), [data.workouts, dk])
+  const streak = useMemo(
+    () => computeStreak(data.workouts, data.weeklyPlan, parseKey(dk)),
+    [data.workouts, data.weeklyPlan, dk],
+  )
+  const total = useMemo(() => totalWorkoutsLogged(data.workouts), [data.workouts])
+  const hasPR = summary.prs.length > 0
+  const milestone = WORKOUT_MILESTONES.includes(total)
+
+  useEffect(() => {
+    celebrate()
+  }, [])
+
+  return (
+    <>
+      <Confetti count={hasPR || milestone ? 72 : 46} />
+      <Modal open onClose={onClose} footer={<Button onClick={onClose}>Done</Button>}>
+        <div className="fj-summary">
+          <div className="fj-summary__check">
+            <CheckCircle2 size={44} />
+          </div>
+          <h2 className="fj-summary__title">
+            {hasPR ? 'Record-breaking session!' : 'Workout complete'}
+          </h2>
+          <div className="fj-summary__streak">
+            <Flame size={15} color="var(--color-warning)" />
+            {streak.current}-day streak
+          </div>
+
+          <div className="fj-summary__stats">
+            <div>
+              <span className="fj-summary__num">{summary.exerciseCount}</span>
+              <span className="fj-summary__unit">exercises</span>
+            </div>
+            <div>
+              <span className="fj-summary__num">{summary.totalSets}</span>
+              <span className="fj-summary__unit">sets</span>
+            </div>
+            {summary.totalVolume > 0 && (
+              <div>
+                <span className="fj-summary__num">
+                  {Math.round(summary.totalVolume).toLocaleString()}
+                </span>
+                <span className="fj-summary__unit">lbs volume</span>
+              </div>
+            )}
+            {summary.cardioCount > 0 && (
+              <div>
+                <span className="fj-summary__num">{summary.cardioMinutes}</span>
+                <span className="fj-summary__unit">min cardio</span>
+              </div>
+            )}
+          </div>
+
+          {hasPR && (
+            <div className="fj-summary__prs">
+              <div className="fj-summary__prs-head">
+                <Trophy size={15} color="var(--color-warning)" />
+                {summary.prs.length === 1
+                  ? 'New personal record'
+                  : `${summary.prs.length} new personal records`}
+              </div>
+              {summary.prs.map((p, i) => (
+                <div key={i} className="fj-summary__pr">
+                  <span>{p.label}</span>
+                  <span className="fj-summary__pr-val">{p.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {milestone && (
+            <div className="fj-summary__milestone">
+              🎉 That&apos;s your {total}th logged workout — a real milestone.
+            </div>
+          )}
+        </div>
+      </Modal>
+    </>
   )
 }
 
