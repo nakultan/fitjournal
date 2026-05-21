@@ -23,16 +23,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(loadData)
   const [page, setPage] = useState<PageId>('today')
   const [viewingDateKey, setViewingDateKey] = useState<string>(todayKey)
+  const [saveFailed, setSaveFailed] = useState(false)
 
-  // Persist on every change — this is the on-device "database".
+  // Persist on every change — this is the on-device "database". A failed
+  // write (quota, disabled storage) is recorded so the UI can warn the user
+  // instead of letting unsaved changes look saved. This setState cannot
+  // cascade: the effect depends only on `data`, which it never changes, and
+  // a same-value update bails out.
   useEffect(() => {
-    saveData(data)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a failed device write must surface in render
+    setSaveFailed(!saveData(data))
   }, [data])
 
   const value: StoreValue = {
     data,
     page,
     viewingDateKey,
+    saveFailed,
 
     navigate: setPage,
     setViewingDateKey,
@@ -204,6 +211,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     savePreferences: (preferences) => setData((d) => ({ ...d, preferences })),
     setHealth: (health) => setData((d) => ({ ...d, health })),
     restoreData: (next) => setData(next),
+    markBackedUp: () => setData((d) => ({ ...d, lastBackupAt: new Date().toISOString() })),
   }
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

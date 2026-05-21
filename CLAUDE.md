@@ -3,7 +3,8 @@
 Personal, offline-first fitness journal. React 19 + TypeScript + Vite, shipped
 as an installable PWA. **All data is on-device** (localStorage) — there is no
 backend, no account, and no network dependency at runtime. See `README.md` for
-the product overview and `../ROADMAP.md` for the build plan and roadmap.
+the product overview and `AUDIT.md` for the current product audit and the
+ranked backlog.
 
 ## Commands
 
@@ -32,6 +33,8 @@ data/logic + data/storage  (pure functions; localStorage)
 - **`data/storage.ts`** — `loadData()` / `saveData()` / `defaultData()` /
   `exportData()` / `importData()`. Seeds Push/Pull/Legs templates on a fresh
   install; `importData()` validates a backup file before it can be restored.
+  `saveData()` returns `false` on a failed device write (quota exceeded,
+  blocked storage) so the failure can be surfaced instead of lost silently.
 - **`data/logic.ts`** — *pure* derived computations: PRs, rest-day-aware
   streaks, weekly & total stats, week-goal progress, session summaries, muscle
   balance, plateaus, insights/milestones, the activity heatmap. **Nothing
@@ -40,7 +43,8 @@ data/logic + data/storage  (pure functions; localStorage)
   being pure makes them straightforward to unit-test.
 - **`data/store.tsx`** — `StoreProvider` holds `AppData` in React state,
   persists it to localStorage on every change, and exposes typed actions that
-  do immutable updates. Also holds UI nav state (`page`, `viewingDateKey`).
+  do immutable updates. Also holds UI nav state (`page`, `viewingDateKey`) and
+  `saveFailed` — true when the most recent persist failed.
 - **`data/store-context.ts`** — `StoreContext`, the `useStore()` hook, and the
   `StoreValue` interface.
 
@@ -80,17 +84,28 @@ and renders the sidebar.
 - Unique ids come from `lib/uid.ts`; `YYYY-MM-DD` date keys from `lib/dates.ts`.
 - `lib/feedback.ts` is the celebration helper — a synthesised Web Audio chime
   plus a haptic tap; it degrades silently and is always safe to call.
+- `lib/backup.ts` exposes `downloadBackup()` — the shared JSON-export helper
+  used by Settings, the backup reminder, and the save-error banner.
 
 ## Data safety
 
-On-device storage has no cloud backup. Settings → Export writes a full JSON
-copy; Settings → Import restores one (via `restoreData()`, behind a confirm
-step). The localStorage key `fitjournal` is effectively the database.
+On-device storage has no cloud backup; the localStorage key `fitjournal` is
+effectively the database.
 
-## Not yet built (see ROADMAP.md)
+- **Export / Import** — Settings → Export writes a full JSON copy; Settings →
+  Import restores one via `restoreData()`, behind a confirm step. A restore
+  first auto-downloads a snapshot of the current data, so it can be undone.
+- **`SaveErrorBanner`** — a persistent banner shown when a device write fails
+  (the store's `saveFailed`); it urges an immediate export.
+- **`BackupReminder`** — a calm, dismissible nudge to export, shown once there
+  is data and the user has not backed up in three weeks (`lastBackupAt` tracks
+  the last export). Both render globally from `App.tsx`.
+
+## Not yet built
 
 All five roadmap phases are done, plus a Vitest suite over the data/logic
-layer. The original single-file app has been retired to `../archive/`. Still
-open: optional nice-to-haves (occasional backup reminders). OS-level scheduled
-reminders are deliberately deferred — unreliable for an offline, server-less
-app.
+layer and the first round of post-audit fixes (`AUDIT.md` → Phase 1). The
+original single-file app has been retired to `../archive/`. OS-level
+scheduled reminders are deliberately deferred — unreliable for an offline,
+server-less app. `AUDIT.md` holds the full ranked audit and the remaining
+open findings.

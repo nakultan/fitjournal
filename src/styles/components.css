@@ -443,6 +443,71 @@
   gap: var(--space-2);
 }
 
+/* ---- Save-error banner ------------------------------------- */
+/* Persistent, non-dismissible — a write to device storage failed. */
+.fj-save-error {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px var(--space-4);
+  padding-top: calc(12px + env(safe-area-inset-top));
+  background: var(--color-danger-soft);
+  border-bottom: 1.5px solid var(--color-danger);
+  backdrop-filter: blur(12px);
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.4;
+  z-index: 150;
+}
+.fj-save-error__icon {
+  flex-shrink: 0;
+  color: var(--color-danger);
+}
+.fj-save-error__msg {
+  flex: 1;
+}
+.fj-save-error__msg strong {
+  color: var(--color-danger);
+}
+
+/* ---- Backup reminder --------------------------------------- */
+/* Calm, dismissible nudge to export a backup. */
+.fj-backup-reminder {
+  position: fixed;
+  left: var(--space-5);
+  bottom: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 340px;
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  font-size: 14px;
+  z-index: 200;
+}
+.fj-backup-reminder__msg {
+  display: flex;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+.fj-backup-reminder__msg svg {
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+.fj-backup-reminder__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
 /* ---- Showcase page (Phase 1 only) -------------------------- */
 .fj-showcase {
   max-width: 920px;
@@ -506,7 +571,8 @@
   /* Floating UI clears the bottom nav bar */
   .fj-toaster,
   .fj-install-hint,
-  .fj-sw-toast {
+  .fj-sw-toast,
+  .fj-backup-reminder {
     bottom: calc(64px + env(safe-area-inset-bottom) + var(--space-2));
   }
 }

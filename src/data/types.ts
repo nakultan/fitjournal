@@ -129,4 +129,6 @@ export interface AppData {
   goals: Record<string, number>
   preferences: Preferences
   health: HealthData | null
+  /** ISO timestamp of the last backup export, or null if never backed up. */
+  lastBackupAt: string | null
 }

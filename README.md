@@ -11,8 +11,8 @@ screen for free.
 
 **All five phases complete** — the app is fully responsive (a phone layout with
 a bottom nav and bottom-sheet modals) and installable on an iPhone home screen,
-on top of the full feature set and polish pass. See
-[`../ROADMAP.md`](../ROADMAP.md) for the build history and remaining notes.
+on top of the full feature set and polish pass. See [`AUDIT.md`](AUDIT.md) for
+a full product audit and the ranked backlog.
 
 ## What it does
 
@@ -24,7 +24,7 @@ on top of the full feature set and polish pass. See
 - **History** — a 13-week activity heatmap and a list of past workouts
 - **Plan** — build workout templates and assign them to a weekly schedule
 - **Recipes** — a searchable, taggable recipe collection
-- **Settings** — preferences, backup export & restore, and Apple Health import
+- **Settings** — preferences, backup export & restore, and health-data (JSON) import
 
 ## Running it
 
@@ -50,8 +50,10 @@ npm run typecheck
   no account, no cloud. Personal records, streaks and stats are *calculated*
   from your logged workouts, never stored separately.
 - **Back up regularly:** Settings → Export downloads a JSON copy of everything,
-  and Settings → Import restores one. There is no cloud safety net, so a recent
-  export is your only way back.
+  and Settings → Import restores one — after first downloading a snapshot of
+  your current data, so a restore can be undone. The app nudges you to export
+  when it has been a while, and warns you if a save to the device fails. There
+  is still no cloud safety net, so keeping a recent export is wise.
 
 ## Project structure
 
@@ -60,7 +62,7 @@ src/
   components/   AppShell + design-system components (Button, Card, Modal, ...)
   pages/        the seven screens
   data/         types, constants, storage, derived logic, the store
-  lib/          small helpers (dates, ids, class names)
+  lib/          small helpers (dates, ids, class names, backup)
   styles/       design tokens + global + component + app styles
 public/         app icons
 ```

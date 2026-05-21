@@ -81,6 +81,7 @@ function appData(w: Record<string, Workout>): AppData {
       weeklySummary: true,
     },
     health: null,
+    lastBackupAt: null,
   }
 }
 

@@ -517,7 +517,9 @@ function CardioForm({ dateKey: dk }: { dateKey: string }) {
         <div style={{ flex: 1 }}>
           <Input label="Calories" type="number" inputMode="decimal" placeholder="0" value={calories} onChange={(e) => setCalories(e.target.value)} />
         </div>
-        <Button onClick={submit}>Add</Button>
+        <Button onClick={submit} disabled={!time && !speed && !calories}>
+          Add
+        </Button>
       </div>
     </Card>
   )

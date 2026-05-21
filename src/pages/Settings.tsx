@@ -10,11 +10,12 @@ import {
 } from 'lucide-react'
 import { Button, Card, Modal, PageHeader, StatTile, Toggle, useToast } from '@/components'
 import { useStore } from '@/data/store-context'
-import { exportData, importData } from '@/data/storage'
+import { importData } from '@/data/storage'
+import { downloadBackup } from '@/lib/backup'
 import type { AppData, DistanceUnit, HealthData, Preferences, WeightUnit } from '@/data/types'
 
 export function SettingsScreen() {
-  const { data, savePreferences, setHealth, restoreData } = useStore()
+  const { data, savePreferences, setHealth, restoreData, markBackedUp } = useStore()
   const { showToast } = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
   const importFileRef = useRef<HTMLInputElement>(null)
@@ -24,13 +25,8 @@ export function SettingsScreen() {
   const patch = (change: Partial<Preferences>) => savePreferences({ ...prefs, ...change })
 
   const exportBackup = () => {
-    const blob = new Blob([exportData(data)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `fitjournal-backup-${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadBackup(data)
+    markBackedUp()
     showToast('Backup downloaded', 'success')
   }
 
@@ -48,9 +44,12 @@ export function SettingsScreen() {
 
   const confirmImport = () => {
     if (!pending) return
+    // Snapshot the current data to a file first, so a mistaken restore can
+    // be undone — the overwrite is otherwise irreversible.
+    downloadBackup(data)
     restoreData(pending.data)
     setPending(null)
-    showToast('Backup restored', 'success')
+    showToast('Backup restored — your previous data was downloaded first', 'success')
   }
 
   const importHealth = (file: File) => {
@@ -221,7 +220,7 @@ export function SettingsScreen() {
       <div className="fj-settings-group">
         <div className="fj-settings-group__title">
           <HeartPulse size={12} style={{ verticalAlign: '-1px', marginRight: 6 }} />
-          Apple Health
+          Health data
         </div>
         <div className="fj-settings-row">
           <div>
@@ -303,8 +302,8 @@ export function SettingsScreen() {
           <p>
             The backup holds <strong>{Object.keys(pending.data.workouts).length}</strong> workout
             days, <strong>{pending.data.templates.length}</strong> templates and{' '}
-            <strong>{pending.data.recipes.length}</strong> recipes. Your current data will be
-            overwritten and can&apos;t be recovered.
+            <strong>{pending.data.recipes.length}</strong> recipes. A copy of your current data
+            will be downloaded first, so you can undo this.
           </p>
         </Modal>
       )}

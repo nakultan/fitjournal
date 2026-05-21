@@ -25,7 +25,8 @@ Run `npm run preview`, open the app, and click through:
       template asks for confirmation
 - [ ] **Recipes** — add a recipe; deleting one asks for confirmation
 - [ ] **Settings → Export** — downloads a backup file
-- [ ] **Settings → Import** — restoring that file shows the confirmation dialog
+- [ ] **Settings → Import** — restoring shows the confirmation dialog and first
+      downloads a snapshot of the current data
 - [ ] **Offline** — reload with the network off; the app still works
 - [ ] **Narrow window** — shrink the window; the bottom nav and reflow kick in
 

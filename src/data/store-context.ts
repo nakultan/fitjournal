@@ -17,6 +17,8 @@ export interface StoreValue {
   data: AppData
   page: PageId
   viewingDateKey: string
+  /** True when the most recent write to device storage failed. */
+  saveFailed: boolean
 
   // navigation
   navigate: (page: PageId) => void
@@ -59,6 +61,8 @@ export interface StoreValue {
   setHealth: (health: HealthData) => void
   /** Replace the entire app state — used to restore a backup file. */
   restoreData: (data: AppData) => void
+  /** Record that the user has just exported a backup. */
+  markBackedUp: () => void
 }
 
 export const StoreContext = createContext<StoreValue | null>(null)

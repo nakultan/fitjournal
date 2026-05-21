@@ -66,6 +66,7 @@ export function defaultData(): AppData {
     goals: {},
     preferences: { ...DEFAULT_PREFERENCES },
     health: null,
+    lastBackupAt: null,
   }
 }
 
@@ -84,6 +85,7 @@ function normalize(parsed: Partial<AppData>): AppData {
     goals: parsed.goals ?? base.goals,
     preferences: { ...base.preferences, ...(parsed.preferences ?? {}) },
     health: parsed.health ?? base.health,
+    lastBackupAt: parsed.lastBackupAt ?? base.lastBackupAt,
   }
 }
 
@@ -121,11 +123,18 @@ export function importData(raw: string): AppData {
   return normalize(parsed)
 }
 
-export function saveData(data: AppData): void {
+/**
+ * Persist the full state to the device. Returns `false` if the write failed
+ * (storage full, disabled, or blocked) so callers can warn the user — a
+ * silent failure would let unsaved changes look saved.
+ */
+export function saveData(data: AppData): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    return true
   } catch (e) {
     console.warn('[fitjournal] could not save data', e)
+    return false
   }
 }
 
