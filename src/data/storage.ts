@@ -69,22 +69,56 @@ export function defaultData(): AppData {
   }
 }
 
+/**
+ * Merge possibly-incomplete data onto the defaults, so an older or partial
+ * save still produces a valid, fully-shaped AppData.
+ */
+function normalize(parsed: Partial<AppData>): AppData {
+  const base = defaultData()
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    workouts: parsed.workouts ?? base.workouts,
+    templates: parsed.templates ?? base.templates,
+    weeklyPlan: parsed.weeklyPlan ?? base.weeklyPlan,
+    recipes: parsed.recipes ?? base.recipes,
+    goals: parsed.goals ?? base.goals,
+    preferences: { ...base.preferences, ...(parsed.preferences ?? {}) },
+    health: parsed.health ?? base.health,
+  }
+}
+
 /** Load saved data, filling in any missing fields from the defaults. */
 export function loadData(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return defaultData()
-    const parsed = JSON.parse(raw) as Partial<AppData>
-    const base = defaultData()
-    return {
-      ...base,
-      ...parsed,
-      preferences: { ...base.preferences, ...(parsed.preferences ?? {}) },
-      schemaVersion: SCHEMA_VERSION,
-    }
+    return normalize(JSON.parse(raw) as Partial<AppData>)
   } catch {
     return defaultData()
   }
+}
+
+/**
+ * Parse the contents of a backup file into valid AppData. Throws a friendly
+ * error if the text isn't valid JSON or isn't a FitJournal backup.
+ */
+export function importData(raw: string): AppData {
+  let parsed: Partial<AppData>
+  try {
+    parsed = JSON.parse(raw) as Partial<AppData>
+  } catch {
+    throw new Error("That file isn't valid JSON — pick a FitJournal backup file.")
+  }
+  const looksValid =
+    !!parsed &&
+    typeof parsed === 'object' &&
+    typeof parsed.workouts === 'object' &&
+    parsed.workouts !== null &&
+    Array.isArray(parsed.templates)
+  if (!looksValid) {
+    throw new Error("That doesn't look like a FitJournal backup file.")
+  }
+  return normalize(parsed)
 }
 
 export function saveData(data: AppData): void {

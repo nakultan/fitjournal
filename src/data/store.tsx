@@ -187,6 +187,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     savePreferences: (preferences) => setData((d) => ({ ...d, preferences })),
     setHealth: (health) => setData((d) => ({ ...d, health })),
+    restoreData: (next) => setData(next),
   }
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

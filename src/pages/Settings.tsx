@@ -1,14 +1,24 @@
-import { useRef } from 'react'
-import { Download, Footprints, HeartPulse, MapPin, SlidersHorizontal, TrendingUp } from 'lucide-react'
-import { Button, Card, PageHeader, StatTile, Toggle, useToast } from '@/components'
+import { useRef, useState } from 'react'
+import {
+  Download,
+  Footprints,
+  HeartPulse,
+  MapPin,
+  SlidersHorizontal,
+  TrendingUp,
+  Upload,
+} from 'lucide-react'
+import { Button, Card, Modal, PageHeader, StatTile, Toggle, useToast } from '@/components'
 import { useStore } from '@/data/store-context'
-import { exportData } from '@/data/storage'
-import type { DistanceUnit, HealthData, Preferences, WeightUnit } from '@/data/types'
+import { exportData, importData } from '@/data/storage'
+import type { AppData, DistanceUnit, HealthData, Preferences, WeightUnit } from '@/data/types'
 
 export function SettingsScreen() {
-  const { data, savePreferences, setHealth } = useStore()
+  const { data, savePreferences, setHealth, restoreData } = useStore()
   const { showToast } = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
+  const importFileRef = useRef<HTMLInputElement>(null)
+  const [pending, setPending] = useState<{ data: AppData; fileName: string } | null>(null)
   const prefs = data.preferences
 
   const patch = (change: Partial<Preferences>) => savePreferences({ ...prefs, ...change })
@@ -22,6 +32,25 @@ export function SettingsScreen() {
     a.click()
     URL.revokeObjectURL(url)
     showToast('Backup downloaded', 'success')
+  }
+
+  const handleImportFile = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        setPending({ data: importData(String(reader.result)), fileName: file.name })
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Could not read that file', 'warning')
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const confirmImport = () => {
+    if (!pending) return
+    restoreData(pending.data)
+    setPending(null)
+    showToast('Backup restored', 'success')
   }
 
   const importHealth = (file: File) => {
@@ -162,6 +191,28 @@ export function SettingsScreen() {
             <Download size={15} /> Export
           </Button>
         </div>
+        <div className="fj-settings-row">
+          <div>
+            <div className="fj-settings-row__label">Restore from a backup</div>
+            <div className="fj-settings-row__desc">
+              Load a previously exported file. This replaces everything currently in the app.
+            </div>
+          </div>
+          <Button variant="secondary" onClick={() => importFileRef.current?.click()}>
+            <Upload size={15} /> Import
+          </Button>
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleImportFile(file)
+              e.target.value = ''
+            }}
+          />
+        </div>
       </div>
 
       {/* Apple Health */}
@@ -226,6 +277,35 @@ export function SettingsScreen() {
       <p className="fj-muted" style={{ textAlign: 'center', marginTop: 'var(--space-6)' }}>
         FitJournal runs entirely on this device — no account, no servers, no internet required.
       </p>
+
+      {pending && (
+        <Modal
+          open
+          onClose={() => setPending(null)}
+          title="Restore this backup?"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setPending(null)}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={confirmImport}>
+                Replace my data
+              </Button>
+            </>
+          }
+        >
+          <p style={{ marginBottom: 'var(--space-3)' }}>
+            This replaces <strong>everything</strong> currently in FitJournal with the contents
+            of <strong>{pending.fileName}</strong>.
+          </p>
+          <p>
+            The backup holds <strong>{Object.keys(pending.data.workouts).length}</strong> workout
+            days, <strong>{pending.data.templates.length}</strong> templates and{' '}
+            <strong>{pending.data.recipes.length}</strong> recipes. Your current data will be
+            overwritten and can&apos;t be recovered.
+          </p>
+        </Modal>
+      )}
     </div>
   )
 }

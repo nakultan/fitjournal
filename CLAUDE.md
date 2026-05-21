@@ -29,7 +29,8 @@ data/logic + data/storage  (pure functions; localStorage)
 - **`data/types.ts`** — the entire data model. `AppData` is the single saved
   object; `SCHEMA_VERSION` guards future migrations.
 - **`data/storage.ts`** — `loadData()` / `saveData()` / `defaultData()` /
-  `exportData()`. Seeds Push/Pull/Legs templates on a fresh install.
+  `exportData()` / `importData()`. Seeds Push/Pull/Legs templates on a fresh
+  install; `importData()` validates a backup file before it can be restored.
 - **`data/logic.ts`** — *pure* derived computations: PRs, rest-day-aware
   streaks, weekly & total stats, week-goal progress, session summaries, muscle
   balance, plateaus, insights/milestones, the activity heatmap. **Nothing
@@ -76,12 +77,13 @@ and renders the sidebar.
 
 ## Data safety
 
-On-device storage has no backup. Settings → Export writes a full JSON copy.
-The localStorage key `fitjournal` is effectively the database.
+On-device storage has no cloud backup. Settings → Export writes a full JSON
+copy; Settings → Import restores one (via `restoreData()`, behind a confirm
+step). The localStorage key `fitjournal` is effectively the database.
 
 ## Not yet built (see ROADMAP.md)
 
-Phases 1–3 are done. Still open: backup import/restore, automated tests,
-Phase 4 (accessibility, performance, premium-feel polish) and Phase 5 (a
-responsive mobile layout + iPhone install). OS-level scheduled reminders are
-deliberately deferred — unreliable for an offline, server-less app.
+Phases 1–3 are done. Still open: automated tests, Phase 4 (accessibility,
+performance, premium-feel polish) and Phase 5 (a responsive mobile layout +
+iPhone install). OS-level scheduled reminders are deliberately deferred —
+unreliable for an offline, server-less app.

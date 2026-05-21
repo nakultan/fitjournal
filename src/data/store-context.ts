@@ -54,6 +54,8 @@ export interface StoreValue {
   // settings
   savePreferences: (preferences: Preferences) => void
   setHealth: (health: HealthData) => void
+  /** Replace the entire app state — used to restore a backup file. */
+  restoreData: (data: AppData) => void
 }
 
 export const StoreContext = createContext<StoreValue | null>(null)

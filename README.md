@@ -23,7 +23,7 @@ streaks, a weekly goal, and a finish-workout celebration. See
 - **History** — a 13-week activity heatmap and a list of past workouts
 - **Plan** — build workout templates and assign them to a weekly schedule
 - **Recipes** — a searchable, taggable recipe collection
-- **Settings** — preferences, a data-backup export, and Apple Health import
+- **Settings** — preferences, backup export & restore, and Apple Health import
 
 ## Running it
 
@@ -47,8 +47,9 @@ npm run typecheck
 - **All data lives on your device** in the browser's localStorage — no server,
   no account, no cloud. Personal records, streaks and stats are *calculated*
   from your logged workouts, never stored separately.
-- **Back up regularly:** Settings → Export downloads a JSON copy of everything.
-  There is no cloud safety net.
+- **Back up regularly:** Settings → Export downloads a JSON copy of everything,
+  and Settings → Import restores one. There is no cloud safety net, so a recent
+  export is your only way back.
 
 ## Project structure
 
