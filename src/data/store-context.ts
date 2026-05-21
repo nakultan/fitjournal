@@ -23,12 +23,15 @@ export interface StoreValue {
   setViewingDateKey: (key: string) => void
   viewWorkoutDate: (key: string) => void
 
-  // workouts — `addExercise` / `addCardio` return true if a PR was set
+  // workouts — `addExercise` / `addCardio` return true if a PR was set;
+  // `restore*` re-insert a deleted entry at its original index (for undo)
   setBodyWeight: (dateKey: string, weight: number | null) => void
   addExercise: (dateKey: string, entry: ExerciseEntry) => boolean
   deleteExercise: (dateKey: string, id: string) => void
+  restoreExercise: (dateKey: string, entry: ExerciseEntry, index: number) => void
   addCardio: (dateKey: string, entry: CardioEntry) => boolean
   deleteCardio: (dateKey: string, id: string) => void
+  restoreCardio: (dateKey: string, entry: CardioEntry, index: number) => void
   loadTemplateIntoDay: (dateKey: string, template: Template) => void
   /** Load the weekly plan's exercises for `day` into that date's workout. */
   loadPlanIntoDay: (dateKey: string, day: DayName) => void

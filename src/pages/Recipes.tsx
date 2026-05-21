@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { Plus, Star, UtensilsCrossed } from 'lucide-react'
-import { Button, Card, Chip, EmptyState, Input, Modal, PageHeader, useToast } from '@/components'
+import {
+  Button,
+  Card,
+  Chip,
+  ConfirmModal,
+  EmptyState,
+  Input,
+  Modal,
+  PageHeader,
+  useToast,
+} from '@/components'
 import { useStore } from '@/data/store-context'
 import { RECIPE_TAGS, RECIPE_TAG_LABELS } from '@/data/constants'
 import type { Recipe, RecipeTag } from '@/data/types'
@@ -286,6 +296,7 @@ function RecipeDetail({
 }) {
   const { data, deleteRecipe } = useStore()
   const { showToast } = useToast()
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const r = data.recipes.find((x) => x.id === recipeId)
   if (!r) return null
   const totalTime = r.prepTime + r.cookTime
@@ -297,14 +308,7 @@ function RecipeDetail({
       title={r.name}
       footer={
         <>
-          <Button
-            variant="danger"
-            onClick={() => {
-              deleteRecipe(r.id)
-              showToast('Recipe deleted')
-              onClose()
-            }}
-          >
+          <Button variant="danger" onClick={() => setConfirmingDelete(true)}>
             Delete
           </Button>
           <Button variant="ghost" onClick={onClose}>
@@ -363,6 +367,17 @@ function RecipeDetail({
           </div>
         )}
       </div>
+      <ConfirmModal
+        open={confirmingDelete}
+        title="Delete this recipe?"
+        message={`"${r.name}" and its ingredients, steps and notes will be permanently removed.`}
+        onConfirm={() => {
+          deleteRecipe(r.id)
+          showToast('Recipe deleted')
+          onClose()
+        }}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </Modal>
   )
 }

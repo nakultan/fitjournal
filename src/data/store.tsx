@@ -58,6 +58,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           exercises: w.exercises.filter((e) => e.id !== id),
         })),
       ),
+    restoreExercise: (dateKey, entry, index) =>
+      setData((d) =>
+        withWorkout(d, dateKey, (w) => {
+          const exercises = [...w.exercises]
+          exercises.splice(Math.min(Math.max(index, 0), exercises.length), 0, entry)
+          return { ...w, exercises }
+        }),
+      ),
     addCardio: (dateKey, entry) => {
       const isPR = wouldBeCardioPR(data.workouts, entry.type, entry.calories)
       setData((d) => withWorkout(d, dateKey, (w) => ({ ...w, cardio: [...w.cardio, entry] })))
@@ -66,6 +74,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     deleteCardio: (dateKey, id) =>
       setData((d) =>
         withWorkout(d, dateKey, (w) => ({ ...w, cardio: w.cardio.filter((c) => c.id !== id) })),
+      ),
+    restoreCardio: (dateKey, entry, index) =>
+      setData((d) =>
+        withWorkout(d, dateKey, (w) => {
+          const cardio = [...w.cardio]
+          cardio.splice(Math.min(Math.max(index, 0), cardio.length), 0, entry)
+          return { ...w, cardio }
+        }),
       ),
     loadTemplateIntoDay: (dateKey, template) =>
       setData((d) =>

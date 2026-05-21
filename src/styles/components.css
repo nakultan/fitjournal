@@ -364,6 +364,9 @@
   z-index: 200;
 }
 .fj-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   padding: 12px 18px;
   border-radius: var(--radius-md);
   background: var(--color-surface-2);
@@ -373,6 +376,21 @@
   font-weight: 500;
   box-shadow: var(--shadow-modal);
   animation: fj-toast-in var(--dur) var(--ease);
+}
+.fj-toast__action {
+  margin-left: auto;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: color var(--dur-fast) var(--ease);
+}
+.fj-toast__action:hover {
+  color: var(--color-accent-hover);
 }
 .fj-toast--success {
   border-color: var(--color-success);

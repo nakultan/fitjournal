@@ -42,7 +42,7 @@ import {
   isLoggedWorkout,
   totalWorkoutsLogged,
 } from '@/data/logic'
-import type { CardioType, MuscleGroup } from '@/data/types'
+import type { CardioEntry, CardioType, ExerciseEntry, MuscleGroup } from '@/data/types'
 import { addDays, dateKey, dayNameOf, formatLong, parseKey, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
 import { celebrate } from '@/lib/feedback'
@@ -91,8 +91,8 @@ export function TodayScreen() {
         <CardioForm dateKey={viewingDateKey} />
         {workout && workout.cardio.length > 0 && (
           <div className="fj-col" style={{ marginTop: 'var(--space-3)' }}>
-            {workout.cardio.map((c) => (
-              <CardioRow key={c.id} dateKey={viewingDateKey} entryId={c.id} />
+            {workout.cardio.map((c, idx) => (
+              <CardioRow key={c.id} dateKey={viewingDateKey} entryId={c.id} index={idx} />
             ))}
           </div>
         )}
@@ -132,7 +132,7 @@ export function TodayScreen() {
               <span>Weight</span>
               <span />
             </div>
-            {workout.exercises.map((e) => {
+            {workout.exercises.map((e, idx) => {
               const pr = strengthPRs[exerciseKey(e.name)]
               const isPR = !!pr && e.weight > 0 && pr.weight === e.weight && pr.date === viewingDateKey
               return (
@@ -150,7 +150,7 @@ export function TodayScreen() {
                   <span className="fj-cell-value">
                     {e.weight} <small>lbs</small>
                   </span>
-                  <DeleteButton dateKey={viewingDateKey} kind="exercise" entryId={e.id} />
+                  <DeleteButton dateKey={viewingDateKey} kind="exercise" entry={e} index={idx} />
                 </div>
               )
             })}
@@ -523,7 +523,15 @@ function CardioForm({ dateKey: dk }: { dateKey: string }) {
   )
 }
 
-function CardioRow({ dateKey: dk, entryId }: { dateKey: string; entryId: string }) {
+function CardioRow({
+  dateKey: dk,
+  entryId,
+  index,
+}: {
+  dateKey: string
+  entryId: string
+  index: number
+}) {
   const { data } = useStore()
   const entry = data.workouts[dk]?.cardio.find((c) => c.id === entryId)
   if (!entry) return null
@@ -541,28 +549,41 @@ function CardioRow({ dateKey: dk, entryId }: { dateKey: string; entryId: string 
           {entry.calories} <small>kcal</small>
         </span>
       </div>
-      <DeleteButton dateKey={dk} kind="cardio" entryId={entryId} />
+      <DeleteButton dateKey={dk} kind="cardio" entry={entry} index={index} />
     </Card>
   )
 }
 
 /* ---------- Shared bits ---------- */
-function DeleteButton({
-  dateKey: dk,
-  kind,
-  entryId,
-}: {
-  dateKey: string
-  kind: 'exercise' | 'cardio'
-  entryId: string
-}) {
-  const { deleteExercise, deleteCardio } = useStore()
+/** A row delete that's reversible — it fires an "Undo" toast. */
+type DeleteButtonProps =
+  | { dateKey: string; kind: 'exercise'; entry: ExerciseEntry; index: number }
+  | { dateKey: string; kind: 'cardio'; entry: CardioEntry; index: number }
+
+function DeleteButton(props: DeleteButtonProps) {
+  const { deleteExercise, deleteCardio, restoreExercise, restoreCardio } = useStore()
+  const { showToast } = useToast()
+
+  const remove = () => {
+    if (props.kind === 'exercise') {
+      const { dateKey: dk, entry, index } = props
+      deleteExercise(dk, entry.id)
+      showToast('Exercise deleted', 'default', {
+        label: 'Undo',
+        onAction: () => restoreExercise(dk, entry, index),
+      })
+    } else {
+      const { dateKey: dk, entry, index } = props
+      deleteCardio(dk, entry.id)
+      showToast('Cardio entry deleted', 'default', {
+        label: 'Undo',
+        onAction: () => restoreCardio(dk, entry, index),
+      })
+    }
+  }
+
   return (
-    <button
-      className="fj-icon-btn fj-icon-btn--danger"
-      aria-label="Delete"
-      onClick={() => (kind === 'exercise' ? deleteExercise(dk, entryId) : deleteCardio(dk, entryId))}
-    >
+    <button className="fj-icon-btn fj-icon-btn--danger" aria-label="Delete" onClick={remove}>
       <Trash2 size={15} />
     </button>
   )

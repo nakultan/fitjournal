@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CalendarRange, LayoutGrid, Plus, Trash2 } from 'lucide-react'
-import { Button, Card, Input, Modal, PageHeader, useToast } from '@/components'
+import { Button, Card, ConfirmModal, Input, Modal, PageHeader, useToast } from '@/components'
 import { useStore } from '@/data/store-context'
 import { MUSCLE_GROUPS } from '@/data/constants'
 import { DAY_NAMES } from '@/lib/dates'
@@ -133,6 +133,7 @@ function TemplateModal({
   const [rows, setRows] = useState<TemplateExercise[]>(
     existing ? existing.exercises.map((e) => ({ ...e })) : [emptyRow()],
   )
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const updateRow = (i: number, patch: Partial<TemplateExercise>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
@@ -171,7 +172,7 @@ function TemplateModal({
       footer={
         <>
           {existing && (
-            <Button variant="danger" onClick={remove}>
+            <Button variant="danger" onClick={() => setConfirmingDelete(true)}>
               Delete
             </Button>
           )}
@@ -256,6 +257,15 @@ function TemplateModal({
           </Button>
         </div>
       </div>
+      {existing && (
+        <ConfirmModal
+          open={confirmingDelete}
+          title="Delete this template?"
+          message={`"${existing.name}" will be removed. Workouts you've already logged from it stay in your history.`}
+          onConfirm={remove}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </Modal>
   )
 }
