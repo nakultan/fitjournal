@@ -27,7 +27,7 @@ export default defineConfig(({ command }) => {
         registerType: 'prompt',
         // Lets us test offline behaviour during `npm run dev`.
         devOptions: { enabled: true },
-        includeAssets: ['favicon.svg', 'icon.svg', 'icon-maskable.svg'],
+        includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
         manifest: {
           name: 'FitJournal',
           short_name: 'FitJournal',
@@ -39,13 +39,15 @@ export default defineConfig(({ command }) => {
           start_url: base,
           scope: base,
           icons: [
-            { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+            { src: 'pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: 'pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
             {
-              src: 'icon-maskable.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
+              src: 'pwa-maskable-512.png',
+              sizes: '512x512',
+              type: 'image/png',
               purpose: 'maskable',
             },
+            { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
           ],
         },
         workbox: {

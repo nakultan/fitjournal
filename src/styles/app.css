@@ -1004,3 +1004,107 @@
   color: var(--color-text);
   font-weight: 700;
 }
+
+/* ============================================================
+   Responsive — phone & narrow layout (≤768px)
+   The desktop layout above is untouched; every rule here applies
+   only when the viewport is narrow.
+   ============================================================ */
+@media (max-width: 768px) {
+  /* ---- Shell: the sidebar becomes a fixed bottom nav bar ---- */
+  .fj-sidebar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    width: auto;
+    height: auto;
+    flex-direction: row;
+    gap: 0;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-right: none;
+    border-top: 1px solid var(--color-border);
+  }
+  .fj-sidebar__logo {
+    display: none;
+  }
+  .fj-sidebar nav {
+    display: flex;
+    width: 100%;
+  }
+  .fj-nav__item {
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    width: auto;
+    padding: 8px 2px;
+    border-radius: 0;
+    font-size: 10px;
+    letter-spacing: 0.2px;
+  }
+  .fj-nav__item:hover {
+    background: transparent;
+    color: var(--color-text-muted);
+  }
+  .fj-nav__item--active,
+  .fj-nav__item--active:hover {
+    background: transparent;
+    color: var(--color-accent);
+  }
+  .fj-main {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  /* ---- Screens ---- */
+  .fj-screen {
+    padding: var(--space-5) var(--space-4) var(--space-6);
+  }
+  .fj-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+  }
+  .fj-page-header__title {
+    font: var(--text-title);
+  }
+  .fj-section__head {
+    flex-wrap: wrap;
+  }
+
+  /* Date navigation fills the header row */
+  .fj-datenav__label {
+    min-width: 0;
+    flex: 1;
+  }
+
+  /* Stat tiles stay two-up rather than one long column */
+  .fj-stat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Tighten dense rows so they fit a phone */
+  .fj-weight-compare {
+    gap: var(--space-4);
+  }
+  .fj-cardio-entry__stats {
+    gap: var(--space-3);
+  }
+  .fj-cardio-entry__name {
+    min-width: 64px;
+  }
+  .fj-table__row {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  /* Finger-friendly tap targets */
+  .fj-icon-btn,
+  .fj-datenav__btn {
+    width: 40px;
+    height: 40px;
+  }
+}

@@ -9,10 +9,10 @@ screen for free.
 
 ## Status
 
-**Phase 4 complete** — a polish pass: WCAG-AA text contrast, focus-trapped
-modals, and gentle screen/modal animations, on top of the Phase 3 habit
-features. See [`../ROADMAP.md`](../ROADMAP.md) for the plan and what's next
-(Phase 5 — mobile & iPhone).
+**All five phases complete** — the app is fully responsive (a phone layout with
+a bottom nav and bottom-sheet modals) and installable on an iPhone home screen,
+on top of the full feature set and polish pass. See
+[`../ROADMAP.md`](../ROADMAP.md) for the build history and remaining notes.
 
 ## What it does
 
@@ -68,10 +68,18 @@ See [`CLAUDE.md`](CLAUDE.md) for a developer's guide to the codebase.
 
 ## Offline & installing
 
-Once loaded, the app caches itself and works with no internet. On desktop
-Chrome/Edge an **Install** option appears in the address bar — it gets its own
-window and icon. On iPhone, open it in Safari → **Share → Add to Home Screen**.
-No App Store, no fees.
+Once loaded, the app caches itself and works with no internet.
+
+- **Desktop (Chrome/Edge):** an **Install** option appears in the address bar —
+  the app gets its own window and icon.
+- **iPhone:** open the site in Safari → **Share → Add to Home Screen**. It
+  installs with its own icon, runs full-screen, and works offline. No App
+  Store, no Apple fee.
+
+**Each install keeps its own data.** Storage is per-device, so your iPhone and
+your desktop hold separate journals — there is no cloud sync. To move data
+between them, use Settings → Export on one device and Settings → Import on the
+other.
 
 ## Deployment
 

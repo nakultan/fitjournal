@@ -470,3 +470,43 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: var(--space-3);
 }
+
+/* ============================================================
+   Responsive — phone layout (≤768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Modals slide up from the bottom as sheets */
+  .fj-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .fj-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: none;
+    padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+    animation-name: fj-sheet-in;
+  }
+  @keyframes fj-sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  /* Comfortable tap targets */
+  .fj-btn--sm {
+    padding: 9px 14px;
+  }
+  .fj-chip {
+    padding: 9px 14px;
+  }
+
+  /* Floating UI clears the bottom nav bar */
+  .fj-toaster,
+  .fj-install-hint,
+  .fj-sw-toast {
+    bottom: calc(64px + env(safe-area-inset-bottom) + var(--space-2));
+  }
+}

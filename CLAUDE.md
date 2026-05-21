@@ -59,6 +59,9 @@ and renders the sidebar.
   styles the shell and screens. Every class is prefixed `fj-`.
 - Icons are **Lucide** (`lucide-react`). Emoji are reserved for celebratory
   moments only.
+- **Responsive:** a single `@media (max-width: 768px)` block at the end of
+  `app.css` / `components.css` holds the phone layout (bottom nav, bottom-sheet
+  modals, `env(safe-area-inset-*)`). The desktop layout is the default.
 
 ## Conventions & gotchas
 
@@ -83,7 +86,7 @@ step). The localStorage key `fitjournal` is effectively the database.
 
 ## Not yet built (see ROADMAP.md)
 
-Phases 1–4 are done. Still open: automated tests and Phase 5 (a responsive
-mobile layout, raster app icons + iOS splash, and iPhone install). OS-level
-scheduled reminders are deliberately deferred — unreliable for an offline,
-server-less app.
+All five roadmap phases are done. Still open: automated tests for the
+data/logic layer, and optional nice-to-haves (backup reminders, retiring the
+old `index.html`). OS-level scheduled reminders are deliberately deferred —
+unreliable for an offline, server-less app.
