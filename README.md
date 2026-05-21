@@ -9,9 +9,10 @@ screen for free.
 
 ## Status
 
-**Phase 3 complete** — habit features are in: a Today hub, rest-day-aware
-streaks, a weekly goal, and a finish-workout celebration. See
-[`../ROADMAP.md`](../ROADMAP.md) for the plan and what's next (Phase 4).
+**Phase 4 complete** — a polish pass: WCAG-AA text contrast, focus-trapped
+modals, and gentle screen/modal animations, on top of the Phase 3 habit
+features. See [`../ROADMAP.md`](../ROADMAP.md) for the plan and what's next
+(Phase 5 — mobile & iPhone).
 
 ## What it does
 

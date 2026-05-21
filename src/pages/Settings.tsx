@@ -157,6 +157,7 @@ export function SettingsScreen() {
             </div>
           </div>
           <Toggle
+            ariaLabel="Daily reminder"
             checked={prefs.dailyReminder}
             onChange={(v) => patch({ dailyReminder: v })}
           />
@@ -167,6 +168,7 @@ export function SettingsScreen() {
             <div className="fj-settings-row__desc">Show a weekly summary at the top of Progress</div>
           </div>
           <Toggle
+            ariaLabel="Weekly recap"
             checked={prefs.weeklySummary}
             onChange={(v) => patch({ weeklySummary: v })}
           />

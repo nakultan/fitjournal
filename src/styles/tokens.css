@@ -14,9 +14,10 @@
   --color-border-soft: rgba(255, 255, 255, 0.08);
 
   /* ---- Text ---- */
+  /* Dim is the faintest tier — kept at ≥4.5:1 on the dark surfaces for AA. */
   --color-text: #ffffff;
   --color-text-muted: #98989d;
-  --color-text-dim: #6a6a6e;
+  --color-text-dim: #8a8a8e;
 
   /* ---- Brand & accents ---- */
   --color-accent: #0a84ff;

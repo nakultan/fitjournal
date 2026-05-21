@@ -83,7 +83,7 @@ step). The localStorage key `fitjournal` is effectively the database.
 
 ## Not yet built (see ROADMAP.md)
 
-Phases 1–3 are done. Still open: automated tests, Phase 4 (accessibility,
-performance, premium-feel polish) and Phase 5 (a responsive mobile layout +
-iPhone install). OS-level scheduled reminders are deliberately deferred —
-unreliable for an offline, server-less app.
+Phases 1–4 are done. Still open: automated tests and Phase 5 (a responsive
+mobile layout, raster app icons + iOS splash, and iPhone install). OS-level
+scheduled reminders are deliberately deferred — unreliable for an offline,
+server-less app.
