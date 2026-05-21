@@ -103,7 +103,7 @@ effectively the database.
 
 ## Not yet built
 
-All five roadmap phases are done, plus a Vitest suite over the data/logic
+All five build phases are done, plus a Vitest suite over the data/logic
 layer and the first round of post-audit fixes (`AUDIT.md` → Phase 1). The
 original single-file app has been retired to `../archive/`. OS-level
 scheduled reminders are deliberately deferred — unreliable for an offline,
