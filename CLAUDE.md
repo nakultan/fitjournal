@@ -90,6 +90,7 @@ step). The localStorage key `fitjournal` is effectively the database.
 ## Not yet built (see ROADMAP.md)
 
 All five roadmap phases are done, plus a Vitest suite over the data/logic
-layer. Still open: optional nice-to-haves (backup reminders, retiring the old
-`index.html`). OS-level scheduled reminders are deliberately deferred —
-unreliable for an offline, server-less app.
+layer. The original single-file app has been retired to `../archive/`. Still
+open: optional nice-to-haves (occasional backup reminders). OS-level scheduled
+reminders are deliberately deferred — unreliable for an offline, server-less
+app.
