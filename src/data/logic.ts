@@ -532,11 +532,13 @@ export interface HeatCell {
   future: boolean
 }
 
-/** A 13-week (13×7) activity grid ending at `reference`. */
+/** A 13-week (13×7) activity grid whose last column is the current week. */
 export function computeHeatmap(workouts: Workouts, reference: Date): HeatCell[] {
   const cells: HeatCell[] = []
   const start = new Date(reference)
-  start.setDate(reference.getDate() - 90 - reference.getDay())
+  // Back up to the Sunday 12 weeks before this week, so the 13th (last) column
+  // is the current week — including today and any days still to come.
+  start.setDate(reference.getDate() - reference.getDay() - 84)
   for (let col = 0; col < 13; col++) {
     for (let row = 0; row < 7; row++) {
       const d = addDays(start, col * 7 + row)

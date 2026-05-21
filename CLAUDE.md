@@ -9,6 +9,7 @@ the product overview and `../ROADMAP.md` for the build plan and roadmap.
 
 - `npm run dev` — dev server with HMR
 - `npm run build` — typecheck (`tsc -b`) then production build into `dist/`
+- `npm test` — Vitest unit tests for the data & logic layer
 - `npm run lint` · `npm run format` · `npm run typecheck`
 
 Deployment is automatic: pushing to `main` runs `.github/workflows/deploy.yml`,
@@ -34,7 +35,9 @@ data/logic + data/storage  (pure functions; localStorage)
 - **`data/logic.ts`** — *pure* derived computations: PRs, rest-day-aware
   streaks, weekly & total stats, week-goal progress, session summaries, muscle
   balance, plateaus, insights/milestones, the activity heatmap. **Nothing
-  derived is ever stored** — it is always recomputed from `workouts`.
+  derived is ever stored** — it is always recomputed from `workouts`. This file
+  and `storage.ts` have co-located `*.test.ts` suites (run with `npm test`);
+  being pure makes them straightforward to unit-test.
 - **`data/store.tsx`** — `StoreProvider` holds `AppData` in React state,
   persists it to localStorage on every change, and exposes typed actions that
   do immutable updates. Also holds UI nav state (`page`, `viewingDateKey`).
@@ -86,7 +89,7 @@ step). The localStorage key `fitjournal` is effectively the database.
 
 ## Not yet built (see ROADMAP.md)
 
-All five roadmap phases are done. Still open: automated tests for the
-data/logic layer, and optional nice-to-haves (backup reminders, retiring the
-old `index.html`). OS-level scheduled reminders are deliberately deferred —
+All five roadmap phases are done, plus a Vitest suite over the data/logic
+layer. Still open: optional nice-to-haves (backup reminders, retiring the old
+`index.html`). OS-level scheduled reminders are deliberately deferred —
 unreliable for an offline, server-less app.

@@ -36,6 +36,7 @@ npm install      # one time
 npm run dev      # dev server with hot reload
 npm run build    # offline-ready production build in dist/
 npm run preview  # serve the built app locally
+npm test         # run the unit tests (data & logic layer)
 npm run lint     # check code quality
 npm run format   # auto-format the code
 npm run typecheck
