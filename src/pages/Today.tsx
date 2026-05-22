@@ -46,7 +46,7 @@ import {
 import type { CardioEntry, CardioType, ExerciseEntry, MuscleGroup, Workout } from '@/data/types'
 import { addDays, dateKey, dayNameOf, formatLong, formatShort, parseKey, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
-import { celebrate } from '@/lib/feedback'
+import { celebrate, tap } from '@/lib/feedback'
 
 export function TodayScreen() {
   const { data, viewingDateKey, setViewingDateKey } = useStore()
@@ -281,7 +281,12 @@ function TodayHub() {
           <div>
             <div className="fj-hub__big">{streak.current}</div>
             <div className="fj-hub__cap">
-              day streak{streak.longest > streak.current ? ` · best ${streak.longest}` : ''}
+              day streak
+              {streak.longest > streak.current
+                ? ` · best ${streak.longest}`
+                : streak.current > 0
+                  ? ' · best yet'
+                  : ''}
             </div>
           </div>
         </div>
@@ -383,14 +388,18 @@ function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string; onClos
   const total = useMemo(() => totalWorkoutsLogged(data.workouts), [data.workouts])
   const hasPR = summary.prs.length > 0
   const milestone = WORKOUT_MILESTONES.includes(total)
+  const bigMoment = hasPR || milestone
 
+  // A PR or milestone earns the full celebration; an everyday finish gets
+  // just a quiet haptic tap, so the big moments stay meaningful.
   useEffect(() => {
-    celebrate()
-  }, [])
+    if (bigMoment) celebrate()
+    else tap()
+  }, [bigMoment])
 
   return (
     <>
-      <Confetti count={hasPR || milestone ? 72 : 46} />
+      {bigMoment && <Confetti count={72} />}
       <Modal open onClose={onClose} footer={<Button onClick={onClose}>Done</Button>}>
         <div className="fj-summary">
           <div className="fj-summary__check">

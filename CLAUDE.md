@@ -35,8 +35,9 @@ data/logic + data/storage  (pure functions; localStorage)
   install; `importData()` validates a backup file before it can be restored.
   `saveData()` returns `false` on a failed device write (quota exceeded,
   blocked storage) so the failure can be surfaced instead of lost silently.
-- **`data/logic.ts`** — *pure* derived computations: PRs, rest-day-aware
-  streaks, weekly & total stats, week-goal progress, session summaries, muscle
+- **`data/logic.ts`** — *pure* derived computations: PRs, streaks (rest-day-
+  aware, with a one-day grace), weekly & total stats, week-goal progress,
+  session summaries, muscle
   balance, plateaus, insights/milestones, the activity heatmap. **Nothing
   derived is ever stored** — it is always recomputed from `workouts`. This file
   and `storage.ts` have co-located `*.test.ts` suites (run with `npm test`);
@@ -82,8 +83,9 @@ and renders the sidebar.
 - `vite.config.ts` sets `base` to `/fitjournal/` for production (the GitHub
   Pages sub-path) and `/` for local dev.
 - Unique ids come from `lib/uid.ts`; `YYYY-MM-DD` date keys from `lib/dates.ts`.
-- `lib/feedback.ts` is the celebration helper — a synthesised Web Audio chime
-  plus a haptic tap; it degrades silently and is always safe to call.
+- `lib/feedback.ts` is the feedback helper — `celebrate()` (a synthesised Web
+  Audio chime plus a haptic buzz, for PRs and milestones) and `tap()` (a soft
+  haptic, for everyday confirmations); both degrade silently and are safe to call.
 - `lib/backup.ts` exposes `downloadBackup()` — the shared JSON-export helper
   used by Settings, the backup reminder, and the save-error banner.
 
@@ -104,7 +106,7 @@ effectively the database.
 ## Not yet built
 
 All five build phases are done, plus a Vitest suite over the data/logic
-layer and two rounds of post-audit fixes (`AUDIT.md` → Phases 1–2). The
+layer and three rounds of post-audit fixes (`AUDIT.md` → Phases 1–3). The
 original single-file app has been retired to `../archive/`. OS-level
 scheduled reminders are deliberately deferred — unreliable for an offline,
 server-less app. `AUDIT.md` holds the full ranked audit and the remaining

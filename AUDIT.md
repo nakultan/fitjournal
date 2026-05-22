@@ -64,9 +64,10 @@ pick a starting point.
 
 ## Implementation status
 
-**Phases 1 and 2 were implemented and shipped on 2026-05-21.** Resolved findings — **C1, H1,
-H4, L2, L5** (Phase 1) and **C3, H2, H3, M3, M4, M5** (Phase 2) — are marked ✅ in the table
-and detail sections below. All other findings remain open.
+**Phases 1–3 were implemented and shipped (2026-05-21 to 2026-05-22).** Resolved findings —
+**C1, H1, H4, L2, L5** (Phase 1), **C3, H2, H3, M3, M4, M5** (Phase 2), and **M1, M2, L4**
+(Phase 3) — are marked ✅ in the table and detail sections below. All other findings remain
+open.
 
 ---
 
@@ -81,8 +82,8 @@ and detail sections below. All other findings remain open.
 | H2 ✅ | Unit preference does nothing — `lbs`/`mi` are hardcoded everywhere | Amateur-feeling, Trust, Inconsistency | **High** | High | Low–Med |
 | H3 ✅ | History truncates at 60 workouts — older journal is unreachable in-app | UX liability, Weak flow, Abandonment | **High** | Med–High | Low–Med |
 | H4 ✅ | Restore overwrites everything with no rollback / pre-restore snapshot | Trust, Weak flow | **High** | Medium | Low |
-| M1 | Streak is loss-framed and visually dominant — risks the "broke it, quit" spiral | Behavioral, Abandonment, Calm UX | Medium | Med–High | Low–Med |
-| M2 | Full celebration (confetti + chime + haptic) on *every* finished workout — reward inflation | Behavioral, Calm UX | Medium | Medium | Low |
+| M1 ✅ | Streak is loss-framed and visually dominant — risks the "broke it, quit" spiral | Behavioral, Abandonment, Calm UX | Medium | Med–High | Low–Med |
+| M2 ✅ | Full celebration (confetti + chime + haptic) on *every* finished workout — reward inflation | Behavioral, Calm UX | Medium | Medium | Low |
 | M3 ✅ | Add-Exercise modal loses all input on dismiss, with no "discard?" guard | Friction, Data loss | Medium | Medium | Low |
 | M4 ✅ | No "last time" performance shown when logging an exercise (only last note) | Missing premium, Friction | Medium | Med–High | Low |
 | M5 ✅ | Date navigation is ±1-day buttons only — no calendar jump | Friction, Weak flow, Mobile ergonomics | Medium | Medium | Medium |
@@ -96,7 +97,7 @@ and detail sections below. All other findings remain open.
 | L1 | Numeric inputs accept negatives, no `min`, silent coercion, no validation feedback | Amateur-feeling, Friction | Low | Low–Med | Low |
 | L2 ✅ | Cardio "Add" with empty fields silently no-ops — no feedback | Friction, Amateur-feeling | Low | Low | Trivial |
 | L3 | Capitalization/label inconsistency ("Add exercise" vs "Add Exercise", etc.) | Design inconsistency | Low | Low | Trivial |
-| L4 | Insights can stack into a wall of orange warnings on Progress — not calm | Calm UX | Low–Med | Low–Med | Low |
+| L4 ✅ | Insights can stack into a wall of orange warnings on Progress — not calm | Calm UX | Low–Med | Low–Med | Low |
 | L5 ✅ | "Apple Health" section is really a manual JSON import — overpromises integration | Trust, Microcopy | Low | Low | Trivial |
 | L6 | Recipes filter is not memoized — minor jank at scale | Performance | Low | Low | Trivial |
 
@@ -258,6 +259,10 @@ unguarded data-loss path.
 ### M1 — The streak is loss-framed and visually dominant
 **Severity: Medium · Impact: Medium–High · Effort: Low–Medium**
 
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 3). The streak stays the Today hero but now
+> always shows "best" as a stable anchor, and one unplanned missed day is automatically
+> forgiven so a single slip isn't a cliff.
+
 The streak is the largest element on the Today hub — a big flame and a big number
 ([src/pages/Today.tsx:222-233](src/pages/Today.tsx#L222)). Streaks are intrinsically
 loss-framed: their emotional weight comes from the threat of losing them. The rest-day bridging
@@ -273,6 +278,9 @@ product philosophy.
 
 ### M2 — Every finished workout triggers the full celebration
 **Severity: Medium · Impact: Medium · Effort: Low**
+
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 3). Confetti + chime are now reserved for PRs
+> and milestones; an everyday finish gets a soft haptic tap and the calm summary card only.
 
 `WorkoutSummaryModal` fires `celebrate()` (chime + haptic) on mount and always renders confetti
 ([src/pages/Today.tsx:330-336](src/pages/Today.tsx#L330)) — every single workout, PR or not. A
@@ -437,6 +445,9 @@ rule per element type and apply it.
 ### L4 — Insights can stack into a wall of warnings
 **Severity: Low–Medium · Impact: Low–Medium · Effort: Low**
 
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 3). Progress now shows at most 3 insights, with
+> no more than 2 of them warnings.
+
 `computeInsights` can emit several `warning`-tone items at once (multiple plateaus + imbalances),
 and Progress renders all of them ([src/pages/Progress.tsx:163-180](src/pages/Progress.tsx#L163)).
 A column of orange alerts is the opposite of calm. The Today hub already does this well — it
@@ -479,7 +490,7 @@ is a contained, philosophy-preserving correction.
 - **M3 / M4** guard the modal against discard; show "last time" performance.
 - **M5** add a date-picker / calendar jump so backfilling an older day isn't many taps.
 
-**3 — Behavioral & calm-UX tuning (preserve sustainability over addiction)**
+**3 — Behavioral & calm-UX tuning (preserve sustainability over addiction)** · ✅ shipped 2026-05-22
 - **M1** soften streak loss-framing; **M2** tier the celebration; **L4** cap the insight list.
 
 **4 — Durability & performance**

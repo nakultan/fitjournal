@@ -186,17 +186,28 @@ describe('computeStreak', () => {
     expect(computeStreak(w, {}, REF).current).toBe(2)
   })
 
-  it('breaks on a missed day when there is no plan', () => {
+  it('forgives a single unplanned missed day', () => {
+    // 05-18 is missed, with no plan — the automatic grace day bridges it.
     const w = workouts({
       '2026-05-16': { ex: [exAt('A', 50)] },
       '2026-05-17': { ex: [exAt('A', 50)] },
       '2026-05-19': { ex: [exAt('A', 50)] },
       '2026-05-20': { ex: [exAt('A', 50)] },
     })
-    expect(computeStreak(w, {}, REF)).toEqual({ current: 2, longest: 2 })
+    expect(computeStreak(w, {}, REF)).toEqual({ current: 4, longest: 4 })
   })
 
-  it('bridges a planned rest day — resting on schedule keeps the streak', () => {
+  it('breaks when a second day is missed', () => {
+    // Two gaps (05-17 and 05-18) — one is forgiven, the second breaks the streak.
+    const w = workouts({
+      '2026-05-16': { ex: [exAt('A', 50)] },
+      '2026-05-19': { ex: [exAt('A', 50)] },
+      '2026-05-20': { ex: [exAt('A', 50)] },
+    })
+    expect(computeStreak(w, {}, REF).current).toBe(2)
+  })
+
+  it('bridges planned rest days — resting on schedule keeps the streak', () => {
     // Plan trains Mon/Wed/Fri. Logged Mon 05-18 and Wed 05-20; Tue 05-19 is rest.
     const w = workouts({
       '2026-05-18': { ex: [exAt('A', 50)] },
@@ -204,14 +215,6 @@ describe('computeStreak', () => {
     })
     const plan = mkPlan('Monday', 'Wednesday', 'Friday')
     expect(computeStreak(w, plan, REF).current).toBe(2)
-    // Without a plan the same gap (Tue) breaks it.
-    expect(computeStreak(w, {}, REF).current).toBe(1)
-  })
-
-  it('still breaks when a planned training day is missed', () => {
-    // Plan trains Mon/Wed/Fri; only Wed 05-20 logged — Mon 05-18 was missed.
-    const w = workouts({ '2026-05-20': { ex: [exAt('A', 50)] } })
-    expect(computeStreak(w, mkPlan('Monday', 'Wednesday', 'Friday'), REF).current).toBe(1)
   })
 
   it('tracks the longest streak across rest days', () => {

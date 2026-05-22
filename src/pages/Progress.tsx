@@ -55,6 +55,15 @@ export function ProgressScreen() {
   const trendPct =
     lastWeekSets > 0 ? Math.round(((week.totalSets - lastWeekSets) / lastWeekSets) * 100) : null
 
+  // Keep Progress calm: show at most 3 insights, and no more than 2 warnings —
+  // never a wall of orange. Positives lead; warnings stay visible at the end.
+  const warningInsights = insights.filter((i) => i.tone === 'warning').slice(0, 2)
+  const positiveInsights = insights.filter((i) => i.tone !== 'warning')
+  const shownInsights = [
+    ...positiveInsights.slice(0, 3 - warningInsights.length),
+    ...warningInsights,
+  ]
+
   return (
     <div className="fj-screen">
       <PageHeader title="Progress" subtitle="Your trends over time" />
@@ -160,8 +169,8 @@ export function ProgressScreen() {
             <Lightbulb size={18} /> Insights
           </h2>
         </div>
-        {insights.length > 0 ? (
-          insights.map((i) => {
+        {shownInsights.length > 0 ? (
+          shownInsights.map((i) => {
             const Icon = TONE_ICON[i.tone]
             return (
               <div key={i.id} className={`fj-insight fj-insight--${i.tone}`}>

@@ -46,3 +46,8 @@ export function celebrate(): void {
   playChime()
   vibrate([0, 22, 40, 22])
 }
+
+/** A single soft haptic tap — a quiet "done" confirmation, no sound. */
+export function tap(): void {
+  vibrate(18)
+}

@@ -138,7 +138,7 @@ function isPlannedRest(weeklyPlan: WeeklyPlan, date: Date): boolean {
   return !plan || plan.exercises.length === 0
 }
 
-/** Longest run of trained days, bridging planned rest days. */
+/** Longest run of trained days, bridging planned rest days and one missed day per run. */
 function longestStreak(workouts: Workouts, weeklyPlan: WeeklyPlan): number {
   const logged = Object.keys(workouts)
     .filter((k) => isLoggedWorkout(workouts[k]))
@@ -148,14 +148,19 @@ function longestStreak(workouts: Workouts, weeklyPlan: WeeklyPlan): number {
   const last = parseKey(logged[logged.length - 1])
   let longest = 0
   let run = 0
+  let usedGrace = false
   for (let cur = parseKey(logged[0]); cur <= last; cur = addDays(cur, 1)) {
     if (isLoggedWorkout(workouts[dateKey(cur)])) {
       run += 1
       longest = Math.max(longest, run)
     } else if (planned && isPlannedRest(weeklyPlan, cur)) {
       // rest day — bridges the run without adding to it
+    } else if (run > 0 && !usedGrace) {
+      // one unplanned missed day per run is forgiven
+      usedGrace = true
     } else {
       run = 0
+      usedGrace = false
     }
   }
   return longest
@@ -163,7 +168,8 @@ function longestStreak(workouts: Workouts, weeklyPlan: WeeklyPlan): number {
 
 /**
  * Current streak of trained days ending today (or yesterday — today still
- * counts as "in progress"). Planned rest days keep the streak alive.
+ * counts as "in progress"). Planned rest days keep the streak alive, and a
+ * single unplanned missed day is forgiven so one slip isn't a cliff.
  */
 export function computeStreak(
   workouts: Workouts,
@@ -172,6 +178,7 @@ export function computeStreak(
 ): StreakResult {
   const planned = hasWeeklyPlan(weeklyPlan)
   let current = 0
+  let forgiven = false
   let cursor = new Date(reference)
   for (let i = 0; i < 400; i++) {
     if (isLoggedWorkout(workouts[dateKey(cursor)])) {
@@ -180,6 +187,9 @@ export function computeStreak(
       // rest day — the streak is safe, this day just doesn't count
     } else if (i === 0) {
       // today isn't logged yet — grace, the streak runs through to yesterday
+    } else if (!forgiven) {
+      // one unplanned missed day is forgiven — the streak survives a single slip
+      forgiven = true
     } else {
       break
     }
