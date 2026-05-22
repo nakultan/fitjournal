@@ -30,14 +30,7 @@ export type RecipeTag =
   | 'quick'
   | 'vegetarian'
 
-export type PageId =
-  | 'today'
-  | 'progress'
-  | 'records'
-  | 'history'
-  | 'plan'
-  | 'recipes'
-  | 'settings'
+export type PageId = 'today' | 'progress' | 'plan' | 'recipes' | 'settings'
 
 /** One logged set — a number of reps at a given weight. */
 export interface SetEntry {

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { AppData, PageId, Workout } from './types'
+import type { AppData, Workout } from './types'
 import { StoreContext } from './store-context'
 import type { StoreValue } from './store-context'
 import { loadData, requestPersistentStorage, saveData } from './storage'
 import { cardioMetric, topSetWeight, wouldBeCardioPR, wouldBeStrengthPR } from './logic'
-import { todayKey } from '@/lib/dates'
+import { navigateTo, useRoute } from '@/lib/router'
 import { uid } from '@/lib/uid'
 import { applyTheme } from '@/lib/theme'
 
@@ -49,8 +49,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 /** Holds all app state, persists it to the device, exposes actions. */
 function StoreReady({ initialData, children }: { initialData: AppData; children: ReactNode }) {
   const [data, setData] = useState<AppData>(initialData)
-  const [page, setPage] = useState<PageId>('today')
-  const [viewingDateKey, setViewingDateKey] = useState<string>(todayKey)
+  const route = useRoute()
   const [saveFailed, setSaveFailed] = useState(false)
   const latestData = useRef(data)
 
@@ -90,16 +89,13 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
 
   const value: StoreValue = {
     data,
-    page,
-    viewingDateKey,
+    page: route.page,
+    viewingDateKey: route.date,
     saveFailed,
 
-    navigate: setPage,
-    setViewingDateKey,
-    viewWorkoutDate: (key) => {
-      setViewingDateKey(key)
-      setPage('today')
-    },
+    navigate: (page) => navigateTo(page),
+    setViewingDateKey: (key) => navigateTo('today', key),
+    viewWorkoutDate: (key) => navigateTo('today', key),
 
     setBodyWeight: (dateKey, weight) =>
       setData((d) => withWorkout(d, dateKey, (w) => ({ ...w, bodyWeight: weight }))),

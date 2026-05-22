@@ -313,6 +313,43 @@ export function computeMuscleBalance(
   return sets
 }
 
+export interface WeightPoint {
+  date: string
+  weight: number
+  /** Trailing 7-day average of logged weights — smooths daily noise. */
+  avg: number
+}
+
+/**
+ * Logged body-weight entries over the last `days`, oldest first, each carrying
+ * a trailing 7-day average — the honest trend behind a noisy daily number.
+ */
+export function computeWeightSeries(
+  workouts: Workouts,
+  reference: Date,
+  days = 90,
+): WeightPoint[] {
+  const refKey = dateKey(reference)
+  const cutoffKey = dateKey(addDays(reference, -days))
+  const logged: { date: string; at: number; weight: number }[] = []
+  for (const dk of Object.keys(workouts).sort()) {
+    if (dk < cutoffKey || dk > refKey) continue
+    const bw = workouts[dk].bodyWeight
+    if (bw == null || bw <= 0) continue
+    logged.push({ date: dk, at: parseKey(dk).getTime(), weight: bw })
+  }
+  return logged.map((pt, i) => {
+    let sum = 0
+    let n = 0
+    for (let j = i; j >= 0; j--) {
+      if ((pt.at - logged[j].at) / DAY_MS > 6) break
+      sum += logged[j].weight
+      n += 1
+    }
+    return { date: pt.date, weight: pt.weight, avg: Number((sum / n).toFixed(1)) }
+  })
+}
+
 export interface Plateau {
   exercise: string
   sessions: number

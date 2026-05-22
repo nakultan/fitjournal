@@ -18,10 +18,10 @@ on top of the full feature set and polish pass.
 - **Today** — a hub showing your streak, weekly-goal progress and today's planned
   workout; log body weight, cardio, and exercises set by set (tap any entry to
   edit it); finish with a session recap — and a celebration when you set a record
-- **Progress** — a weekly recap, streak, 30-day stats, an 8-week chart, automatic
-  insights, muscle balance
-- **Records** — strength & cardio personal records, per-exercise goals, a PR timeline
-- **History** — a 13-week activity heatmap and a list of past workouts
+- **Progress** — one screen with three tabs: an **Overview** (streak, weekly
+  recap, body-weight trend, 30-day stats, charts, automatic insights, muscle
+  balance), **Exercises** (strength & cardio personal records, per-exercise
+  goals, a PR timeline), and a **History** heatmap with past workouts
 - **Plan** — build workout templates and assign them to a weekly schedule
 - **Recipes** — a searchable, taggable recipe collection
 - **Settings** — preferences (units, goals, a light/dark theme), backup export &
@@ -62,9 +62,9 @@ npm run typecheck
 ```
 src/
   components/   AppShell + design-system components (Button, Card, Modal, ...)
-  pages/        the seven screens
+  pages/        the five screens
   data/         types, constants, storage, derived logic, the store
-  lib/          small helpers (dates, ids, class names, backup)
+  lib/          small helpers (dates, ids, routing, class names, backup)
   styles/       design tokens + global + component + app styles
 public/         app icons
 ```

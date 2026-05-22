@@ -16,6 +16,7 @@ import {
   computeTotalStats,
   computeWeekProgress,
   computeWeeklyStats,
+  computeWeightSeries,
   exerciseKey,
   isLoggedWorkout,
   totalWorkoutsLogged,
@@ -285,6 +286,36 @@ describe('computeMuscleBalance', () => {
       },
     })
     expect(computeMuscleBalance(w, REF)).toEqual({ chest: 4, back: 3 })
+  })
+})
+
+describe('computeWeightSeries', () => {
+  const wd = (date: string, bodyWeight: number | null): Workout => ({
+    date,
+    bodyWeight,
+    exercises: [],
+    cardio: [],
+  })
+
+  it('returns logged weigh-ins with a trailing 7-day average', () => {
+    const w: Record<string, Workout> = {
+      '2026-05-18': wd('2026-05-18', 180),
+      '2026-05-19': wd('2026-05-19', 178),
+      '2026-05-20': wd('2026-05-20', 182),
+    }
+    const series = computeWeightSeries(w, REF, 90)
+    expect(series.map((p) => p.weight)).toEqual([180, 178, 182])
+    expect(series[0].avg).toBe(180)
+    expect(series[2].avg).toBe(180) // (180 + 178 + 182) / 3
+  })
+
+  it('skips days with no body weight and respects the window', () => {
+    const w: Record<string, Workout> = {
+      '2026-05-20': wd('2026-05-20', 180),
+      '2026-05-19': wd('2026-05-19', null),
+      '2026-01-01': wd('2026-01-01', 200),
+    }
+    expect(computeWeightSeries(w, REF, 90).map((p) => p.date)).toEqual(['2026-05-20'])
   })
 })
 

@@ -21,8 +21,8 @@ Run `npm run preview`, open the app, and click through:
 - [ ] **Edit** — tap a logged exercise or cardio row; the modal opens pre-filled,
       and saving updates the entry
 - [ ] **Finish workout** — the summary modal opens with the right numbers
-- [ ] **Progress / Records / History** — streak, stats, PRs and the heatmap
-      reflect what was just logged (today's square shows on the heatmap)
+- [ ] **Progress** — the Overview, Exercises and History tabs show the streak,
+      stats, body-weight trend, PRs and heatmap reflecting what was just logged
 - [ ] **Plan** — create a template and assign it to a weekday; deleting a
       template asks for confirmation
 - [ ] **Recipes** — add a recipe; deleting one asks for confirmation
@@ -33,6 +33,8 @@ Run `npm run preview`, open the app, and click through:
       follows the device, and the choice survives a reload with no flash
 - [ ] **Offline** — reload with the network off; the app still works
 - [ ] **Narrow window** — shrink the window; the bottom nav and reflow kick in
+- [ ] **Navigation** — switch screens, then press the browser back button; it
+      steps back through them, and a reload stays on the current screen
 
 ## After deploy
 

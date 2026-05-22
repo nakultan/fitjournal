@@ -51,8 +51,8 @@ data/logic + data/storage  (derived logic; IndexedDB persistence)
   and then mounts `StoreReady`, which holds `AppData` in React state, persists
   it on change (trailing-debounced ~400ms, and flushed immediately when the app
   is hidden or closed), and exposes typed actions that do immutable updates.
-  Also holds UI nav state (`page`, `viewingDateKey`) and `saveFailed` — true
-  when the most recent persist failed.
+  The current `page` and viewed day come from the URL hash via `lib/router.ts`;
+  the store also tracks `saveFailed` — true when the most recent persist failed.
 - **`data/store-context.ts`** — `StoreContext`, the `useStore()` hook, and the
   `StoreValue` interface.
 
@@ -61,10 +61,11 @@ Components read state with `useStore()` and mutate only through store actions.
 ## Screens
 
 `src/pages/` — one file per screen, each exporting a single `*Screen` component
-(`TodayScreen`, `ProgressScreen`, `RecordsScreen`, `HistoryScreen`, `PlanScreen`,
-`RecipesScreen`, `SettingsScreen`). Modals and rows are local, unexported
-sub-components. `components/AppShell.tsx` maps the active `page` to its screen
-and renders the sidebar.
+(`TodayScreen`, `ProgressScreen`, `PlanScreen`, `RecipesScreen`,
+`SettingsScreen`). `ProgressScreen` carries an Overview / Exercises / History
+segmented control — the merged home of the former Records and History screens.
+Modals and rows are local, unexported sub-components. `components/AppShell.tsx`
+maps the active `page` to its screen and renders the sidebar.
 
 ## Styling
 
@@ -102,6 +103,9 @@ and renders the sidebar.
   used by Settings, the backup reminder, and the save-error banner.
 - `lib/theme.ts` exposes `applyTheme()` — sets the `data-theme` attribute and a
   pre-paint localStorage hint that `index.html` reads to avoid a theme flash.
+- `lib/router.ts` is a tiny hash router — `useRoute()` reads `location.hash` and
+  `navigateTo()` writes it; the store derives `page` and the viewed day from it,
+  so the browser and Android back button work.
 
 ## Data safety
 
@@ -128,3 +132,8 @@ Since the audit, the core has been re-modelled for **per-set logging**: an
 `ExerciseEntry` holds a `SetEntry[]` (each set its own reps and weight),
 `SCHEMA_VERSION` is `2` with a v1→v2 migration, and cardio personal records
 rank on measured distance instead of a machine's calorie estimate.
+
+The three retrospective screens (Progress, Records, History) have since been
+merged into one Progress screen with an Overview / Exercises / History
+segmented control; navigation now runs on a hash router (`lib/router.ts`), and
+the Overview carries a body-weight trend chart.
