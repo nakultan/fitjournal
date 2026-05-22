@@ -17,7 +17,8 @@ a full product audit and the ranked backlog.
 ## What it does
 
 - **Today** — a hub showing your streak, weekly-goal progress and today's planned
-  workout; log body weight, cardio, and exercises; finish with a celebration
+  workout; log body weight, cardio, and exercises (tap any entry to edit it);
+  finish with a celebration
 - **Progress** — a weekly recap, streak, 30-day stats, an 8-week chart, automatic
   insights, muscle balance
 - **Records** — strength & cardio personal records, per-exercise goals, a PR timeline

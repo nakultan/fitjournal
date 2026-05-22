@@ -12,10 +12,14 @@ const RECORD_COLS = { gridTemplateColumns: '2fr 1fr 1fr 1.4fr' }
 export function RecordsScreen() {
   const { data } = useStore()
   const [goalKey, setGoalKey] = useState<string | null>(null)
+  const weightUnit = data.preferences.weightUnit
 
   const strengthPRs = useMemo(() => computeStrengthPRs(data.workouts), [data.workouts])
   const cardioPRs = useMemo(() => computeCardioPRs(data.workouts), [data.workouts])
-  const timeline = useMemo(() => computePRTimeline(data.workouts), [data.workouts])
+  const timeline = useMemo(
+    () => computePRTimeline(data.workouts, weightUnit),
+    [data.workouts, weightUnit],
+  )
 
   const strengthKeys = Object.keys(strengthPRs)
   const cardioKeys = Object.keys(cardioPRs) as CardioType[]
@@ -48,7 +52,7 @@ export function RecordsScreen() {
                     {pr.name}
                   </span>
                   <span className="fj-cell-value" style={{ color: 'var(--color-success)' }}>
-                    {pr.weight} <small>lbs</small>
+                    {pr.weight} <small>{weightUnit}</small>
                   </span>
                   <span className="fj-muted">{formatShort(pr.date)}</span>
                   <button
@@ -69,7 +73,7 @@ export function RecordsScreen() {
                   >
                     {goal == null
                       ? 'Set goal'
-                      : `${goal} lbs · ${Math.min(100, Math.round((pr.weight / goal) * 100))}%${reached ? ' ✓' : ''}`}
+                      : `${goal} ${weightUnit} · ${Math.min(100, Math.round((pr.weight / goal) * 100))}%${reached ? ' ✓' : ''}`}
                   </button>
                 </div>
               )
@@ -202,7 +206,7 @@ function GoalModal({
       return
     }
     setGoal(exerciseKey, value)
-    showToast(`Goal set — ${exerciseName} ${value} lbs`, 'success')
+    showToast(`Goal set — ${exerciseName} ${value} ${data.preferences.weightUnit}`, 'success')
     onClose()
   }
   const clear = () => {
@@ -232,10 +236,12 @@ function GoalModal({
     >
       <div className="fj-row" style={{ marginBottom: 'var(--space-3)' }}>
         <Target size={18} color="var(--color-accent)" />
-        <span className="fj-muted">Current best: {currentBest} lbs</span>
+        <span className="fj-muted">
+          Current best: {currentBest} {data.preferences.weightUnit}
+        </span>
       </div>
       <Input
-        label="Target weight (lbs)"
+        label={`Target weight (${data.preferences.weightUnit})`}
         type="number"
         inputMode="decimal"
         placeholder="0"

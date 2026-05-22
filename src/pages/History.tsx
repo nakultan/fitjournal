@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { CalendarDays } from 'lucide-react'
-import { Card, EmptyState, PageHeader } from '@/components'
+import { Button, Card, EmptyState, PageHeader } from '@/components'
 import { useStore } from '@/data/store-context'
 import { computeHeatmap, isLoggedWorkout } from '@/data/logic'
 import { CARDIO_LABELS } from '@/data/constants'
@@ -8,8 +8,11 @@ import { formatShort, parseKey } from '@/lib/dates'
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 
+const PAGE_SIZE = 30
+
 export function HistoryScreen() {
   const { data, viewWorkoutDate } = useStore()
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   const heatmap = useMemo(() => computeHeatmap(data.workouts, new Date()), [data.workouts])
 
@@ -61,7 +64,7 @@ export function HistoryScreen() {
           <h2 className="fj-section__title">Past workouts</h2>
         </div>
         {loggedDates.length > 0 ? (
-          loggedDates.slice(0, 60).map((dk) => {
+          loggedDates.slice(0, visibleCount).map((dk) => {
             const w = data.workouts[dk]
             const d = parseKey(dk)
             const muscles = [...new Set(w.exercises.map((e) => e.muscle))]
@@ -71,7 +74,7 @@ export function HistoryScreen() {
             const sub = [
               w.exercises.length > 0 ? `${w.exercises.length} exercises` : '',
               cardioMin > 0 ? `${cardioMin} min cardio` : '',
-              w.bodyWeight != null ? `${w.bodyWeight} lbs` : '',
+              w.bodyWeight != null ? `${w.bodyWeight} ${data.preferences.weightUnit}` : '',
             ]
               .filter(Boolean)
               .join('  ·  ')
@@ -112,6 +115,13 @@ export function HistoryScreen() {
             title="No workout history"
             description="Your logged workouts will appear here."
           />
+        )}
+        {loggedDates.length > visibleCount && (
+          <div className="fj-history-more">
+            <Button variant="secondary" onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}>
+              Show {Math.min(PAGE_SIZE, loggedDates.length - visibleCount)} older
+            </Button>
+          </div>
         )}
       </section>
     </div>

@@ -64,8 +64,9 @@ pick a starting point.
 
 ## Implementation status
 
-**Phase 1 was implemented and shipped on 2026-05-21.** Findings **C1, H1, H4, L2, and L5** are
-resolved — marked ✅ in the table and detail sections below. All other findings remain open.
+**Phases 1 and 2 were implemented and shipped on 2026-05-21.** Resolved findings — **C1, H1,
+H4, L2, L5** (Phase 1) and **C3, H2, H3, M3, M4, M5** (Phase 2) — are marked ✅ in the table
+and detail sections below. All other findings remain open.
 
 ---
 
@@ -75,16 +76,16 @@ resolved — marked ✅ in the table and detail sections below. All other findin
 |----|---------|-----------|----------|--------|--------|
 | C1 ✅ | Silent save failure — `saveData` swallows storage errors; data looks saved but is lost on reload | Trust, Performance, Abandonment | **Critical** | High | Low |
 | C2 | `localStorage` is the entire database — volatile; Safari/iOS can evict it silently | Trust, Performance, Abandonment | **Critical** | High | Med–High |
-| C3 | No way to edit a logged entry — breaks the template/plan → log flow | Weak flow, Friction, Missing premium, Abandonment | **Critical** | High | Medium |
+| C3 ✅ | No way to edit a logged entry — breaks the template/plan → log flow | Weak flow, Friction, Missing premium, Abandonment | **Critical** | High | Medium |
 | H1 ✅ | No backup prompts or first-run backup education despite "export is your only way back" | Trust, Missing premium, Abandonment | **High** | High | Low |
-| H2 | Unit preference does nothing — `lbs`/`mi` are hardcoded everywhere | Amateur-feeling, Trust, Inconsistency | **High** | High | Low–Med |
-| H3 | History truncates at 60 workouts — older journal is unreachable in-app | UX liability, Weak flow, Abandonment | **High** | Med–High | Low–Med |
+| H2 ✅ | Unit preference does nothing — `lbs`/`mi` are hardcoded everywhere | Amateur-feeling, Trust, Inconsistency | **High** | High | Low–Med |
+| H3 ✅ | History truncates at 60 workouts — older journal is unreachable in-app | UX liability, Weak flow, Abandonment | **High** | Med–High | Low–Med |
 | H4 ✅ | Restore overwrites everything with no rollback / pre-restore snapshot | Trust, Weak flow | **High** | Medium | Low |
 | M1 | Streak is loss-framed and visually dominant — risks the "broke it, quit" spiral | Behavioral, Abandonment, Calm UX | Medium | Med–High | Low–Med |
 | M2 | Full celebration (confetti + chime + haptic) on *every* finished workout — reward inflation | Behavioral, Calm UX | Medium | Medium | Low |
-| M3 | Add-Exercise modal loses all input on dismiss, with no "discard?" guard | Friction, Data loss | Medium | Medium | Low |
-| M4 | No "last time" performance shown when logging an exercise (only last note) | Missing premium, Friction | Medium | Med–High | Low |
-| M5 | Date navigation is ±1-day buttons only — no calendar jump | Friction, Weak flow, Mobile ergonomics | Medium | Medium | Medium |
+| M3 ✅ | Add-Exercise modal loses all input on dismiss, with no "discard?" guard | Friction, Data loss | Medium | Medium | Low |
+| M4 ✅ | No "last time" performance shown when logging an exercise (only last note) | Missing premium, Friction | Medium | Med–High | Low |
+| M5 ✅ | Date navigation is ±1-day buttons only — no calendar jump | Friction, Weak flow, Mobile ergonomics | Medium | Medium | Medium |
 | M6 | `saveData` fires on every keystroke — full DB re-serialized each time | Performance | Medium | Low–Med | Low |
 | M7 | Naive PR model — strength PR = max weight only; cardio PR = most calories | Amateur-feeling, Trust | Medium | Medium | Medium |
 | M8 | Touch targets below 44px (date-nav ~34px, icon buttons ~32px, `sm` buttons) | Accessibility, Mobile ergonomics | Medium | Medium | Low |
@@ -158,6 +159,8 @@ Critical.
 ### C3 — You cannot edit a logged entry — and that breaks the core template flow
 **Severity: Critical · Impact: High · Effort: Medium**
 
+> ✅ **Resolved** — shipped 2026-05-21 (Phase 2).
+
 A logged exercise row renders the values plus a delete button only — there is no edit affordance
 ([src/pages/Today.tsx:135-157](src/pages/Today.tsx#L135)). The consequence becomes severe when
 combined with templates: `loadTemplateIntoDay` and `loadPlanIntoDay` append exercises with
@@ -200,6 +203,10 @@ is a calm product); even a once-a-month prompt closes most of the exposure.
 ### H2 — The unit preference is dead: `lbs` and `mi` are hardcoded everywhere
 **Severity: High · Impact: High · Effort: Low–Medium**
 
+> ✅ **Resolved** — shipped 2026-05-21 (Phase 2). Implemented as label substitution
+> (the displayed unit follows the preference); stored numbers are not converted, since
+> existing data carries no unit metadata.
+
 Settings offers `weightUnit` (lbs/kg) and `distanceUnit` (miles/km)
 ([src/pages/Settings.tsx:97-121](src/pages/Settings.tsx#L97)) — but the preference is never
 read by the rest of the app. Body weight is labeled `lbs`
@@ -217,6 +224,9 @@ works — a missing feature is better than a broken one.
 
 ### H3 — History is truncated at 60 workouts; the older journal is unreachable
 **Severity: High · Impact: Medium–High · Effort: Low–Medium**
+
+> ✅ **Resolved** — shipped 2026-05-21 (Phase 2). Replaced the 60-row cap with
+> "Show more" pagination (30 at a time).
 
 The History list renders only the most recent 60 logged days (`.slice(0, 60)`). The 13-week
 heatmap covers a quarter; beyond that, older workouts still exist in storage but cannot be
@@ -276,6 +286,8 @@ and reserve confetti + chime for real PRs and milestones — the data to disting
 ### M3 — The Add-Exercise modal silently discards in-progress input
 **Severity: Medium · Impact: Medium · Effort: Low**
 
+> ✅ **Resolved** — shipped 2026-05-21 (Phase 2).
+
 The modal holds name/sets/reps/weight/notes in local `useState`
 ([src/pages/Today.tsx:610-758](src/pages/Today.tsx#L610)). Tapping the overlay or pressing
 Escape calls `close()`, which resets everything — no "discard changes?" guard. A user who has
@@ -287,6 +299,8 @@ modal is reopened).
 
 ### M4 — Logging an exercise doesn't show last time's performance
 **Severity: Medium · Impact: Medium–High · Effort: Low**
+
+> ✅ **Resolved** — shipped 2026-05-21 (Phase 2).
 
 The Add-Exercise modal surfaces the last *note* for an exercise
 ([src/pages/Today.tsx:636-645](src/pages/Today.tsx#L636)) — a nice touch — but not the last
@@ -300,6 +314,8 @@ it.
 
 ### M5 — Reaching an older date takes many taps
 **Severity: Medium · Impact: Medium · Effort: Medium**
+
+> ✅ **Resolved** — shipped 2026-05-21 (Phase 2).
 
 Date navigation on Today is ±1-day chevrons only
 ([src/pages/Today.tsx:69-77](src/pages/Today.tsx#L69)). Logging a workout you forgot 10 days
@@ -456,7 +472,7 @@ is a contained, philosophy-preserving correction.
 - **H4** snapshot current data before a restore — High, Low effort.
 - **L2 / L5** disable empty cardio "Add"; rename "Apple Health" — Trivial.
 
-**2 — Core-experience repairs**
+**2 — Core-experience repairs** · ✅ shipped 2026-05-21
 - **C3** tap-to-edit logged entries — fixes the broken template→log flow.
 - **H2** make the unit preference real (or remove it until it is).
 - **H3** paginate History instead of hard-capping at 60.

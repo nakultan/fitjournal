@@ -104,7 +104,7 @@ effectively the database.
 ## Not yet built
 
 All five build phases are done, plus a Vitest suite over the data/logic
-layer and the first round of post-audit fixes (`AUDIT.md` → Phase 1). The
+layer and two rounds of post-audit fixes (`AUDIT.md` → Phases 1–2). The
 original single-file app has been retired to `../archive/`. OS-level
 scheduled reminders are deliberately deferred — unreliable for an offline,
 server-less app. `AUDIT.md` holds the full ranked audit and the remaining

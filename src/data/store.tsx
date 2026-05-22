@@ -58,6 +58,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       )
       return isPR
     },
+    updateExercise: (dateKey, entry) =>
+      setData((d) =>
+        withWorkout(d, dateKey, (w) => ({
+          ...w,
+          exercises: w.exercises.map((e) => (e.id === entry.id ? entry : e)),
+        })),
+      ),
     deleteExercise: (dateKey, id) =>
       setData((d) =>
         withWorkout(d, dateKey, (w) => ({
@@ -78,6 +85,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setData((d) => withWorkout(d, dateKey, (w) => ({ ...w, cardio: [...w.cardio, entry] })))
       return isPR
     },
+    updateCardio: (dateKey, entry) =>
+      setData((d) =>
+        withWorkout(d, dateKey, (w) => ({
+          ...w,
+          cardio: w.cardio.map((c) => (c.id === entry.id ? entry : c)),
+        })),
+      ),
     deleteCardio: (dateKey, id) =>
       setData((d) =>
         withWorkout(d, dateKey, (w) => ({ ...w, cardio: w.cardio.filter((c) => c.id !== id) })),

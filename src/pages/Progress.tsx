@@ -121,7 +121,7 @@ export function ProgressScreen() {
         <StatTile
           icon={<Activity size={22} />}
           value={stats.totalCardioDistance.toFixed(1)}
-          label="Distance (30d mi)"
+          label={`Distance (30d ${data.preferences.distanceUnit === 'km' ? 'km' : 'mi'})`}
         />
       </div>
 

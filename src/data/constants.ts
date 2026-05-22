@@ -1,4 +1,4 @@
-import type { CardioType, MuscleGroup, RecipeTag } from './types'
+import type { CardioType, DistanceUnit, MuscleGroup, RecipeTag } from './types'
 
 export const MUSCLE_GROUPS: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'abs']
 
@@ -10,11 +10,13 @@ export const CARDIO_LABELS: Record<CardioType, string> = {
   stairmaster: 'Stairmaster',
 }
 
-/** Speed unit shown per cardio type. */
-export const CARDIO_SPEED_UNIT: Record<CardioType, string> = {
-  treadmill: 'mph',
-  bike: 'mph',
-  stairmaster: 'spm',
+/**
+ * Speed unit shown for a cardio type. Treadmill and bike follow the user's
+ * distance preference (mph / km/h); the stairmaster is steps-per-minute.
+ */
+export function cardioSpeedUnit(type: CardioType, distanceUnit: DistanceUnit): string {
+  if (type === 'stairmaster') return 'spm'
+  return distanceUnit === 'km' ? 'km/h' : 'mph'
 }
 
 export const RECIPE_TAGS: RecipeTag[] = [

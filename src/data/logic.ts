@@ -2,7 +2,7 @@
  * Derived computations. Everything here is a pure function of stored data —
  * PRs, streaks, stats, insights and the heatmap are calculated, never saved.
  */
-import type { AppData, CardioType, DayName, Workout } from './types'
+import type { AppData, CardioType, DayName, WeightUnit, Workout } from './types'
 import { CARDIO_LABELS } from './constants'
 import { addDays, dateKey, dayNameOf, parseKey } from '@/lib/dates'
 
@@ -69,7 +69,10 @@ export function computeCardioPRs(workouts: Workouts): Partial<Record<CardioType,
 }
 
 /** Every moment a record was beaten, newest first. */
-export function computePRTimeline(workouts: Workouts): TimelineEntry[] {
+export function computePRTimeline(
+  workouts: Workouts,
+  weightUnit: WeightUnit = 'lbs',
+): TimelineEntry[] {
   const entries: TimelineEntry[] = []
   const bestWeight: Record<string, number> = {}
   const bestCalories: Partial<Record<CardioType, number>> = {}
@@ -80,7 +83,7 @@ export function computePRTimeline(workouts: Workouts): TimelineEntry[] {
       const k = exerciseKey(e.name)
       if (e.weight > (bestWeight[k] ?? 0)) {
         bestWeight[k] = e.weight
-        entries.push({ date: dk, kind: 'weight', label: e.name, value: `${e.weight} lbs` })
+        entries.push({ date: dk, kind: 'weight', label: e.name, value: `${e.weight} ${weightUnit}` })
       }
     }
     for (const c of w.cardio) {
@@ -301,6 +304,7 @@ export interface Insight {
 export function computeInsights(data: AppData, reference: Date): Insight[] {
   const out: Insight[] = []
   const { workouts, goals } = data
+  const unit = data.preferences.weightUnit
 
   const streak = computeStreak(workouts, data.weeklyPlan, reference)
   if (streak.current >= 3) {
@@ -367,7 +371,7 @@ export function computeInsights(data: AppData, reference: Date): Insight[] {
     out.push({
       id: `plateau-${p.exercise}`,
       tone: 'warning',
-      text: `${p.exercise} has held around ${p.weight} lbs for ${p.sessions} sessions. Try varying reps or adding a set.`,
+      text: `${p.exercise} has held around ${p.weight} ${unit} for ${p.sessions} sessions. Try varying reps or adding a set.`,
     })
   }
 
@@ -416,13 +420,13 @@ export function computeInsights(data: AppData, reference: Date): Insight[] {
       out.push({
         id: `goal-${k}`,
         tone: 'success',
-        text: `${pr.name} goal reached — ${pr.weight} lbs (goal ${target}).`,
+        text: `${pr.name} goal reached — ${pr.weight} ${unit} (goal ${target}).`,
       })
     } else if (pct >= 75) {
       out.push({
         id: `goal-${k}`,
         tone: 'info',
-        text: `${pr.name} is at ${pct}% of your ${target} lb goal — keep pushing.`,
+        text: `${pr.name} is at ${pct}% of your ${target} ${unit} goal — keep pushing.`,
       })
     }
   }
@@ -498,9 +502,13 @@ export interface SessionSummary {
 }
 
 /** One day's workout rolled up for the post-workout summary. */
-export function computeSessionSummary(workouts: Workouts, dk: string): SessionSummary {
+export function computeSessionSummary(
+  workouts: Workouts,
+  dk: string,
+  weightUnit: WeightUnit = 'lbs',
+): SessionSummary {
   const w = workouts[dk]
-  const prs = computePRTimeline(workouts).filter((e) => e.date === dk)
+  const prs = computePRTimeline(workouts, weightUnit).filter((e) => e.date === dk)
   let totalSets = 0
   let totalVolume = 0
   let cardioMinutes = 0

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity,
   Bell,
@@ -22,6 +22,7 @@ import {
   Card,
   Chip,
   Confetti,
+  ConfirmModal,
   EmptyState,
   Input,
   Modal,
@@ -30,7 +31,7 @@ import {
   useToast,
 } from '@/components'
 import { useStore } from '@/data/store-context'
-import { CARDIO_LABELS, CARDIO_SPEED_UNIT, CARDIO_TYPES, MUSCLE_GROUPS } from '@/data/constants'
+import { CARDIO_LABELS, CARDIO_TYPES, MUSCLE_GROUPS, cardioSpeedUnit } from '@/data/constants'
 import {
   WORKOUT_MILESTONES,
   computeInsights,
@@ -42,21 +43,24 @@ import {
   isLoggedWorkout,
   totalWorkoutsLogged,
 } from '@/data/logic'
-import type { CardioEntry, CardioType, ExerciseEntry, MuscleGroup } from '@/data/types'
-import { addDays, dateKey, dayNameOf, formatLong, parseKey, todayKey } from '@/lib/dates'
+import type { CardioEntry, CardioType, ExerciseEntry, MuscleGroup, Workout } from '@/data/types'
+import { addDays, dateKey, dayNameOf, formatLong, formatShort, parseKey, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
 import { celebrate } from '@/lib/feedback'
 
 export function TodayScreen() {
   const { data, viewingDateKey, setViewingDateKey } = useStore()
-  const [modalOpen, setModalOpen] = useState(false)
+  const [exerciseModal, setExerciseModal] = useState<ExerciseEntry | 'new' | null>(null)
+  const [cardioEdit, setCardioEdit] = useState<CardioEntry | null>(null)
   const [summaryOpen, setSummaryOpen] = useState(false)
+  const dateInputRef = useRef<HTMLInputElement>(null)
 
   const date = parseKey(viewingDateKey)
   const workout = data.workouts[viewingDateKey]
   const strengthPRs = useMemo(() => computeStrengthPRs(data.workouts), [data.workouts])
   const isToday = viewingDateKey === todayKey()
   const dayLogged = isLoggedWorkout(workout)
+  const weightUnit = data.preferences.weightUnit
 
   const shiftDate = (days: number) => setViewingDateKey(dateKey(addDays(date, days)))
 
@@ -70,7 +74,23 @@ export function TodayScreen() {
             <button className="fj-datenav__btn" onClick={() => shiftDate(-1)} aria-label="Previous day">
               <ChevronLeft size={18} />
             </button>
-            <span className="fj-datenav__label">{formatLong(date)}</span>
+            <button
+              type="button"
+              className="fj-datenav__label"
+              onClick={() => dateInputRef.current?.showPicker?.()}
+              aria-label="Pick a date"
+            >
+              {formatLong(date)}
+            </button>
+            <input
+              ref={dateInputRef}
+              type="date"
+              className="fj-datenav__date"
+              value={viewingDateKey}
+              onChange={(e) => e.target.value && setViewingDateKey(e.target.value)}
+              tabIndex={-1}
+              aria-hidden="true"
+            />
             <button className="fj-datenav__btn" onClick={() => shiftDate(1)} aria-label="Next day">
               <ChevronRight size={18} />
             </button>
@@ -92,7 +112,13 @@ export function TodayScreen() {
         {workout && workout.cardio.length > 0 && (
           <div className="fj-col" style={{ marginTop: 'var(--space-3)' }}>
             {workout.cardio.map((c, idx) => (
-              <CardioRow key={c.id} dateKey={viewingDateKey} entryId={c.id} index={idx} />
+              <CardioRow
+                key={c.id}
+                dateKey={viewingDateKey}
+                entryId={c.id}
+                index={idx}
+                onEdit={setCardioEdit}
+              />
             ))}
           </div>
         )}
@@ -103,7 +129,7 @@ export function TodayScreen() {
           <h2 className="fj-section__title">
             <Dumbbell size={18} /> Weight Lifting
           </h2>
-          <Button size="sm" onClick={() => setModalOpen(true)}>
+          <Button size="sm" onClick={() => setExerciseModal('new')}>
             Add exercise
           </Button>
         </div>
@@ -136,7 +162,20 @@ export function TodayScreen() {
               const pr = strengthPRs[exerciseKey(e.name)]
               const isPR = !!pr && e.weight > 0 && pr.weight === e.weight && pr.date === viewingDateKey
               return (
-                <div key={e.id} className="fj-table__row">
+                <div
+                  key={e.id}
+                  className="fj-table__row fj-table__row--clickable"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Edit ${e.name}`}
+                  onClick={() => setExerciseModal(e)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === 'Enter' || ev.key === ' ') {
+                      ev.preventDefault()
+                      setExerciseModal(e)
+                    }
+                  }}
+                >
                   <span className="fj-cell-name">
                     {e.name}
                     <span className="fj-muscle-tag" data-muscle={e.muscle}>
@@ -148,7 +187,7 @@ export function TodayScreen() {
                   <span className="fj-cell-value">{e.sets}</span>
                   <span className="fj-cell-value">{e.reps}</span>
                   <span className="fj-cell-value">
-                    {e.weight} <small>lbs</small>
+                    {e.weight} <small>{weightUnit}</small>
                   </span>
                   <DeleteButton dateKey={viewingDateKey} kind="exercise" entry={e} index={idx} />
                 </div>
@@ -167,7 +206,22 @@ export function TodayScreen() {
         </div>
       )}
 
-      <ExerciseModal open={modalOpen} dateKey={viewingDateKey} onClose={() => setModalOpen(false)} />
+      {exerciseModal && (
+        <ExerciseModal
+          key={exerciseModal === 'new' ? 'new' : exerciseModal.id}
+          dateKey={viewingDateKey}
+          editing={exerciseModal === 'new' ? null : exerciseModal}
+          onClose={() => setExerciseModal(null)}
+        />
+      )}
+      {cardioEdit && (
+        <CardioModal
+          key={cardioEdit.id}
+          dateKey={viewingDateKey}
+          entry={cardioEdit}
+          onClose={() => setCardioEdit(null)}
+        />
+      )}
       {summaryOpen && (
         <WorkoutSummaryModal dateKey={viewingDateKey} onClose={() => setSummaryOpen(false)} />
       )}
@@ -318,7 +372,10 @@ function TodayHub() {
 /* ---------- Workout summary ---------- */
 function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string; onClose: () => void }) {
   const { data } = useStore()
-  const summary = useMemo(() => computeSessionSummary(data.workouts, dk), [data.workouts, dk])
+  const summary = useMemo(
+    () => computeSessionSummary(data.workouts, dk, data.preferences.weightUnit),
+    [data.workouts, dk, data.preferences.weightUnit],
+  )
   const streak = useMemo(
     () => computeStreak(data.workouts, data.weeklyPlan, parseKey(dk)),
     [data.workouts, data.weeklyPlan, dk],
@@ -361,7 +418,7 @@ function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string; onClos
                 <span className="fj-summary__num">
                   {Math.round(summary.totalVolume).toLocaleString()}
                 </span>
-                <span className="fj-summary__unit">lbs volume</span>
+                <span className="fj-summary__unit">{data.preferences.weightUnit} volume</span>
               </div>
             )}
             {summary.cardioCount > 0 && (
@@ -436,7 +493,7 @@ function WeightBanner({ dateKey: dk }: { dateKey: string }) {
                 setBodyWeight(dk, e.target.value === '' ? null : Number(e.target.value))
               }
             />
-            <span className="fj-muted">lbs</span>
+            <span className="fj-muted">{data.preferences.weightUnit}</span>
           </div>
         </div>
       </div>
@@ -450,13 +507,17 @@ function WeightBanner({ dateKey: dk }: { dateKey: string }) {
                 (c.value == null ? '' : c.value < 0 ? 'fj-down' : c.value > 0 ? 'fj-up' : '')
               }
             >
-              {c.value == null ? '—' : `${c.value > 0 ? '+' : ''}${c.value} lbs`}
+              {c.value == null
+                ? '—'
+                : `${c.value > 0 ? '+' : ''}${c.value} ${data.preferences.weightUnit}`}
             </div>
           </div>
         ))}
         <div className="fj-weight-compare__item">
           <div className="fj-weight-compare__label">Goal</div>
-          <div className="fj-weight-compare__value">{data.preferences.goalWeight} lbs</div>
+          <div className="fj-weight-compare__value">
+            {data.preferences.goalWeight} {data.preferences.weightUnit}
+          </div>
         </div>
       </div>
     </Card>
@@ -465,7 +526,7 @@ function WeightBanner({ dateKey: dk }: { dateKey: string }) {
 
 /* ---------- Cardio ---------- */
 function CardioForm({ dateKey: dk }: { dateKey: string }) {
-  const { addCardio } = useStore()
+  const { data, addCardio } = useStore()
   const { showToast } = useToast()
   const [type, setType] = useState<CardioType>('treadmill')
   const [time, setTime] = useState('')
@@ -506,7 +567,7 @@ function CardioForm({ dateKey: dk }: { dateKey: string }) {
         </div>
         <div style={{ flex: 1 }}>
           <Input
-            label={`Speed (${CARDIO_SPEED_UNIT[type]})`}
+            label={`Speed (${cardioSpeedUnit(type, data.preferences.distanceUnit)})`}
             type="number"
             inputMode="decimal"
             placeholder="0"
@@ -529,23 +590,39 @@ function CardioRow({
   dateKey: dk,
   entryId,
   index,
+  onEdit,
 }: {
   dateKey: string
   entryId: string
   index: number
+  onEdit: (entry: CardioEntry) => void
 }) {
   const { data } = useStore()
   const entry = data.workouts[dk]?.cardio.find((c) => c.id === entryId)
   if (!entry) return null
   return (
-    <Card className="fj-cardio-entry" padded={false} style={{ padding: '12px 16px' }}>
+    <Card
+      className="fj-cardio-entry fj-cardio-entry--clickable"
+      padded={false}
+      style={{ padding: '12px 16px' }}
+      role="button"
+      tabIndex={0}
+      aria-label={`Edit ${CARDIO_LABELS[entry.type]} cardio`}
+      onClick={() => onEdit(entry)}
+      onKeyDown={(ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault()
+          onEdit(entry)
+        }
+      }}
+    >
       <span className="fj-cardio-entry__name">{CARDIO_LABELS[entry.type]}</span>
       <div className="fj-cardio-entry__stats">
         <span className="fj-cell-value">
           {entry.time} <small>min</small>
         </span>
         <span className="fj-cell-value">
-          {entry.speed} <small>{CARDIO_SPEED_UNIT[entry.type]}</small>
+          {entry.speed} <small>{cardioSpeedUnit(entry.type, data.preferences.distanceUnit)}</small>
         </span>
         <span className="fj-cell-value">
           {entry.calories} <small>kcal</small>
@@ -585,7 +662,14 @@ function DeleteButton(props: DeleteButtonProps) {
   }
 
   return (
-    <button className="fj-icon-btn fj-icon-btn--danger" aria-label="Delete" onClick={remove}>
+    <button
+      className="fj-icon-btn fj-icon-btn--danger"
+      aria-label="Delete"
+      onClick={(ev) => {
+        ev.stopPropagation()
+        remove()
+      }}
+    >
       <Trash2 size={15} />
     </button>
   )
@@ -608,24 +692,46 @@ function TemplateChip({ templateId, dateKey: dk }: { templateId: string; dateKey
   )
 }
 
-/* ---------- Add-exercise modal ---------- */
+/** The most recent logged instance of `name`, on a day before `dk`. */
+function findLastTime(
+  workouts: Record<string, Workout>,
+  name: string,
+  dk: string,
+): { entry: ExerciseEntry; date: string } | null {
+  const key = name.trim().toLowerCase()
+  if (key.length < 2) return null
+  for (const dk2 of Object.keys(workouts).sort().reverse()) {
+    if (dk2 >= dk) continue
+    for (const e of workouts[dk2].exercises) {
+      if (e.name.toLowerCase() === key) return { entry: e, date: dk2 }
+    }
+  }
+  return null
+}
+
+/* ---------- Add / edit exercise modal ---------- */
 function ExerciseModal({
-  open,
   dateKey: dk,
+  editing,
   onClose,
 }: {
-  open: boolean
   dateKey: string
+  /** The entry being edited, or null to add a new one. */
+  editing: ExerciseEntry | null
   onClose: () => void
 }) {
-  const { data, addExercise } = useStore()
+  const { data, addExercise, updateExercise } = useStore()
   const { showToast } = useToast()
-  const [name, setName] = useState('')
-  const [muscle, setMuscle] = useState<MuscleGroup>('chest')
-  const [sets, setSets] = useState('')
-  const [reps, setReps] = useState('')
-  const [weight, setWeight] = useState('')
-  const [notes, setNotes] = useState('')
+  const weightUnit = data.preferences.weightUnit
+
+  const initialWeight = editing && editing.weight > 0 ? String(editing.weight) : ''
+  const [name, setName] = useState(editing?.name ?? '')
+  const [muscle, setMuscle] = useState<MuscleGroup>(editing?.muscle ?? 'chest')
+  const [sets, setSets] = useState(editing ? String(editing.sets) : '')
+  const [reps, setReps] = useState(editing ? String(editing.reps) : '')
+  const [weight, setWeight] = useState(initialWeight)
+  const [notes, setNotes] = useState(editing?.notes ?? '')
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
 
   const pastNames = useMemo(() => {
     const names = new Set<string>()
@@ -635,124 +741,214 @@ function ExerciseModal({
     return [...names].sort()
   }, [data.workouts])
 
-  const lastNote = useMemo(() => {
-    const key = name.trim().toLowerCase()
-    if (key.length < 2) return null
-    for (const dk2 of Object.keys(data.workouts).sort().reverse()) {
-      for (const e of data.workouts[dk2].exercises) {
-        if (e.name.toLowerCase() === key && e.notes) return e.notes
-      }
-    }
-    return null
-  }, [name, data.workouts])
+  // The most recent time this exercise was logged on an earlier day.
+  const lastTime = findLastTime(data.workouts, name, dk)
 
-  const reset = () => {
-    setName('')
-    setMuscle('chest')
-    setSets('')
-    setReps('')
-    setWeight('')
-    setNotes('')
+  const dirty =
+    name !== (editing?.name ?? '') ||
+    muscle !== (editing?.muscle ?? 'chest') ||
+    sets !== (editing ? String(editing.sets) : '') ||
+    reps !== (editing ? String(editing.reps) : '') ||
+    weight !== initialWeight ||
+    notes !== (editing?.notes ?? '')
+
+  const requestClose = () => {
+    if (dirty) setConfirmDiscard(true)
+    else onClose()
   }
-  const close = () => {
-    reset()
-    onClose()
-  }
+
   const submit = () => {
     const trimmed = name.trim()
     if (!trimmed) return
     const w = Number(weight) || 0
-    const isPR = addExercise(dk, {
-      id: uid(),
+    const entry: ExerciseEntry = {
+      id: editing?.id ?? uid(),
       name: trimmed,
       muscle,
       sets: Number(sets) || 0,
       reps: Number(reps) || 0,
       weight: w,
       notes: notes.trim() || undefined,
+    }
+    if (editing) {
+      updateExercise(dk, entry)
+      showToast('Exercise updated')
+    } else {
+      const isPR = addExercise(dk, entry)
+      showToast(
+        isPR ? `New PR — ${trimmed} ${w} ${weightUnit}` : 'Exercise added',
+        isPR ? 'success' : 'default',
+      )
+    }
+    onClose()
+  }
+
+  return (
+    <>
+      <Modal
+        open
+        onClose={requestClose}
+        title={editing ? 'Edit Exercise' : 'Add Exercise'}
+        footer={
+          <>
+            <Button variant="ghost" onClick={requestClose}>
+              Cancel
+            </Button>
+            <Button onClick={submit}>{editing ? 'Save changes' : 'Add Exercise'}</Button>
+          </>
+        }
+      >
+        <div className="fj-col" style={{ gap: 'var(--space-4)' }}>
+          <div>
+            <Input
+              label="Exercise name"
+              placeholder="e.g. Bench Press"
+              list="fj-exercise-names"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
+            <datalist id="fj-exercise-names">
+              {pastNames.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+            {lastTime && (
+              <p className="fj-muted" style={{ marginTop: 'var(--space-2)' }}>
+                Last time ({formatShort(lastTime.date)}): {lastTime.entry.weight} {weightUnit} ·{' '}
+                {lastTime.entry.sets} × {lastTime.entry.reps}
+                {lastTime.entry.notes ? ` — ${lastTime.entry.notes}` : ''}
+              </p>
+            )}
+          </div>
+          <div className="fj-field">
+            <label className="fj-field__label" htmlFor="fj-ex-muscle">
+              Muscle group
+            </label>
+            <select
+              id="fj-ex-muscle"
+              className="fj-select"
+              value={muscle}
+              onChange={(e) => setMuscle(e.target.value as MuscleGroup)}
+            >
+              {MUSCLE_GROUPS.map((m) => (
+                <option key={m} value={m}>
+                  {m[0].toUpperCase() + m.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="fj-row" style={{ alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+              <Input label="Sets" type="number" inputMode="numeric" placeholder="0" value={sets} onChange={(e) => setSets(e.target.value)} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <Input label="Reps" type="number" inputMode="numeric" placeholder="0" value={reps} onChange={(e) => setReps(e.target.value)} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <Input label={`Weight (${weightUnit})`} type="number" inputMode="decimal" placeholder="0" value={weight} onChange={(e) => setWeight(e.target.value)} />
+            </div>
+          </div>
+          <div className="fj-field">
+            <label className="fj-field__label" htmlFor="fj-ex-notes">
+              Notes (optional — shown next time you log this)
+            </label>
+            <textarea
+              id="fj-ex-notes"
+              className="fj-input"
+              rows={2}
+              style={{ resize: 'vertical' }}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+        </div>
+      </Modal>
+      <ConfirmModal
+        open={confirmDiscard}
+        title="Discard changes?"
+        message="Your unsaved changes to this exercise will be lost."
+        confirmLabel="Discard"
+        onConfirm={() => {
+          setConfirmDiscard(false)
+          onClose()
+        }}
+        onCancel={() => setConfirmDiscard(false)}
+      />
+    </>
+  )
+}
+
+/* ---------- Edit cardio modal ---------- */
+function CardioModal({
+  dateKey: dk,
+  entry,
+  onClose,
+}: {
+  dateKey: string
+  entry: CardioEntry
+  onClose: () => void
+}) {
+  const { data, updateCardio } = useStore()
+  const { showToast } = useToast()
+  const [type, setType] = useState<CardioType>(entry.type)
+  const [time, setTime] = useState(entry.time ? String(entry.time) : '')
+  const [speed, setSpeed] = useState(entry.speed ? String(entry.speed) : '')
+  const [calories, setCalories] = useState(entry.calories ? String(entry.calories) : '')
+
+  const submit = () => {
+    updateCardio(dk, {
+      id: entry.id,
+      type,
+      time: Number(time) || 0,
+      speed: Number(speed) || 0,
+      calories: Number(calories) || 0,
     })
-    showToast(
-      isPR ? `New PR — ${trimmed} ${w} lbs` : 'Exercise added',
-      isPR ? 'success' : 'default',
-    )
-    close()
+    showToast('Cardio updated')
+    onClose()
   }
 
   return (
     <Modal
-      open={open}
-      onClose={close}
-      title="Add Exercise"
+      open
+      onClose={onClose}
+      title="Edit Cardio"
       footer={
         <>
-          <Button variant="ghost" onClick={close}>
+          <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={submit}>Add Exercise</Button>
+          <Button onClick={submit}>Save changes</Button>
         </>
       }
     >
-      <div className="fj-col" style={{ gap: 'var(--space-4)' }}>
-        <div>
-          <Input
-            label="Exercise name"
-            placeholder="e.g. Bench Press"
-            list="fj-exercise-names"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-          />
-          <datalist id="fj-exercise-names">
-            {pastNames.map((n) => (
-              <option key={n} value={n} />
-            ))}
-          </datalist>
-          {lastNote && (
-            <p className="fj-muted" style={{ marginTop: 'var(--space-2)' }}>
-              Last note: {lastNote}
-            </p>
-          )}
-        </div>
-        <div className="fj-field">
-          <label className="fj-field__label" htmlFor="fj-ex-muscle">
-            Muscle group
-          </label>
-          <select
-            id="fj-ex-muscle"
-            className="fj-select"
-            value={muscle}
-            onChange={(e) => setMuscle(e.target.value as MuscleGroup)}
+      <div className="fj-cardio-tabs" style={{ marginBottom: 'var(--space-4)' }}>
+        {CARDIO_TYPES.map((t) => (
+          <button
+            key={t}
+            className={'fj-cardio-tab' + (type === t ? ' fj-cardio-tab--active' : '')}
+            onClick={() => setType(t)}
           >
-            {MUSCLE_GROUPS.map((m) => (
-              <option key={m} value={m}>
-                {m[0].toUpperCase() + m.slice(1)}
-              </option>
-            ))}
-          </select>
+            {CARDIO_LABELS[t]}
+          </button>
+        ))}
+      </div>
+      <div className="fj-row" style={{ alignItems: 'flex-end' }}>
+        <div style={{ flex: 1 }}>
+          <Input label="Time (min)" type="number" inputMode="decimal" placeholder="0" value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
-        <div className="fj-row" style={{ alignItems: 'flex-start' }}>
-          <div style={{ flex: 1 }}>
-            <Input label="Sets" type="number" inputMode="numeric" placeholder="0" value={sets} onChange={(e) => setSets(e.target.value)} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <Input label="Reps" type="number" inputMode="numeric" placeholder="0" value={reps} onChange={(e) => setReps(e.target.value)} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <Input label="Weight (lbs)" type="number" inputMode="decimal" placeholder="0" value={weight} onChange={(e) => setWeight(e.target.value)} />
-          </div>
-        </div>
-        <div className="fj-field">
-          <label className="fj-field__label" htmlFor="fj-ex-notes">
-            Notes (optional — shown next time you log this)
-          </label>
-          <textarea
-            id="fj-ex-notes"
-            className="fj-input"
-            rows={2}
-            style={{ resize: 'vertical' }}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+        <div style={{ flex: 1 }}>
+          <Input
+            label={`Speed (${cardioSpeedUnit(type, data.preferences.distanceUnit)})`}
+            type="number"
+            inputMode="decimal"
+            placeholder="0"
+            value={speed}
+            onChange={(e) => setSpeed(e.target.value)}
           />
+        </div>
+        <div style={{ flex: 1 }}>
+          <Input label="Calories" type="number" inputMode="decimal" placeholder="0" value={calories} onChange={(e) => setCalories(e.target.value)} />
         </div>
       </div>
     </Modal>

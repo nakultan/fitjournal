@@ -18,6 +18,8 @@ Run `npm run preview`, open the app, and click through:
 - [ ] **Today** — log a body weight, a cardio entry and an exercise; a PR badge
       and toast appear when a record is beaten
 - [ ] **Undo** — delete an exercise, click *Undo* in the toast; it returns
+- [ ] **Edit** — tap a logged exercise or cardio row; the modal opens pre-filled,
+      and saving updates the entry
 - [ ] **Finish workout** — the summary modal opens with the right numbers
 - [ ] **Progress / Records / History** — streak, stats, PRs and the heatmap
       reflect what was just logged (today's square shows on the heatmap)
