@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { AppData, PageId, Workout } from './types'
 import { StoreContext } from './store-context'
 import type { StoreValue } from './store-context'
-import { loadData, saveData } from './storage'
+import { loadData, requestPersistentStorage, saveData } from './storage'
 import { wouldBeCardioPR, wouldBeStrengthPR } from './logic'
 import { todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
@@ -18,22 +18,69 @@ function withWorkout(data: AppData, dateKey: string, fn: (w: Workout) => Workout
   return { ...data, workouts: { ...data.workouts, [dateKey]: fn(current) } }
 }
 
-/** Holds all app state, persists it to localStorage, exposes actions. */
+/** Trailing-debounce window for persistence — coalesces a burst of edits
+ *  (e.g. each keystroke in the body-weight field) into one device write. */
+const SAVE_DEBOUNCE_MS = 400
+
+/**
+ * Loads the on-device journal — which lives in IndexedDB, so the load is
+ * async — and mounts the live store once it is ready. The brief wait shows
+ * nothing over the app's black background, so there is no flash.
+ */
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(loadData)
+  const [initialData, setInitialData] = useState<AppData | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void requestPersistentStorage()
+    void loadData().then((loaded) => {
+      if (!cancelled) setInitialData(loaded)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!initialData) return null
+  return <StoreReady initialData={initialData}>{children}</StoreReady>
+}
+
+/** Holds all app state, persists it to the device, exposes actions. */
+function StoreReady({ initialData, children }: { initialData: AppData; children: ReactNode }) {
+  const [data, setData] = useState<AppData>(initialData)
   const [page, setPage] = useState<PageId>('today')
   const [viewingDateKey, setViewingDateKey] = useState<string>(todayKey)
   const [saveFailed, setSaveFailed] = useState(false)
+  const latestData = useRef(data)
 
-  // Persist on every change — this is the on-device "database". A failed
-  // write (quota, disabled storage) is recorded so the UI can warn the user
-  // instead of letting unsaved changes look saved. This setState cannot
-  // cascade: the effect depends only on `data`, which it never changes, and
-  // a same-value update bails out.
+  // Persist on change, debounced — a burst of edits becomes one write
+  // rather than re-serialising the whole journal on every keystroke. A
+  // failed write is recorded so the UI can warn the user instead of
+  // letting unsaved changes look saved.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- a failed device write must surface in render
-    setSaveFailed(!saveData(data))
+    latestData.current = data
+    const timer = setTimeout(() => {
+      void saveData(data).then((ok) => setSaveFailed(!ok))
+    }, SAVE_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
   }, [data])
+
+  // Flush the pending debounced write immediately when the app is hidden or
+  // closed, so a recent change cannot be lost if the OS reclaims the tab.
+  useEffect(() => {
+    const flush = () => {
+      void saveData(latestData.current).then((ok) => setSaveFailed(!ok))
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('pagehide', flush)
+    }
+  }, [])
 
   const value: StoreValue = {
     data,

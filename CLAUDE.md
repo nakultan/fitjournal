@@ -1,7 +1,7 @@
 # FitJournal — codebase guide
 
 Personal, offline-first fitness journal. React 19 + TypeScript + Vite, shipped
-as an installable PWA. **All data is on-device** (localStorage) — there is no
+as an installable PWA. **All data is on-device** (IndexedDB) — there is no
 backend, no account, and no network dependency at runtime. See `README.md` for
 the product overview and `AUDIT.md` for the current product audit and the
 ranked backlog.
@@ -25,16 +25,21 @@ pages/ (screens)  →  components/ (UI kit)
         ↓
 data/store  (React context — state, actions, persistence)
         ↓
-data/logic + data/storage  (pure functions; localStorage)
+data/logic + data/storage  (derived logic; IndexedDB persistence)
 ```
 
 - **`data/types.ts`** — the entire data model. `AppData` is the single saved
-  object; `SCHEMA_VERSION` guards future migrations.
+  object; `SCHEMA_VERSION` is bumped for each schema change, paired with a
+  migration step in `storage.ts`.
 - **`data/storage.ts`** — `loadData()` / `saveData()` / `defaultData()` /
-  `exportData()` / `importData()`. Seeds Push/Pull/Legs templates on a fresh
-  install; `importData()` validates a backup file before it can be restored.
-  `saveData()` returns `false` on a failed device write (quota exceeded,
-  blocked storage) so the failure can be surfaced instead of lost silently.
+  `exportData()` / `importData()` / `requestPersistentStorage()`. The journal
+  lives in **IndexedDB**, so `loadData()` / `saveData()` are async; `loadData()`
+  migrates an older `localStorage` journal across on first run, and both fall
+  back to `localStorage` if IndexedDB is unavailable. Seeds Push/Pull/Legs
+  templates on a fresh install; `importData()` validates a backup file before
+  it can be restored; a versioned `MIGRATIONS` chain upgrades old saves and
+  backups. `saveData()` returns `false` only if every storage tier fails, so a
+  silent data loss can never look saved.
 - **`data/logic.ts`** — *pure* derived computations: PRs, streaks (rest-day-
   aware, with a one-day grace), weekly & total stats, week-goal progress,
   session summaries, muscle
@@ -42,10 +47,12 @@ data/logic + data/storage  (pure functions; localStorage)
   derived is ever stored** — it is always recomputed from `workouts`. This file
   and `storage.ts` have co-located `*.test.ts` suites (run with `npm test`);
   being pure makes them straightforward to unit-test.
-- **`data/store.tsx`** — `StoreProvider` holds `AppData` in React state,
-  persists it to localStorage on every change, and exposes typed actions that
-  do immutable updates. Also holds UI nav state (`page`, `viewingDateKey`) and
-  `saveFailed` — true when the most recent persist failed.
+- **`data/store.tsx`** — `StoreProvider` loads the journal (async — IndexedDB)
+  and then mounts `StoreReady`, which holds `AppData` in React state, persists
+  it on change (trailing-debounced ~400ms, and flushed immediately when the app
+  is hidden or closed), and exposes typed actions that do immutable updates.
+  Also holds UI nav state (`page`, `viewingDateKey`) and `saveFailed` — true
+  when the most recent persist failed.
 - **`data/store-context.ts`** — `StoreContext`, the `useStore()` hook, and the
   `StoreValue` interface.
 
@@ -91,8 +98,8 @@ and renders the sidebar.
 
 ## Data safety
 
-On-device storage has no cloud backup; the localStorage key `fitjournal` is
-effectively the database.
+On-device storage has no cloud backup; an IndexedDB record is effectively the
+database, and `navigator.storage.persist()` is requested to keep it durable.
 
 - **Export / Import** — Settings → Export writes a full JSON copy; Settings →
   Import restores one via `restoreData()`, behind a confirm step. A restore
@@ -106,7 +113,7 @@ effectively the database.
 ## Not yet built
 
 All five build phases are done, plus a Vitest suite over the data/logic
-layer and three rounds of post-audit fixes (`AUDIT.md` → Phases 1–3). The
+layer and four rounds of post-audit fixes (`AUDIT.md` → Phases 1–4). The
 original single-file app has been retired to `../archive/`. OS-level
 scheduled reminders are deliberately deferred — unreliable for an offline,
 server-less app. `AUDIT.md` holds the full ranked audit and the remaining

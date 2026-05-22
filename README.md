@@ -47,9 +47,10 @@ npm run typecheck
 
 - **React 19 + TypeScript**, bundled by **Vite**; `vite-plugin-pwa` for offline
   support and installability; **Lucide** icons.
-- **All data lives on your device** in the browser's localStorage — no server,
-  no account, no cloud. Personal records, streaks and stats are *calculated*
-  from your logged workouts, never stored separately.
+- **All data lives on your device** in the browser's IndexedDB storage — no
+  server, no account, no cloud. The app asks the browser to keep that storage
+  durable. Personal records, streaks and stats are *calculated* from your
+  logged workouts, never stored separately.
 - **Back up regularly:** Settings → Export downloads a JSON copy of everything,
   and Settings → Import restores one — after first downloading a snapshot of
   your current data, so a restore can be undone. The app nudges you to export

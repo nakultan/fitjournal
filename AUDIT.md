@@ -64,10 +64,10 @@ pick a starting point.
 
 ## Implementation status
 
-**Phases 1–3 were implemented and shipped (2026-05-21 to 2026-05-22).** Resolved findings —
-**C1, H1, H4, L2, L5** (Phase 1), **C3, H2, H3, M3, M4, M5** (Phase 2), and **M1, M2, L4**
-(Phase 3) — are marked ✅ in the table and detail sections below. All other findings remain
-open.
+**Phases 1–4 were implemented and shipped (2026-05-21 to 2026-05-22).** Resolved findings —
+**C1, H1, H4, L2, L5** (Phase 1), **C3, H2, H3, M3, M4, M5** (Phase 2), **M1, M2, L4**
+(Phase 3), and **C2, M6, M10** (Phase 4) — are marked ✅ in the table and detail sections
+below. All other findings remain open.
 
 ---
 
@@ -76,7 +76,7 @@ open.
 | ID | Finding | Categories | Severity | Impact | Effort |
 |----|---------|-----------|----------|--------|--------|
 | C1 ✅ | Silent save failure — `saveData` swallows storage errors; data looks saved but is lost on reload | Trust, Performance, Abandonment | **Critical** | High | Low |
-| C2 | `localStorage` is the entire database — volatile; Safari/iOS can evict it silently | Trust, Performance, Abandonment | **Critical** | High | Med–High |
+| C2 ✅ | `localStorage` is the entire database — volatile; Safari/iOS can evict it silently | Trust, Performance, Abandonment | **Critical** | High | Med–High |
 | C3 ✅ | No way to edit a logged entry — breaks the template/plan → log flow | Weak flow, Friction, Missing premium, Abandonment | **Critical** | High | Medium |
 | H1 ✅ | No backup prompts or first-run backup education despite "export is your only way back" | Trust, Missing premium, Abandonment | **High** | High | Low |
 | H2 ✅ | Unit preference does nothing — `lbs`/`mi` are hardcoded everywhere | Amateur-feeling, Trust, Inconsistency | **High** | High | Low–Med |
@@ -87,11 +87,11 @@ open.
 | M3 ✅ | Add-Exercise modal loses all input on dismiss, with no "discard?" guard | Friction, Data loss | Medium | Medium | Low |
 | M4 ✅ | No "last time" performance shown when logging an exercise (only last note) | Missing premium, Friction | Medium | Med–High | Low |
 | M5 ✅ | Date navigation is ±1-day buttons only — no calendar jump | Friction, Weak flow, Mobile ergonomics | Medium | Medium | Medium |
-| M6 | `saveData` fires on every keystroke — full DB re-serialized each time | Performance | Medium | Low–Med | Low |
+| M6 ✅ | `saveData` fires on every keystroke — full DB re-serialized each time | Performance | Medium | Low–Med | Low |
 | M7 | Naive PR model — strength PR = max weight only; cardio PR = most calories | Amateur-feeling, Trust | Medium | Medium | Medium |
 | M8 | Touch targets below 44px (date-nav ~34px, icon buttons ~32px, `sm` buttons) | Accessibility, Mobile ergonomics | Medium | Medium | Low |
 | M9 | Missing ARIA labels on tappable rows; decorative icons not hidden; weak focus rings | Accessibility | Medium | Medium | Low–Med |
-| M10 | No schema migration path — `normalize` just stamps the current version | Trust, Performance | Medium | Low now / High later | Medium |
+| M10 ✅ | No schema migration path — `normalize` just stamps the current version | Trust, Performance | Medium | Low now / High later | Medium |
 | M11 | Dark-only theme — no choice for bright-gym or light-preference users | Missing premium, Accessibility | Medium | Medium | Medium |
 | M12 | No dynamic-type support — fixed `px` type scale breaks with OS font scaling | Accessibility, Mobile ergonomics | Medium | Medium | Medium |
 | L1 | Numeric inputs accept negatives, no `min`, silent coercion, no validation feedback | Amateur-feeling, Friction | Low | Low–Med | Low |
@@ -137,6 +137,11 @@ value fix in the audit.
 
 ### C2 — `localStorage` is the entire database, and it is volatile
 **Severity: Critical · Impact: High · Effort: Medium–High**
+
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 4). The journal now lives in **IndexedDB**;
+> `loadData`/`saveData` are async, an existing `localStorage` journal is migrated across on
+> first run (with `localStorage` kept as a fallback store when IndexedDB is unavailable),
+> and `navigator.storage.persist()` requests durable, eviction-resistant storage.
 
 The localStorage key `fitjournal` *is* the database (`CLAUDE.md` says so explicitly). But
 `localStorage` is the most fragile storage tier in a browser:
@@ -335,6 +340,10 @@ already have a workout — there is no way to *navigate to* an empty past day to
 ### M6 — Persistence runs on every keystroke
 **Severity: Medium · Impact: Low–Medium · Effort: Low**
 
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 4). Writes are trailing-debounced at 400ms, so
+> a burst of edits becomes one write; the pending write is flushed immediately on
+> `visibilitychange`/`pagehide` so a recent change can't be lost to the debounce window.
+
 `useEffect(() => saveData(data), [data])` ([src/data/store.tsx:28-30](src/data/store.tsx#L28))
 re-serializes the *entire* `AppData` and writes localStorage on every state change — including
 each keystroke in the body-weight input, which calls `setBodyWeight` on every change
@@ -382,6 +391,11 @@ visible focus outline token applied to all interactive elements.
 
 ### M10 — There is no schema migration path
 **Severity: Medium (latent) · Impact: Low now / High later · Effort: Medium**
+
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 4). `storage.ts` now has a versioned
+> `MIGRATIONS` chain: `migrate()` walks any old save — or old backup file — up from its
+> stored `schemaVersion` before normalising, so the stamped version is honest. The chain is
+> empty while the schema is still at v1; the framework is in place for the first real change.
 
 `SCHEMA_VERSION` exists, but `normalize` ([src/data/storage.ts:76-88](src/data/storage.ts#L76))
 just merges onto defaults and *stamps the current version* regardless of the input's actual
@@ -493,7 +507,7 @@ is a contained, philosophy-preserving correction.
 **3 — Behavioral & calm-UX tuning (preserve sustainability over addiction)** · ✅ shipped 2026-05-22
 - **M1** soften streak loss-framing; **M2** tier the celebration; **L4** cap the insight list.
 
-**4 — Durability & performance**
+**4 — Durability & performance** · ✅ shipped 2026-05-22
 - **C2** migrate storage to IndexedDB + request persistent storage — Critical but Medium–High
   effort; the most important *architectural* fix. **M6** debounce writes alongside it.
 - **M10** add a real schema-migration chain before any schema change ships.
