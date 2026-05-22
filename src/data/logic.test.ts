@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { AppData, CardioEntry, DayName, ExerciseEntry, Workout } from '@/data/types'
+import type { AppData, CardioEntry, DayName, ExerciseEntry, MuscleGroup, Workout } from '@/data/types'
 import { parseKey } from '@/lib/dates'
 import {
   WORKOUT_MILESTONES,
@@ -28,8 +28,19 @@ import {
 let idSeq = 0
 const nextId = () => `id-${++idSeq}`
 
-function exAt(name: string, weight: number, extra: Partial<ExerciseEntry> = {}): ExerciseEntry {
-  return { id: nextId(), name, muscle: 'chest', sets: 3, reps: 10, weight, ...extra }
+function exAt(
+  name: string,
+  weight: number,
+  extra: { muscle?: MuscleGroup; sets?: number; reps?: number } = {},
+): ExerciseEntry {
+  const count = extra.sets ?? 3
+  const reps = extra.reps ?? 10
+  return {
+    id: nextId(),
+    name,
+    muscle: extra.muscle ?? 'chest',
+    sets: Array.from({ length: count }, () => ({ reps, weight })),
+  }
 }
 
 function cardioAt(extra: Partial<CardioEntry> = {}): CardioEntry {
@@ -127,12 +138,13 @@ describe('computeStrengthPRs', () => {
 })
 
 describe('computeCardioPRs', () => {
-  it('keeps the most calories per cardio type', () => {
+  it('keeps the best distance per cardio type', () => {
     const w = workouts({
-      '2026-05-01': { cardio: [cardioAt({ calories: 200 })] },
-      '2026-05-02': { cardio: [cardioAt({ calories: 350 })] },
+      // distance = (time / 60) * speed → 2 and 4
+      '2026-05-01': { cardio: [cardioAt({ time: 20, speed: 6 })] },
+      '2026-05-02': { cardio: [cardioAt({ time: 30, speed: 8 })] },
     })
-    expect(computeCardioPRs(w).treadmill).toEqual({ mostCalories: 350, date: '2026-05-02' })
+    expect(computeCardioPRs(w).treadmill).toEqual({ bestDistance: 4, date: '2026-05-02' })
   })
 })
 
@@ -156,10 +168,11 @@ describe('wouldBeStrengthPR / wouldBeCardioPR', () => {
     expect(wouldBeStrengthPR(w, 'New Lift', 5)).toBe(true)
     expect(wouldBeStrengthPR(w, 'Bench', 0)).toBe(false)
   })
-  it('detects a cardio PR on calories', () => {
-    const w = workouts({ '2026-05-01': { cardio: [cardioAt({ calories: 300 })] } })
-    expect(wouldBeCardioPR(w, 'treadmill', 400)).toBe(true)
-    expect(wouldBeCardioPR(w, 'treadmill', 300)).toBe(false)
+  it('detects a cardio PR on distance', () => {
+    // cardioAt default — time 30, speed 6 → distance 3
+    const w = workouts({ '2026-05-01': { cardio: [cardioAt()] } })
+    expect(wouldBeCardioPR(w, 'treadmill', 4)).toBe(true)
+    expect(wouldBeCardioPR(w, 'treadmill', 3)).toBe(false)
   })
 })
 
@@ -389,7 +402,7 @@ describe('computeSessionSummary', () => {
           exAt('Bench', 100, { sets: 3, reps: 10 }),
           exAt('Squat', 200, { sets: 5, reps: 5 }),
         ],
-        cardio: [cardioAt({ time: 20, calories: 0 }), cardioAt({ time: 15, calories: 0 })],
+        cardio: [cardioAt({ time: 20, speed: 0 }), cardioAt({ time: 15, speed: 0 })],
       },
     })
     const s = computeSessionSummary(w, '2026-05-20')

@@ -3,8 +3,7 @@
 Personal, offline-first fitness journal. React 19 + TypeScript + Vite, shipped
 as an installable PWA. **All data is on-device** (IndexedDB) — there is no
 backend, no account, and no network dependency at runtime. See `README.md` for
-the product overview and `AUDIT.md` for the current product audit and the
-ranked backlog.
+the product overview and `AUDIT.md` for the completed product audit.
 
 ## Commands
 
@@ -30,7 +29,8 @@ data/logic + data/storage  (derived logic; IndexedDB persistence)
 
 - **`data/types.ts`** — the entire data model. `AppData` is the single saved
   object; `SCHEMA_VERSION` is bumped for each schema change, paired with a
-  migration step in `storage.ts`.
+  migration step in `storage.ts`. An `ExerciseEntry` carries a `SetEntry[]` —
+  one entry per logged set, each with its own reps and weight.
 - **`data/storage.ts`** — `loadData()` / `saveData()` / `defaultData()` /
   `exportData()` / `importData()` / `requestPersistentStorage()`. The journal
   lives in **IndexedDB**, so `loadData()` / `saveData()` are async; `loadData()`
@@ -117,12 +117,15 @@ database, and `navigator.storage.persist()` is requested to keep it durable.
   is data and the user has not backed up in three weeks (`lastBackupAt` tracks
   the last export). Both render globally from `App.tsx`.
 
-## Not yet built
+## Project status
 
 All five build phases are done, plus a Vitest suite over the data/logic
 layer and five rounds of post-audit fixes (`AUDIT.md` → Phases 1–5). The
 original single-file app has been retired to `../archive/`. OS-level
 scheduled reminders are deliberately deferred — unreliable for an offline,
-server-less app. `AUDIT.md` holds the full ranked audit; with Phase 5 every
-finding has been actioned (M7, the PR model, was reviewed and deliberately
-kept as-is).
+server-less app.
+
+Since the audit, the core has been re-modelled for **per-set logging**: an
+`ExerciseEntry` holds a `SetEntry[]` (each set its own reps and weight),
+`SCHEMA_VERSION` is `2` with a v1→v2 migration, and cardio personal records
+rank on measured distance instead of a machine's calorie estimate.

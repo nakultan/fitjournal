@@ -2,7 +2,12 @@ import { useMemo, useState } from 'react'
 import { Activity, Dumbbell, History, Target, Trophy } from 'lucide-react'
 import { Button, Card, EmptyState, Input, Modal, PageHeader, useToast } from '@/components'
 import { useStore } from '@/data/store-context'
-import { computeCardioPRs, computePRTimeline, computeStrengthPRs } from '@/data/logic'
+import {
+  computeCardioPRs,
+  computePRTimeline,
+  computeStrengthPRs,
+  formatCardioMetric,
+} from '@/data/logic'
 import { CARDIO_LABELS } from '@/data/constants'
 import type { CardioType } from '@/data/types'
 import { formatShort } from '@/lib/dates'
@@ -17,8 +22,8 @@ export function RecordsScreen() {
   const strengthPRs = useMemo(() => computeStrengthPRs(data.workouts), [data.workouts])
   const cardioPRs = useMemo(() => computeCardioPRs(data.workouts), [data.workouts])
   const timeline = useMemo(
-    () => computePRTimeline(data.workouts, weightUnit),
-    [data.workouts, weightUnit],
+    () => computePRTimeline(data.workouts, weightUnit, data.preferences.distanceUnit),
+    [data.workouts, weightUnit, data.preferences.distanceUnit],
   )
 
   const strengthKeys = Object.keys(strengthPRs)
@@ -98,7 +103,7 @@ export function RecordsScreen() {
           <div className="fj-table">
             <div className="fj-table__row fj-table__head" style={RECORD_COLS}>
               <span>Type</span>
-              <span>Most calories</span>
+              <span>Best distance</span>
               <span>Date</span>
               <span />
             </div>
@@ -109,7 +114,7 @@ export function RecordsScreen() {
                 <div key={k} className="fj-table__row" style={RECORD_COLS}>
                   <span className="fj-cell-name">{CARDIO_LABELS[k]}</span>
                   <span className="fj-cell-value" style={{ color: 'var(--color-success)' }}>
-                    {pr.mostCalories} <small>kcal</small>
+                    {formatCardioMetric(k, pr.bestDistance, data.preferences.distanceUnit)}
                   </span>
                   <span className="fj-muted">{formatShort(pr.date)}</span>
                   <span />

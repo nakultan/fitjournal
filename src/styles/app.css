@@ -350,6 +350,35 @@
   font-weight: 400;
 }
 
+/* Per-set exercise rows (Today) — name line + set summary, stacked */
+.fj-ex-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px var(--space-4);
+  border-top: 1px solid var(--color-border-soft);
+}
+.fj-ex-row:first-child {
+  border-top: none;
+}
+.fj-ex-row--clickable {
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+.fj-ex-row--clickable:hover {
+  background: var(--color-inset);
+}
+.fj-ex-row__main {
+  flex: 1;
+  min-width: 0;
+}
+.fj-ex-row__sets {
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-top: 3px;
+}
+
 /* Muscle-group tags — a deliberate fixed category palette. */
 .fj-muscle-tag {
   padding: 2px 8px;
@@ -1142,7 +1171,8 @@
   .fj-cardio-entry__name {
     min-width: 64px;
   }
-  .fj-table__row {
+  .fj-table__row,
+  .fj-ex-row {
     padding-left: var(--space-3);
     padding-right: var(--space-3);
   }

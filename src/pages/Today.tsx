@@ -11,6 +11,7 @@ import {
   Lightbulb,
   Moon,
   PlayCircle,
+  Plus,
   Scale,
   Sparkles,
   StickyNote,
@@ -41,9 +42,17 @@ import {
   computeWeekProgress,
   exerciseKey,
   isLoggedWorkout,
+  topSetWeight,
   totalWorkoutsLogged,
 } from '@/data/logic'
-import type { CardioEntry, CardioType, ExerciseEntry, MuscleGroup, Workout } from '@/data/types'
+import type {
+  CardioEntry,
+  CardioType,
+  ExerciseEntry,
+  MuscleGroup,
+  SetEntry,
+  Workout,
+} from '@/data/types'
 import { addDays, dateKey, dayNameOf, formatLong, formatShort, parseKey, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
 import { celebrate, tap } from '@/lib/feedback'
@@ -151,20 +160,14 @@ export function TodayScreen() {
           />
         ) : (
           <div className="fj-table">
-            <div className="fj-table__row fj-table__head">
-              <span>Exercise</span>
-              <span>Sets</span>
-              <span>Reps</span>
-              <span>Weight</span>
-              <span />
-            </div>
             {workout.exercises.map((e, idx) => {
+              const top = topSetWeight(e)
               const pr = strengthPRs[exerciseKey(e.name)]
-              const isPR = !!pr && e.weight > 0 && pr.weight === e.weight && pr.date === viewingDateKey
+              const isPR = !!pr && top > 0 && pr.weight === top && pr.date === viewingDateKey
               return (
                 <div
                   key={e.id}
-                  className="fj-table__row fj-table__row--clickable"
+                  className="fj-ex-row fj-ex-row--clickable"
                   role="button"
                   tabIndex={0}
                   aria-label={`Edit ${e.name}`}
@@ -176,19 +179,19 @@ export function TodayScreen() {
                     }
                   }}
                 >
-                  <span className="fj-cell-name">
-                    {e.name}
-                    <span className="fj-muscle-tag" data-muscle={e.muscle}>
-                      {e.muscle}
+                  <div className="fj-ex-row__main">
+                    <span className="fj-cell-name">
+                      {e.name}
+                      <span className="fj-muscle-tag" data-muscle={e.muscle}>
+                        {e.muscle}
+                      </span>
+                      {isPR && <Trophy size={13} color="var(--color-warning)" />}
+                      {e.notes && (
+                        <StickyNote size={13} color="var(--color-text-dim)" aria-label={e.notes} />
+                      )}
                     </span>
-                    {isPR && <Trophy size={13} color="var(--color-warning)" />}
-                    {e.notes && <StickyNote size={13} color="var(--color-text-dim)" aria-label={e.notes} />}
-                  </span>
-                  <span className="fj-cell-value">{e.sets}</span>
-                  <span className="fj-cell-value">{e.reps}</span>
-                  <span className="fj-cell-value">
-                    {e.weight} <small>{weightUnit}</small>
-                  </span>
+                    <div className="fj-ex-row__sets">{formatSets(e.sets, weightUnit)}</div>
+                  </div>
                   <DeleteButton dateKey={viewingDateKey} kind="exercise" entry={e} index={idx} />
                 </div>
               )
@@ -378,8 +381,14 @@ function TodayHub() {
 function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string; onClose: () => void }) {
   const { data } = useStore()
   const summary = useMemo(
-    () => computeSessionSummary(data.workouts, dk, data.preferences.weightUnit),
-    [data.workouts, dk, data.preferences.weightUnit],
+    () =>
+      computeSessionSummary(
+        data.workouts,
+        dk,
+        data.preferences.weightUnit,
+        data.preferences.distanceUnit,
+      ),
+    [data.workouts, dk, data.preferences.weightUnit, data.preferences.distanceUnit],
   )
   const streak = useMemo(
     () => computeStreak(data.workouts, data.weeklyPlan, parseKey(dk)),
@@ -723,6 +732,23 @@ function findLastTime(
   return null
 }
 
+/** "185×5, 185×5, 205×3 lbs" — a compact summary of an exercise's logged sets. */
+function formatSets(sets: SetEntry[], unit: string): string {
+  if (sets.length === 0) return 'No sets'
+  return `${sets.map((s) => `${s.weight}×${s.reps}`).join(', ')} ${unit}`
+}
+
+type SetDraft = { reps: string; weight: string }
+
+/** Stored sets → editable string rows; always yields at least one row. */
+function setsToDraft(sets: SetEntry[]): SetDraft[] {
+  if (sets.length === 0) return [{ reps: '', weight: '' }]
+  return sets.map((s) => ({
+    reps: s.reps > 0 ? String(s.reps) : '',
+    weight: s.weight > 0 ? String(s.weight) : '',
+  }))
+}
+
 /* ---------- Add / edit exercise modal ---------- */
 function ExerciseModal({
   dateKey: dk,
@@ -738,14 +764,18 @@ function ExerciseModal({
   const { showToast } = useToast()
   const weightUnit = data.preferences.weightUnit
 
-  const initialWeight = editing && editing.weight > 0 ? String(editing.weight) : ''
+  const initialRows = useMemo(() => setsToDraft(editing?.sets ?? []), [editing])
   const [name, setName] = useState(editing?.name ?? '')
   const [muscle, setMuscle] = useState<MuscleGroup>(editing?.muscle ?? 'chest')
-  const [sets, setSets] = useState(editing ? String(editing.sets) : '')
-  const [reps, setReps] = useState(editing ? String(editing.reps) : '')
-  const [weight, setWeight] = useState(initialWeight)
+  const [rows, setRows] = useState<SetDraft[]>(initialRows)
   const [notes, setNotes] = useState(editing?.notes ?? '')
   const [confirmDiscard, setConfirmDiscard] = useState(false)
+
+  const updateRow = (i: number, patch: Partial<SetDraft>) =>
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
+  const addRow = () => setRows((rs) => [...rs, { reps: '', weight: '' }])
+  const removeRow = (i: number) =>
+    setRows((rs) => (rs.length > 1 ? rs.filter((_, idx) => idx !== i) : rs))
 
   const pastNames = useMemo(() => {
     const names = new Set<string>()
@@ -761,10 +791,8 @@ function ExerciseModal({
   const dirty =
     name !== (editing?.name ?? '') ||
     muscle !== (editing?.muscle ?? 'chest') ||
-    sets !== (editing ? String(editing.sets) : '') ||
-    reps !== (editing ? String(editing.reps) : '') ||
-    weight !== initialWeight ||
-    notes !== (editing?.notes ?? '')
+    notes !== (editing?.notes ?? '') ||
+    JSON.stringify(rows) !== JSON.stringify(initialRows)
 
   const requestClose = () => {
     if (dirty) setConfirmDiscard(true)
@@ -774,14 +802,15 @@ function ExerciseModal({
   const submit = () => {
     const trimmed = name.trim()
     if (!trimmed) return
-    const w = Math.max(0, Number(weight) || 0)
+    const sets: SetEntry[] = rows.map((r) => ({
+      reps: Math.max(0, Math.round(Number(r.reps) || 0)),
+      weight: Math.max(0, Number(r.weight) || 0),
+    }))
     const entry: ExerciseEntry = {
       id: editing?.id ?? uid(),
       name: trimmed,
       muscle,
-      sets: Math.max(0, Number(sets) || 0),
-      reps: Math.max(0, Number(reps) || 0),
-      weight: w,
+      sets,
       notes: notes.trim() || undefined,
     }
     if (editing) {
@@ -790,7 +819,7 @@ function ExerciseModal({
     } else {
       const isPR = addExercise(dk, entry)
       showToast(
-        isPR ? `New PR — ${trimmed} ${w} ${weightUnit}` : 'Exercise added',
+        isPR ? `New PR — ${trimmed} ${topSetWeight(entry)} ${weightUnit}` : 'Exercise added',
         isPR ? 'success' : 'default',
       )
     }
@@ -829,8 +858,7 @@ function ExerciseModal({
             </datalist>
             {lastTime && (
               <p className="fj-muted" style={{ marginTop: 'var(--space-2)' }}>
-                Last time ({formatShort(lastTime.date)}): {lastTime.entry.weight} {weightUnit} ·{' '}
-                {lastTime.entry.sets} × {lastTime.entry.reps}
+                Last time ({formatShort(lastTime.date)}): {formatSets(lastTime.entry.sets, weightUnit)}
                 {lastTime.entry.notes ? ` — ${lastTime.entry.notes}` : ''}
               </p>
             )}
@@ -852,16 +880,60 @@ function ExerciseModal({
               ))}
             </select>
           </div>
-          <div className="fj-row" style={{ alignItems: 'flex-start' }}>
-            <div style={{ flex: 1 }}>
-              <Input label="Sets" type="number" min={0} inputMode="numeric" placeholder="0" value={sets} onChange={(e) => setSets(e.target.value)} />
+          <div className="fj-field">
+            <label className="fj-field__label">Sets</label>
+            <div className="fj-col" style={{ gap: 'var(--space-2)' }}>
+              {rows.map((r, i) => (
+                <div key={i} className="fj-row" style={{ gap: 'var(--space-2)', flexWrap: 'nowrap' }}>
+                  <span
+                    className="fj-muted"
+                    style={{ width: 18, textAlign: 'center', flexShrink: 0 }}
+                  >
+                    {i + 1}
+                  </span>
+                  <input
+                    className="fj-input"
+                    style={{ flex: 1, minWidth: 0 }}
+                    type="number"
+                    min={0}
+                    inputMode="decimal"
+                    placeholder={`Weight (${weightUnit})`}
+                    aria-label={`Set ${i + 1} weight`}
+                    value={r.weight}
+                    onChange={(e) => updateRow(i, { weight: e.target.value })}
+                  />
+                  <input
+                    className="fj-input"
+                    style={{ flex: 1, minWidth: 0 }}
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    placeholder="Reps"
+                    aria-label={`Set ${i + 1} reps`}
+                    value={r.reps}
+                    onChange={(e) => updateRow(i, { reps: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    className="fj-icon-btn fj-icon-btn--danger"
+                    aria-label={`Remove set ${i + 1}`}
+                    disabled={rows.length === 1}
+                    style={rows.length === 1 ? { opacity: 0.3 } : undefined}
+                    onClick={() => removeRow(i)}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
-            <div style={{ flex: 1 }}>
-              <Input label="Reps" type="number" min={0} inputMode="numeric" placeholder="0" value={reps} onChange={(e) => setReps(e.target.value)} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <Input label={`Weight (${weightUnit})`} type="number" min={0} inputMode="decimal" placeholder="0" value={weight} onChange={(e) => setWeight(e.target.value)} />
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={addRow}
+              style={{ marginTop: 'var(--space-2)' }}
+            >
+              <Plus size={14} /> Add set
+            </Button>
           </div>
           <div className="fj-field">
             <label className="fj-field__label" htmlFor="fj-ex-notes">

@@ -101,7 +101,37 @@ function isObject(value: unknown): value is Record<string, unknown> {
  * and a backup taken on an earlier version stays safely restorable.
  */
 const MIGRATIONS: Array<(d: Record<string, unknown>) => Record<string, unknown>> = [
-  // v1 → v2: append the first migration step here when the schema changes.
+  // v1 → v2: ExerciseEntry changes from a flat { sets, reps, weight } triple to
+  // { sets: SetEntry[] }. Each old exercise expands into `sets` identical sets,
+  // all carrying the old reps and weight.
+  (d) => {
+    const workouts = isObject(d.workouts) ? d.workouts : {}
+    const migrated: Record<string, unknown> = {}
+    for (const [dk, w] of Object.entries(workouts)) {
+      if (!isObject(w)) {
+        migrated[dk] = w
+        continue
+      }
+      const exercises = Array.isArray(w.exercises) ? w.exercises : []
+      migrated[dk] = {
+        ...w,
+        exercises: exercises.map((e) => {
+          if (!isObject(e) || Array.isArray(e.sets)) return e
+          const count = typeof e.sets === 'number' ? e.sets : 0
+          const reps = typeof e.reps === 'number' ? e.reps : 0
+          const weight = typeof e.weight === 'number' ? e.weight : 0
+          return {
+            id: e.id,
+            name: e.name,
+            muscle: e.muscle,
+            sets: Array.from({ length: Math.max(1, count) }, () => ({ reps, weight })),
+            ...(e.notes != null ? { notes: e.notes } : {}),
+          }
+        }),
+      }
+    }
+    return { ...d, workouts: migrated, schemaVersion: 2 }
+  },
 ]
 
 /**

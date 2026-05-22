@@ -4,7 +4,7 @@
  */
 
 /** Bumped whenever the saved-data shape changes, so migrations stay safe. */
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 export type MuscleGroup = 'chest' | 'back' | 'legs' | 'shoulders' | 'arms' | 'abs'
 export type CardioType = 'treadmill' | 'bike' | 'stairmaster'
@@ -39,14 +39,18 @@ export type PageId =
   | 'recipes'
   | 'settings'
 
-/** A single strength exercise logged on a given day. */
+/** One logged set — a number of reps at a given weight. */
+export interface SetEntry {
+  reps: number
+  weight: number
+}
+
+/** A single strength exercise logged on a given day — one or more sets. */
 export interface ExerciseEntry {
   id: string
   name: string
   muscle: MuscleGroup
-  sets: number
-  reps: number
-  weight: number
+  sets: SetEntry[]
   notes?: string
 }
 

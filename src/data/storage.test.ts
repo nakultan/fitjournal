@@ -60,3 +60,30 @@ describe('importData normalisation', () => {
     expect(importData(backup).workouts['2026-05-20'].bodyWeight).toBe(170)
   })
 })
+
+describe('schema migration v1 → v2', () => {
+  it('expands flat exercises into per-set arrays', () => {
+    const v1 = JSON.stringify({
+      schemaVersion: 1,
+      workouts: {
+        '2026-05-20': {
+          date: '2026-05-20',
+          bodyWeight: null,
+          exercises: [{ id: 'x1', name: 'Bench', muscle: 'chest', sets: 3, reps: 10, weight: 135 }],
+          cardio: [],
+        },
+      },
+      templates: [],
+    })
+    const d = importData(v1)
+    expect(d.schemaVersion).toBe(2)
+    const ex = d.workouts['2026-05-20'].exercises[0]
+    expect(ex.sets).toEqual([
+      { reps: 10, weight: 135 },
+      { reps: 10, weight: 135 },
+      { reps: 10, weight: 135 },
+    ])
+    expect(ex.name).toBe('Bench')
+    expect(ex.muscle).toBe('chest')
+  })
+})

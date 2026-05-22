@@ -4,7 +4,7 @@ import type { AppData, PageId, Workout } from './types'
 import { StoreContext } from './store-context'
 import type { StoreValue } from './store-context'
 import { loadData, requestPersistentStorage, saveData } from './storage'
-import { wouldBeCardioPR, wouldBeStrengthPR } from './logic'
+import { cardioMetric, topSetWeight, wouldBeCardioPR, wouldBeStrengthPR } from './logic'
 import { todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
 import { applyTheme } from '@/lib/theme'
@@ -105,7 +105,7 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
       setData((d) => withWorkout(d, dateKey, (w) => ({ ...w, bodyWeight: weight }))),
 
     addExercise: (dateKey, entry) => {
-      const isPR = wouldBeStrengthPR(data.workouts, entry.name, entry.weight)
+      const isPR = wouldBeStrengthPR(data.workouts, entry.name, topSetWeight(entry))
       setData((d) =>
         withWorkout(d, dateKey, (w) => ({ ...w, exercises: [...w.exercises, entry] })),
       )
@@ -134,7 +134,7 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
         }),
       ),
     addCardio: (dateKey, entry) => {
-      const isPR = wouldBeCardioPR(data.workouts, entry.type, entry.calories)
+      const isPR = wouldBeCardioPR(data.workouts, entry.type, cardioMetric(entry))
       setData((d) => withWorkout(d, dateKey, (w) => ({ ...w, cardio: [...w.cardio, entry] })))
       return isPR
     },
@@ -167,9 +167,10 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
               id: uid(),
               name: te.name,
               muscle: te.muscle,
-              sets: te.sets,
-              reps: te.reps,
-              weight: 0,
+              sets: Array.from({ length: Math.max(1, te.sets) }, () => ({
+                reps: te.reps,
+                weight: 0,
+              })),
             })),
           ],
         })),
@@ -186,9 +187,10 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
               id: uid(),
               name: te.name,
               muscle: te.muscle,
-              sets: te.sets,
-              reps: te.reps,
-              weight: 0,
+              sets: Array.from({ length: Math.max(1, te.sets) }, () => ({
+                reps: te.reps,
+                weight: 0,
+              })),
             })),
           ],
         }))

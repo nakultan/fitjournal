@@ -2,7 +2,16 @@
  * Derived computations. Everything here is a pure function of stored data —
  * PRs, streaks, stats, insights and the heatmap are calculated, never saved.
  */
-import type { AppData, CardioType, DayName, WeightUnit, Workout } from './types'
+import type {
+  AppData,
+  CardioEntry,
+  CardioType,
+  DayName,
+  DistanceUnit,
+  ExerciseEntry,
+  WeightUnit,
+  Workout,
+} from './types'
 import { CARDIO_LABELS } from './constants'
 import { addDays, dateKey, dayNameOf, parseKey } from '@/lib/dates'
 
@@ -14,6 +23,31 @@ const DAY_MS = 86_400_000
 /** Lowercased exercise name — the key PRs and goals are tracked by. */
 export function exerciseKey(name: string): string {
   return name.trim().toLowerCase()
+}
+
+/** An exercise's top-set weight — the heaviest single set it holds (0 if none). */
+export function topSetWeight(e: ExerciseEntry): number {
+  return e.sets.reduce((max, s) => Math.max(max, s.weight), 0)
+}
+
+/**
+ * A cardio session's effort metric — the honest, measured alternative to a
+ * machine's fabricated calorie count: distance for treadmill/bike (miles or km,
+ * matching the logged speed), total steps for the stairmaster.
+ */
+export function cardioMetric(c: CardioEntry): number {
+  if (c.type === 'stairmaster') return c.time * c.speed
+  return (c.time / 60) * c.speed
+}
+
+/** Format a cardio metric for display. */
+export function formatCardioMetric(
+  type: CardioType,
+  value: number,
+  distanceUnit: DistanceUnit,
+): string {
+  if (type === 'stairmaster') return `${Math.round(value)} steps`
+  return `${value.toFixed(2)} ${distanceUnit === 'km' ? 'km' : 'mi'}`
 }
 
 /** A workout "counts" only if it has at least one logged entry. */
@@ -29,12 +63,12 @@ export interface StrengthPR {
   date: string
 }
 export interface CardioPR {
-  mostCalories: number
+  bestDistance: number
   date: string
 }
 export interface TimelineEntry {
   date: string
-  kind: 'weight' | 'calories'
+  kind: 'weight' | 'distance'
   label: string
   value: string
 }
@@ -43,11 +77,12 @@ export function computeStrengthPRs(workouts: Workouts): Record<string, StrengthP
   const prs: Record<string, StrengthPR> = {}
   for (const dk of Object.keys(workouts).sort()) {
     for (const e of workouts[dk].exercises) {
-      if (e.weight <= 0) continue
+      const weight = topSetWeight(e)
+      if (weight <= 0) continue
       const k = exerciseKey(e.name)
       const best = prs[k]
-      if (!best || e.weight > best.weight) {
-        prs[k] = { name: e.name, weight: e.weight, date: dk }
+      if (!best || weight > best.weight) {
+        prs[k] = { name: e.name, weight, date: dk }
       }
     }
   }
@@ -58,10 +93,11 @@ export function computeCardioPRs(workouts: Workouts): Partial<Record<CardioType,
   const prs: Partial<Record<CardioType, CardioPR>> = {}
   for (const dk of Object.keys(workouts).sort()) {
     for (const c of workouts[dk].cardio) {
-      if (c.calories <= 0) continue
+      const distance = cardioMetric(c)
+      if (distance <= 0) continue
       const best = prs[c.type]
-      if (!best || c.calories > best.mostCalories) {
-        prs[c.type] = { mostCalories: c.calories, date: dk }
+      if (!best || distance > best.bestDistance) {
+        prs[c.type] = { bestDistance: distance, date: dk }
       }
     }
   }
@@ -72,29 +108,32 @@ export function computeCardioPRs(workouts: Workouts): Partial<Record<CardioType,
 export function computePRTimeline(
   workouts: Workouts,
   weightUnit: WeightUnit = 'lbs',
+  distanceUnit: DistanceUnit = 'miles',
 ): TimelineEntry[] {
   const entries: TimelineEntry[] = []
   const bestWeight: Record<string, number> = {}
-  const bestCalories: Partial<Record<CardioType, number>> = {}
+  const bestDistance: Partial<Record<CardioType, number>> = {}
   for (const dk of Object.keys(workouts).sort()) {
     const w = workouts[dk]
     for (const e of w.exercises) {
-      if (e.weight <= 0) continue
+      const weight = topSetWeight(e)
+      if (weight <= 0) continue
       const k = exerciseKey(e.name)
-      if (e.weight > (bestWeight[k] ?? 0)) {
-        bestWeight[k] = e.weight
-        entries.push({ date: dk, kind: 'weight', label: e.name, value: `${e.weight} ${weightUnit}` })
+      if (weight > (bestWeight[k] ?? 0)) {
+        bestWeight[k] = weight
+        entries.push({ date: dk, kind: 'weight', label: e.name, value: `${weight} ${weightUnit}` })
       }
     }
     for (const c of w.cardio) {
-      if (c.calories <= 0) continue
-      if (c.calories > (bestCalories[c.type] ?? 0)) {
-        bestCalories[c.type] = c.calories
+      const distance = cardioMetric(c)
+      if (distance <= 0) continue
+      if (distance > (bestDistance[c.type] ?? 0)) {
+        bestDistance[c.type] = distance
         entries.push({
           date: dk,
-          kind: 'calories',
+          kind: 'distance',
           label: CARDIO_LABELS[c.type],
-          value: `${c.calories} kcal`,
+          value: formatCardioMetric(c.type, distance, distanceUnit),
         })
       }
     }
@@ -109,11 +148,11 @@ export function wouldBeStrengthPR(workouts: Workouts, name: string, weight: numb
   return !best || weight > best.weight
 }
 
-/** Would logging this cardio entry set a new calorie record? */
-export function wouldBeCardioPR(workouts: Workouts, type: CardioType, calories: number): boolean {
-  if (calories <= 0) return false
+/** Would logging this cardio entry set a new distance record? */
+export function wouldBeCardioPR(workouts: Workouts, type: CardioType, distance: number): boolean {
+  if (distance <= 0) return false
   const best = computeCardioPRs(workouts)[type]
-  return !best || calories > best.mostCalories
+  return !best || distance > best.bestDistance
 }
 
 // ------------------------------------------------------------- streak -----
@@ -223,7 +262,7 @@ export function computeWeeklyStats(
       const wk = workouts[dateKey(addDays(weekStart, day))]
       if (isLoggedWorkout(wk)) {
         workoutCount += 1
-        for (const e of wk.exercises) totalSets += e.sets
+        for (const e of wk.exercises) totalSets += e.sets.length
         for (const c of wk.cardio) cardioDistance += (c.time / 60) * c.speed
       }
     }
@@ -250,7 +289,7 @@ export function computeTotalStats(workouts: Workouts, reference: Date): TotalSta
     if (diff < 0 || diff > 30) continue
     const w = workouts[dk]
     if (isLoggedWorkout(w)) totalWorkouts += 1
-    for (const e of w.exercises) totalSets += e.sets
+    for (const e of w.exercises) totalSets += e.sets.length
     for (const c of w.cardio) totalCardioDistance += (c.time / 60) * c.speed
   }
   return { totalWorkouts, totalSets, totalCardioDistance }
@@ -268,7 +307,7 @@ export function computeMuscleBalance(
     const d = parseKey(dk)
     if (d < cutoff || d > reference) continue
     for (const e of workouts[dk].exercises) {
-      sets[e.muscle] = (sets[e.muscle] ?? 0) + e.sets
+      sets[e.muscle] = (sets[e.muscle] ?? 0) + e.sets.length
     }
   }
   return sets
@@ -286,7 +325,7 @@ export function computePlateaus(workouts: Workouts): Plateau[] {
   for (const dk of Object.keys(workouts).sort()) {
     for (const e of workouts[dk].exercises) {
       const k = exerciseKey(e.name)
-      ;(history[k] ??= []).push({ name: e.name, weight: e.weight })
+      ;(history[k] ??= []).push({ name: e.name, weight: topSetWeight(e) })
     }
   }
   const plateaus: Plateau[] = []
@@ -492,7 +531,7 @@ export function computeWeekProgress(
     const w = workouts[dateKey(addDays(start, i))]
     if (isLoggedWorkout(w)) {
       done += 1
-      for (const e of w.exercises) totalSets += e.sets
+      for (const e of w.exercises) totalSets += e.sets.length
     }
   }
   const pct = goal > 0 ? Math.min(100, Math.round((done / goal) * 100)) : 0
@@ -516,15 +555,16 @@ export function computeSessionSummary(
   workouts: Workouts,
   dk: string,
   weightUnit: WeightUnit = 'lbs',
+  distanceUnit: DistanceUnit = 'miles',
 ): SessionSummary {
   const w = workouts[dk]
-  const prs = computePRTimeline(workouts, weightUnit).filter((e) => e.date === dk)
+  const prs = computePRTimeline(workouts, weightUnit, distanceUnit).filter((e) => e.date === dk)
   let totalSets = 0
   let totalVolume = 0
   let cardioMinutes = 0
   for (const e of w?.exercises ?? []) {
-    totalSets += e.sets
-    totalVolume += e.sets * e.reps * e.weight
+    totalSets += e.sets.length
+    for (const s of e.sets) totalVolume += s.reps * s.weight
   }
   for (const c of w?.cardio ?? []) {
     cardioMinutes += c.time
