@@ -12,7 +12,8 @@ screen for free.
 **All five phases complete** — the app is fully responsive (a phone layout with
 a bottom nav and bottom-sheet modals) and installable on an iPhone home screen,
 on top of the full feature set and polish pass. See [`AUDIT.md`](AUDIT.md) for
-a full product audit and the ranked backlog.
+the full product audit — every finding has been actioned across five follow-up
+rounds of fixes.
 
 ## What it does
 
@@ -25,7 +26,8 @@ a full product audit and the ranked backlog.
 - **History** — a 13-week activity heatmap and a list of past workouts
 - **Plan** — build workout templates and assign them to a weekly schedule
 - **Recipes** — a searchable, taggable recipe collection
-- **Settings** — preferences, backup export & restore, and health-data (JSON) import
+- **Settings** — preferences (units, goals, a light/dark theme), backup export &
+  restore, and health-data (JSON) import
 
 ## Running it
 

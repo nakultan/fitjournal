@@ -18,6 +18,12 @@ body,
   height: 100%;
 }
 
+/* Keep the root at the browser's default size so the `rem`-based type
+   scale honors the user's OS / browser text-size setting. */
+html {
+  font-size: 100%;
+}
+
 body {
   font: var(--text-body);
   background: var(--color-bg);
@@ -62,7 +68,7 @@ textarea {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--color-hover);
   border-radius: var(--radius-pill);
 }
 ::-webkit-scrollbar-track {

@@ -149,7 +149,7 @@ export function RecordsScreen() {
                   <span className="fj-muted" style={{ minWidth: 64 }}>
                     {formatShort(e.date)}
                   </span>
-                  <span style={{ fontSize: 13 }}>
+                  <span style={{ fontSize: '0.8125rem' }}>
                     <strong>{e.label}</strong> — new {e.kind} record
                   </span>
                 </span>

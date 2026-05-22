@@ -22,6 +22,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   weeklyGoal: 4,
   dailyReminder: true,
   weeklySummary: true,
+  theme: 'system',
 }
 
 /** Push / Pull / Legs — a friendly starting point for a fresh install. */

@@ -225,17 +225,19 @@ function TemplateModal({
                   className="fj-input"
                   style={{ width: 58 }}
                   type="number"
+                  min={0}
                   aria-label="Sets"
                   value={r.sets}
-                  onChange={(e) => updateRow(i, { sets: Number(e.target.value) || 0 })}
+                  onChange={(e) => updateRow(i, { sets: Math.max(0, Number(e.target.value) || 0) })}
                 />
                 <input
                   className="fj-input"
                   style={{ width: 58 }}
                   type="number"
+                  min={0}
                   aria-label="Reps"
                   value={r.reps}
-                  onChange={(e) => updateRow(i, { reps: Number(e.target.value) || 0 })}
+                  onChange={(e) => updateRow(i, { reps: Math.max(0, Number(e.target.value) || 0) })}
                 />
                 <button
                   className="fj-icon-btn fj-icon-btn--danger"

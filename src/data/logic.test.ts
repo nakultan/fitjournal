@@ -79,6 +79,7 @@ function appData(w: Record<string, Workout>): AppData {
       weeklyGoal: 4,
       dailyReminder: true,
       weeklySummary: true,
+      theme: 'system',
     },
     health: null,
     lastBackupAt: null,

@@ -7,6 +7,7 @@ import { loadData, requestPersistentStorage, saveData } from './storage'
 import { wouldBeCardioPR, wouldBeStrengthPR } from './logic'
 import { todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
+import { applyTheme } from '@/lib/theme'
 
 function emptyWorkout(dateKey: string): Workout {
   return { date: dateKey, bodyWeight: null, exercises: [], cardio: [] }
@@ -64,6 +65,11 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     }, SAVE_DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [data])
+
+  // Keep the document's colour theme in sync with the preference.
+  useEffect(() => {
+    applyTheme(data.preferences.theme)
+  }, [data.preferences.theme])
 
   // Flush the pending debounced write immediately when the app is hidden or
   // closed, so a recent change cannot be lost if the OS reclaims the tab.

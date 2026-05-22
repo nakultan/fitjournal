@@ -51,7 +51,7 @@
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
@@ -60,7 +60,7 @@
     color var(--dur-fast) var(--ease);
 }
 .fj-nav__item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-hover);
   color: var(--color-text);
 }
 .fj-nav__item--active {
@@ -132,8 +132,8 @@
   position: relative;
 }
 .fj-datenav__btn {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: var(--radius-sm);
   background: var(--color-surface-2);
@@ -151,9 +151,9 @@
 /* The date label is a button — tapping it opens a native date picker. */
 .fj-datenav__label {
   min-width: 168px;
-  height: 34px;
+  height: 44px;
   text-align: center;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   font-family: inherit;
   border: none;
@@ -209,7 +209,7 @@
   border: none;
   border-bottom: 2px solid var(--color-border);
   color: var(--color-text);
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   outline: none;
@@ -232,7 +232,7 @@
   color: var(--color-text-dim);
 }
 .fj-weight-compare__value {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   margin-top: 2px;
@@ -262,7 +262,7 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   transition:
     border-color var(--dur-fast) var(--ease),
@@ -283,7 +283,7 @@
 }
 .fj-cardio-entry__name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
   min-width: 96px;
 }
 .fj-cardio-entry__stats {
@@ -322,10 +322,10 @@
   transition: background var(--dur-fast) var(--ease);
 }
 .fj-table__row--clickable:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-inset);
 }
 .fj-table__head {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-inset);
 }
 .fj-table__head span {
   font: var(--text-micro);
@@ -338,10 +338,10 @@
   align-items: center;
   gap: var(--space-2);
   font-weight: 500;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .fj-cell-value {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -354,7 +354,7 @@
 .fj-muscle-tag {
   padding: 2px 8px;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -385,9 +385,10 @@
 }
 
 /* ---- Icon button ------------------------------------------- */
+/* 44×44 hit area (WCAG 2.5.5); the icon inside stays small. */
 .fj-icon-btn {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -401,7 +402,7 @@
     color var(--dur-fast) var(--ease);
 }
 .fj-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-hover);
   color: var(--color-text);
 }
 .fj-icon-btn--danger:hover {
@@ -420,7 +421,7 @@
   font-variant-numeric: tabular-nums;
 }
 .fj-streak__count span {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 400;
   color: var(--color-text-muted);
 }
@@ -462,7 +463,7 @@
 .fj-mbar__label {
   width: 84px;
   text-align: right;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   text-transform: capitalize;
   color: var(--color-text-muted);
@@ -471,7 +472,7 @@
 .fj-mbar__track {
   flex: 1;
   height: 22px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-inset);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -509,7 +510,7 @@
   border-left-color: var(--color-warning);
 }
 .fj-insight__text {
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--color-text-muted);
 }
@@ -545,7 +546,7 @@
   width: 48px;
   height: 48px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-inset);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -553,7 +554,7 @@
   flex-shrink: 0;
 }
 .fj-date-box__day {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -564,7 +565,7 @@
 }
 .fj-history-item__title {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .fj-history-item__sub {
   font: var(--text-caption);
@@ -585,7 +586,7 @@
   aspect-ratio: 1;
   min-width: 12px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-inset);
 }
 .fj-heatmap__cell[data-level='1'] {
   background: rgba(10, 132, 255, 0.25);
@@ -650,7 +651,7 @@
   background: transparent;
   color: var(--color-text-dim);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   transition:
     color var(--dur-fast) var(--ease),
@@ -674,11 +675,11 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-inset);
 }
 .fj-plan-day__name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .fj-plan-day__body {
   padding: var(--space-2) var(--space-4) var(--space-3);
@@ -689,7 +690,7 @@
   gap: var(--space-3);
   padding: var(--space-2) 0;
   border-top: 1px solid var(--color-border-soft);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .fj-plan-ex:first-child {
   border-top: none;
@@ -735,7 +736,7 @@
 .fj-tag {
   padding: 2px 8px;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -757,12 +758,12 @@
 .fj-recipe-steps {
   padding-left: var(--space-4);
   line-height: 1.7;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
 }
 .fj-recipe-ingredients {
   list-style: none;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
 }
 .fj-recipe-ingredients li {
@@ -783,7 +784,7 @@
   letter-spacing: 0.4px;
   color: var(--color-text-muted);
   padding: var(--space-3) var(--space-4);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-inset);
 }
 .fj-settings-row {
   display: flex;
@@ -794,7 +795,7 @@
   border-top: 1px solid var(--color-border-soft);
 }
 .fj-settings-row__label {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .fj-settings-row__desc {
   font: var(--text-caption);
@@ -821,7 +822,7 @@
   border-radius: var(--radius-md);
   background: var(--color-warning-soft);
   color: var(--color-warning);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 .fj-hub__top {
@@ -871,12 +872,12 @@
   margin-top: 1px;
 }
 .fj-hub__ringnum {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .fj-hub__ringnum small {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: var(--color-text-dim);
 }
@@ -900,7 +901,7 @@
   flex-shrink: 0;
 }
 .fj-hub__plan-icon--rest {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-inset);
   color: var(--color-text-muted);
 }
 .fj-hub__plan-text {
@@ -908,7 +909,7 @@
   min-width: 0;
 }
 .fj-hub__plan-title {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 .fj-hub__plan-sub {
@@ -920,7 +921,7 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--color-text-muted);
   padding: 0 var(--space-1);
@@ -961,7 +962,7 @@
   align-items: center;
   gap: 6px;
   margin-top: var(--space-2);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--color-text-muted);
 }
@@ -978,7 +979,7 @@
   gap: 2px;
 }
 .fj-summary__num {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
@@ -1000,7 +1001,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--color-warning);
   margin-bottom: var(--space-2);
@@ -1009,7 +1010,7 @@
   display: flex;
   justify-content: space-between;
   gap: var(--space-3);
-  font-size: 13px;
+  font-size: 0.8125rem;
   padding: 3px 0;
   color: var(--color-text-muted);
 }
@@ -1020,7 +1021,7 @@
 }
 .fj-summary__milestone {
   margin-top: var(--space-3);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--color-success);
 }
@@ -1036,7 +1037,7 @@
   min-width: 0;
 }
 .fj-recap__head {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   margin-bottom: 2px;
 }
@@ -1086,7 +1087,7 @@
     width: auto;
     padding: 8px 2px;
     border-radius: 0;
-    font-size: 10px;
+    font-size: 0.625rem;
     letter-spacing: 0.2px;
   }
   .fj-nav__item:hover {
@@ -1144,12 +1145,5 @@
   .fj-table__row {
     padding-left: var(--space-3);
     padding-right: var(--space-3);
-  }
-
-  /* Finger-friendly tap targets */
-  .fj-icon-btn,
-  .fj-datenav__btn {
-    width: 40px;
-    height: 40px;
   }
 }

@@ -76,7 +76,7 @@ export function ProgressScreen() {
             stroke={9}
             color={week.done >= week.goal ? 'var(--color-success)' : 'var(--color-accent)'}
           >
-            <span className="fj-hub__ringnum" style={{ fontSize: 19 }}>
+            <span className="fj-hub__ringnum" style={{ fontSize: '1.1875rem' }}>
               {week.done}
               <small>/{week.goal}</small>
             </span>
@@ -170,15 +170,17 @@ export function ProgressScreen() {
           </h2>
         </div>
         {shownInsights.length > 0 ? (
-          shownInsights.map((i) => {
-            const Icon = TONE_ICON[i.tone]
-            return (
-              <div key={i.id} className={`fj-insight fj-insight--${i.tone}`}>
-                <Icon size={18} />
-                <span className="fj-insight__text">{i.text}</span>
-              </div>
-            )
-          })
+          <div role="list">
+            {shownInsights.map((i) => {
+              const Icon = TONE_ICON[i.tone]
+              return (
+                <div key={i.id} role="listitem" className={`fj-insight fj-insight--${i.tone}`}>
+                  <Icon size={18} />
+                  <span className="fj-insight__text">{i.text}</span>
+                </div>
+              )
+            })}
+          </div>
         ) : (
           <EmptyState
             icon={<Lightbulb size={40} />}

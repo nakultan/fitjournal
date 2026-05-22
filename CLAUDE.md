@@ -70,6 +70,11 @@ and renders the sidebar.
 
 - **Design tokens** live in `styles/tokens.css` (colour, spacing, type, radius,
   motion). **Never hardcode raw colours/sizes** — always use a `var(--…)` token.
+- **Theming:** `tokens.css` carries a dark palette (the default) and a light
+  palette. The theme follows the OS `prefers-color-scheme` unless an explicit
+  `<html data-theme="light|dark">` overrides it — set by `lib/theme.ts` from the
+  `theme` preference. The type scale is in `rem`, so it honors the OS text-size
+  setting.
 - `styles/components.css` styles the design-system components; `styles/app.css`
   styles the shell and screens. Every class is prefixed `fj-`.
 - Icons are **Lucide** (`lucide-react`). Emoji are reserved for celebratory
@@ -95,6 +100,8 @@ and renders the sidebar.
   haptic, for everyday confirmations); both degrade silently and are safe to call.
 - `lib/backup.ts` exposes `downloadBackup()` — the shared JSON-export helper
   used by Settings, the backup reminder, and the save-error banner.
+- `lib/theme.ts` exposes `applyTheme()` — sets the `data-theme` attribute and a
+  pre-paint localStorage hint that `index.html` reads to avoid a theme flash.
 
 ## Data safety
 
@@ -113,8 +120,9 @@ database, and `navigator.storage.persist()` is requested to keep it durable.
 ## Not yet built
 
 All five build phases are done, plus a Vitest suite over the data/logic
-layer and four rounds of post-audit fixes (`AUDIT.md` → Phases 1–4). The
+layer and five rounds of post-audit fixes (`AUDIT.md` → Phases 1–5). The
 original single-file app has been retired to `../archive/`. OS-level
 scheduled reminders are deliberately deferred — unreliable for an offline,
-server-less app. `AUDIT.md` holds the full ranked audit and the remaining
-open findings.
+server-less app. `AUDIT.md` holds the full ranked audit; with Phase 5 every
+finding has been actioned (M7, the PR model, was reviewed and deliberately
+kept as-is).

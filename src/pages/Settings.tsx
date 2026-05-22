@@ -12,7 +12,14 @@ import { Button, Card, Modal, PageHeader, StatTile, Toggle, useToast } from '@/c
 import { useStore } from '@/data/store-context'
 import { importData } from '@/data/storage'
 import { downloadBackup } from '@/lib/backup'
-import type { AppData, DistanceUnit, HealthData, Preferences, WeightUnit } from '@/data/types'
+import type {
+  AppData,
+  DistanceUnit,
+  HealthData,
+  Preferences,
+  ThemePreference,
+  WeightUnit,
+} from '@/data/types'
 
 export function SettingsScreen() {
   const { data, savePreferences, setHealth, restoreData, markBackedUp } = useStore()
@@ -90,12 +97,30 @@ export function SettingsScreen() {
         </div>
         <div className="fj-settings-row">
           <div>
+            <div className="fj-settings-row__label">Theme</div>
+            <div className="fj-settings-row__desc">Follow your device, or force light or dark</div>
+          </div>
+          <select
+            className="fj-select"
+            style={{ width: 120 }}
+            aria-label="Theme"
+            value={prefs.theme}
+            onChange={(e) => patch({ theme: e.target.value as ThemePreference })}
+          >
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+        <div className="fj-settings-row">
+          <div>
             <div className="fj-settings-row__label">Weight unit</div>
             <div className="fj-settings-row__desc">Used across logging and records</div>
           </div>
           <select
             className="fj-select"
             style={{ width: 120 }}
+            aria-label="Weight unit"
             value={prefs.weightUnit}
             onChange={(e) => patch({ weightUnit: e.target.value as WeightUnit })}
           >
@@ -111,6 +136,7 @@ export function SettingsScreen() {
           <select
             className="fj-select"
             style={{ width: 120 }}
+            aria-label="Distance unit"
             value={prefs.distanceUnit}
             onChange={(e) => patch({ distanceUnit: e.target.value as DistanceUnit })}
           >
@@ -126,9 +152,11 @@ export function SettingsScreen() {
           <input
             className="fj-input"
             type="number"
+            min={0}
+            aria-label="Goal weight"
             style={{ width: 120, textAlign: 'center' }}
             value={prefs.goalWeight}
-            onChange={(e) => patch({ goalWeight: Number(e.target.value) || 0 })}
+            onChange={(e) => patch({ goalWeight: Math.max(0, Number(e.target.value) || 0) })}
           />
         </div>
         <div className="fj-settings-row">
@@ -141,6 +169,7 @@ export function SettingsScreen() {
             type="number"
             min={1}
             max={7}
+            aria-label="Weekly workout goal"
             style={{ width: 120, textAlign: 'center' }}
             value={prefs.weeklyGoal}
             onChange={(e) =>

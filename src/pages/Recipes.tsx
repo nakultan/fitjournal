@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Star, UtensilsCrossed } from 'lucide-react'
 import {
   Button,
@@ -33,20 +33,24 @@ export function RecipesScreen() {
     })
 
   const q = search.trim().toLowerCase()
-  const filtered = data.recipes.filter((r) => {
-    if (
-      q &&
-      !r.name.toLowerCase().includes(q) &&
-      !r.ingredients.some((i) => i.toLowerCase().includes(q))
-    ) {
-      return false
-    }
-    for (const f of filters) {
-      if (f === '_fav' && !r.favorite) return false
-      if (f !== '_fav' && !r.tags.includes(f as RecipeTag)) return false
-    }
-    return true
-  })
+  const filtered = useMemo(
+    () =>
+      data.recipes.filter((r) => {
+        if (
+          q &&
+          !r.name.toLowerCase().includes(q) &&
+          !r.ingredients.some((i) => i.toLowerCase().includes(q))
+        ) {
+          return false
+        }
+        for (const f of filters) {
+          if (f === '_fav' && !r.favorite) return false
+          if (f !== '_fav' && !r.tags.includes(f as RecipeTag)) return false
+        }
+        return true
+      }),
+    [data.recipes, q, filters],
+  )
 
   return (
     <div className="fj-screen">
@@ -183,9 +187,9 @@ function RecipeModal({ recipeId, onClose }: { recipeId: string | null; onClose: 
       id: existing?.id ?? uid(),
       name: trimmed,
       tags,
-      prepTime: Number(prep) || 0,
-      cookTime: Number(cook) || 0,
-      servings: Number(servings) || 0,
+      prepTime: Math.max(0, Number(prep) || 0),
+      cookTime: Math.max(0, Number(cook) || 0),
+      servings: Math.max(0, Number(servings) || 0),
       ingredients: ingredients
         .split('\n')
         .map((s) => s.trim())
@@ -236,15 +240,16 @@ function RecipeModal({ recipeId, onClose }: { recipeId: string | null; onClose: 
         </div>
         <div className="fj-row" style={{ alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
-            <Input label="Prep (min)" type="number" value={prep} onChange={(e) => setPrep(e.target.value)} />
+            <Input label="Prep (min)" type="number" min={0} value={prep} onChange={(e) => setPrep(e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
-            <Input label="Cook (min)" type="number" value={cook} onChange={(e) => setCook(e.target.value)} />
+            <Input label="Cook (min)" type="number" min={0} value={cook} onChange={(e) => setCook(e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
             <Input
               label="Servings"
               type="number"
+              min={0}
               value={servings}
               onChange={(e) => setServings(e.target.value)}
             />

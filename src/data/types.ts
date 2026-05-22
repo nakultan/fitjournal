@@ -10,6 +10,8 @@ export type MuscleGroup = 'chest' | 'back' | 'legs' | 'shoulders' | 'arms' | 'ab
 export type CardioType = 'treadmill' | 'bike' | 'stairmaster'
 export type WeightUnit = 'lbs' | 'kg'
 export type DistanceUnit = 'miles' | 'km'
+/** How the app picks its colour theme — follow the OS, or force one. */
+export type ThemePreference = 'system' | 'light' | 'dark'
 export type DayName =
   | 'Monday'
   | 'Tuesday'
@@ -108,6 +110,8 @@ export interface Preferences {
   weeklyGoal: number
   dailyReminder: boolean
   weeklySummary: boolean
+  /** Colour theme: follow the OS, or force light / dark. */
+  theme: ThemePreference
 }
 
 export interface HealthData {

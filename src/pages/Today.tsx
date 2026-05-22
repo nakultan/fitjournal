@@ -495,11 +495,15 @@ function WeightBanner({ dateKey: dk }: { dateKey: string }) {
             <input
               className="fj-weight-input"
               type="number"
+              min={0}
               inputMode="decimal"
               placeholder="—"
               value={bw ?? ''}
               onChange={(e) =>
-                setBodyWeight(dk, e.target.value === '' ? null : Number(e.target.value))
+                setBodyWeight(
+                  dk,
+                  e.target.value === '' ? null : Math.max(0, Number(e.target.value) || 0),
+                )
               }
             />
             <span className="fj-muted">{data.preferences.weightUnit}</span>
@@ -547,9 +551,9 @@ function CardioForm({ dateKey: dk }: { dateKey: string }) {
     const isPR = addCardio(dk, {
       id: uid(),
       type,
-      time: Number(time) || 0,
-      speed: Number(speed) || 0,
-      calories: Number(calories) || 0,
+      time: Math.max(0, Number(time) || 0),
+      speed: Math.max(0, Number(speed) || 0),
+      calories: Math.max(0, Number(calories) || 0),
     })
     showToast(isPR ? `New cardio PR — ${CARDIO_LABELS[type]}` : 'Cardio added', isPR ? 'success' : 'default')
     setTime('')
@@ -572,12 +576,13 @@ function CardioForm({ dateKey: dk }: { dateKey: string }) {
       </div>
       <div className="fj-row" style={{ alignItems: 'flex-end' }}>
         <div style={{ flex: 1 }}>
-          <Input label="Time (min)" type="number" inputMode="decimal" placeholder="0" value={time} onChange={(e) => setTime(e.target.value)} />
+          <Input label="Time (min)" type="number" min={0} inputMode="decimal" placeholder="0" value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
         <div style={{ flex: 1 }}>
           <Input
             label={`Speed (${cardioSpeedUnit(type, data.preferences.distanceUnit)})`}
             type="number"
+            min={0}
             inputMode="decimal"
             placeholder="0"
             value={speed}
@@ -585,7 +590,7 @@ function CardioForm({ dateKey: dk }: { dateKey: string }) {
           />
         </div>
         <div style={{ flex: 1 }}>
-          <Input label="Calories" type="number" inputMode="decimal" placeholder="0" value={calories} onChange={(e) => setCalories(e.target.value)} />
+          <Input label="Calories" type="number" min={0} inputMode="decimal" placeholder="0" value={calories} onChange={(e) => setCalories(e.target.value)} />
         </div>
         <Button onClick={submit} disabled={!time && !speed && !calories}>
           Add
@@ -769,13 +774,13 @@ function ExerciseModal({
   const submit = () => {
     const trimmed = name.trim()
     if (!trimmed) return
-    const w = Number(weight) || 0
+    const w = Math.max(0, Number(weight) || 0)
     const entry: ExerciseEntry = {
       id: editing?.id ?? uid(),
       name: trimmed,
       muscle,
-      sets: Number(sets) || 0,
-      reps: Number(reps) || 0,
+      sets: Math.max(0, Number(sets) || 0),
+      reps: Math.max(0, Number(reps) || 0),
       weight: w,
       notes: notes.trim() || undefined,
     }
@@ -797,13 +802,13 @@ function ExerciseModal({
       <Modal
         open
         onClose={requestClose}
-        title={editing ? 'Edit Exercise' : 'Add Exercise'}
+        title={editing ? 'Edit exercise' : 'Add exercise'}
         footer={
           <>
             <Button variant="ghost" onClick={requestClose}>
               Cancel
             </Button>
-            <Button onClick={submit}>{editing ? 'Save changes' : 'Add Exercise'}</Button>
+            <Button onClick={submit}>{editing ? 'Save changes' : 'Add exercise'}</Button>
           </>
         }
       >
@@ -849,13 +854,13 @@ function ExerciseModal({
           </div>
           <div className="fj-row" style={{ alignItems: 'flex-start' }}>
             <div style={{ flex: 1 }}>
-              <Input label="Sets" type="number" inputMode="numeric" placeholder="0" value={sets} onChange={(e) => setSets(e.target.value)} />
+              <Input label="Sets" type="number" min={0} inputMode="numeric" placeholder="0" value={sets} onChange={(e) => setSets(e.target.value)} />
             </div>
             <div style={{ flex: 1 }}>
-              <Input label="Reps" type="number" inputMode="numeric" placeholder="0" value={reps} onChange={(e) => setReps(e.target.value)} />
+              <Input label="Reps" type="number" min={0} inputMode="numeric" placeholder="0" value={reps} onChange={(e) => setReps(e.target.value)} />
             </div>
             <div style={{ flex: 1 }}>
-              <Input label={`Weight (${weightUnit})`} type="number" inputMode="decimal" placeholder="0" value={weight} onChange={(e) => setWeight(e.target.value)} />
+              <Input label={`Weight (${weightUnit})`} type="number" min={0} inputMode="decimal" placeholder="0" value={weight} onChange={(e) => setWeight(e.target.value)} />
             </div>
           </div>
           <div className="fj-field">
@@ -909,9 +914,9 @@ function CardioModal({
     updateCardio(dk, {
       id: entry.id,
       type,
-      time: Number(time) || 0,
-      speed: Number(speed) || 0,
-      calories: Number(calories) || 0,
+      time: Math.max(0, Number(time) || 0),
+      speed: Math.max(0, Number(speed) || 0),
+      calories: Math.max(0, Number(calories) || 0),
     })
     showToast('Cardio updated')
     onClose()
@@ -921,7 +926,7 @@ function CardioModal({
     <Modal
       open
       onClose={onClose}
-      title="Edit Cardio"
+      title="Edit cardio"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -944,12 +949,13 @@ function CardioModal({
       </div>
       <div className="fj-row" style={{ alignItems: 'flex-end' }}>
         <div style={{ flex: 1 }}>
-          <Input label="Time (min)" type="number" inputMode="decimal" placeholder="0" value={time} onChange={(e) => setTime(e.target.value)} />
+          <Input label="Time (min)" type="number" min={0} inputMode="decimal" placeholder="0" value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
         <div style={{ flex: 1 }}>
           <Input
             label={`Speed (${cardioSpeedUnit(type, data.preferences.distanceUnit)})`}
             type="number"
+            min={0}
             inputMode="decimal"
             placeholder="0"
             value={speed}
@@ -957,7 +963,7 @@ function CardioModal({
           />
         </div>
         <div style={{ flex: 1 }}>
-          <Input label="Calories" type="number" inputMode="decimal" placeholder="0" value={calories} onChange={(e) => setCalories(e.target.value)} />
+          <Input label="Calories" type="number" min={0} inputMode="decimal" placeholder="0" value={calories} onChange={(e) => setCalories(e.target.value)} />
         </div>
       </div>
     </Modal>

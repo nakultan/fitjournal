@@ -29,6 +29,8 @@ Run `npm run preview`, open the app, and click through:
 - [ ] **Settings → Export** — downloads a backup file
 - [ ] **Settings → Import** — restoring shows the confirmation dialog and first
       downloads a snapshot of the current data
+- [ ] **Settings → Theme** — Light and Dark restyle the app immediately; System
+      follows the device, and the choice survives a reload with no flash
 - [ ] **Offline** — reload with the network off; the app still works
 - [ ] **Narrow window** — shrink the window; the bottom nav and reflow kick in
 

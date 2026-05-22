@@ -64,10 +64,12 @@ pick a starting point.
 
 ## Implementation status
 
-**Phases 1–4 were implemented and shipped (2026-05-21 to 2026-05-22).** Resolved findings —
+**Phases 1–5 were implemented and shipped (2026-05-21 to 2026-05-22).** Resolved findings —
 **C1, H1, H4, L2, L5** (Phase 1), **C3, H2, H3, M3, M4, M5** (Phase 2), **M1, M2, L4**
-(Phase 3), and **C2, M6, M10** (Phase 4) — are marked ✅ in the table and detail sections
-below. All other findings remain open.
+(Phase 3), **C2, M6, M10** (Phase 4), and **M8, M9, M11, M12, L1, L3, L6** (Phase 5) — are
+marked ✅ in the table and detail sections below. **M7** (the PR model) was reviewed in
+Phase 5 and, by the owner's decision, deliberately kept as-is — marked ↪. Every audit
+finding has now been actioned; none remain open.
 
 ---
 
@@ -88,18 +90,18 @@ below. All other findings remain open.
 | M4 ✅ | No "last time" performance shown when logging an exercise (only last note) | Missing premium, Friction | Medium | Med–High | Low |
 | M5 ✅ | Date navigation is ±1-day buttons only — no calendar jump | Friction, Weak flow, Mobile ergonomics | Medium | Medium | Medium |
 | M6 ✅ | `saveData` fires on every keystroke — full DB re-serialized each time | Performance | Medium | Low–Med | Low |
-| M7 | Naive PR model — strength PR = max weight only; cardio PR = most calories | Amateur-feeling, Trust | Medium | Medium | Medium |
-| M8 | Touch targets below 44px (date-nav ~34px, icon buttons ~32px, `sm` buttons) | Accessibility, Mobile ergonomics | Medium | Medium | Low |
-| M9 | Missing ARIA labels on tappable rows; decorative icons not hidden; weak focus rings | Accessibility | Medium | Medium | Low–Med |
+| M7 ↪ | Naive PR model — strength PR = max weight only; cardio PR = most calories | Amateur-feeling, Trust | Medium | Medium | Medium |
+| M8 ✅ | Touch targets below 44px (date-nav ~34px, icon buttons ~32px, `sm` buttons) | Accessibility, Mobile ergonomics | Medium | Medium | Low |
+| M9 ✅ | Missing ARIA labels on tappable rows; decorative icons not hidden; weak focus rings | Accessibility | Medium | Medium | Low–Med |
 | M10 ✅ | No schema migration path — `normalize` just stamps the current version | Trust, Performance | Medium | Low now / High later | Medium |
-| M11 | Dark-only theme — no choice for bright-gym or light-preference users | Missing premium, Accessibility | Medium | Medium | Medium |
-| M12 | No dynamic-type support — fixed `px` type scale breaks with OS font scaling | Accessibility, Mobile ergonomics | Medium | Medium | Medium |
-| L1 | Numeric inputs accept negatives, no `min`, silent coercion, no validation feedback | Amateur-feeling, Friction | Low | Low–Med | Low |
+| M11 ✅ | Dark-only theme — no choice for bright-gym or light-preference users | Missing premium, Accessibility | Medium | Medium | Medium |
+| M12 ✅ | No dynamic-type support — fixed `px` type scale breaks with OS font scaling | Accessibility, Mobile ergonomics | Medium | Medium | Medium |
+| L1 ✅ | Numeric inputs accept negatives, no `min`, silent coercion, no validation feedback | Amateur-feeling, Friction | Low | Low–Med | Low |
 | L2 ✅ | Cardio "Add" with empty fields silently no-ops — no feedback | Friction, Amateur-feeling | Low | Low | Trivial |
-| L3 | Capitalization/label inconsistency ("Add exercise" vs "Add Exercise", etc.) | Design inconsistency | Low | Low | Trivial |
+| L3 ✅ | Capitalization/label inconsistency ("Add exercise" vs "Add Exercise", etc.) | Design inconsistency | Low | Low | Trivial |
 | L4 ✅ | Insights can stack into a wall of orange warnings on Progress — not calm | Calm UX | Low–Med | Low–Med | Low |
 | L5 ✅ | "Apple Health" section is really a manual JSON import — overpromises integration | Trust, Microcopy | Low | Low | Trivial |
-| L6 | Recipes filter is not memoized — minor jank at scale | Performance | Low | Low | Trivial |
+| L6 ✅ | Recipes filter is not memoized — minor jank at scale | Performance | Low | Low | Trivial |
 
 ---
 
@@ -357,6 +359,11 @@ migration.
 ### M7 — The "personal records" model is naive enough to mislead
 **Severity: Medium · Impact: Medium · Effort: Medium**
 
+> ↪ **Reviewed — kept as-is** (Phase 5, 2026-05-22). The owner weighed the options and chose
+> to keep the current model — strength PR = max weight, cardio PR = most calories — rather
+> than move to estimated-1RM / pace. Not a defect left open: a deliberate product decision,
+> to revisit only if it becomes a felt pain point.
+
 `computeStrengthPRs` tracks **max weight only** ([src/data/logic.ts:42-55](src/data/logic.ts#L42)).
 Bench 225×1 logged once means a later 225×10 never registers as a PR — a clear strength gain the
 app calls nothing. Cardio PRs are "most calories" ([src/data/logic.ts:57-69](src/data/logic.ts#L57)),
@@ -370,6 +377,10 @@ cardio. This is a product decision as much as a code change — flag for the own
 ### M8 — Touch targets fall below the 44px minimum
 **Severity: Medium · Impact: Medium · Effort: Low**
 
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 5). Date-nav buttons, the date label and icon
+> buttons are now 44×44; buttons and chips take a 44px min-height on touch. The icons
+> themselves stay small — only the hit area grew.
+
 Date-nav buttons are ~34×34px, row icon buttons ~32×32px, and the `sm` button variant renders
 shorter than 44px. These are high-frequency targets (day navigation, row delete). Per WCAG 2.5.5
 and platform guidance, interactive targets should be ≥44×44px. Undersized targets disproportionately
@@ -380,6 +391,11 @@ enlarging the visual icon).
 
 ### M9 — Screen-reader and keyboard support has gaps
 **Severity: Medium · Impact: Medium · Effort: Low–Medium**
+
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 5). Tappable History rows now carry an
+> `aria-label`; Progress insights are a real `role="list"`; Settings' controls got labels.
+> The keyboard focus ring was already in place (`global.css`), and lucide-react marks
+> decorative icons `aria-hidden` by default — verified in the installed version.
 
 Modals are handled well (focus trap, Escape, `aria-modal`). But: tappable History rows use
 `role="button"` with no `aria-label` (a screen reader reads a confusing pile of nested text);
@@ -410,6 +426,10 @@ before the first schema change ships.
 ### M11 — Dark-only, with no theme choice
 **Severity: Medium · Impact: Medium · Effort: Medium**
 
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 5). A full light palette was added; the theme
+> follows the OS by default, and a Settings control (System / Light / Dark) can override it.
+> A pre-paint hint in `index.html` avoids a flash of the wrong theme on load.
+
 `tokens.css` hardcodes a dark palette and sets `color-scheme: dark`
 ([src/styles/tokens.css:73](src/styles/tokens.css#L73)); there is no light theme and no
 `prefers-color-scheme` handling. A pure-black UI is hard to read in a bright gym and excludes
@@ -420,6 +440,10 @@ the work is producing a second palette, not re-plumbing).
 
 ### M12 — No dynamic-type support
 **Severity: Medium · Impact: Medium · Effort: Medium**
+
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 5). The type scale — and every component font
+> size — moved to `rem` on a 100%-default document root, so text honors the OS / browser
+> text-size setting.
 
 The type scale is fixed `px` ([src/styles/tokens.css:60-65](src/styles/tokens.css#L60)). Users
 who raise their OS font size for readability get no response from the app, and layouts may break
@@ -434,6 +458,9 @@ setting; verify layouts at larger sizes.
 
 ### L1 — Numeric inputs are unvalidated
 **Severity: Low · Impact: Low–Medium · Effort: Low**
+
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 5). Every numeric input gained `min="0"`, and
+> values are clamped to non-negative wherever they are written to the journal.
 
 Weight/sets/reps/cardio fields are `type="number"` with no `min`, and values are coerced via
 `Number(x) || 0`. Negative weights and implausible numbers are accepted; bad input fails
@@ -451,6 +478,9 @@ happens. **Direction:** disable the button when empty, or show a brief hint.
 
 ### L3 — Capitalization and label casing are inconsistent
 **Severity: Low · Impact: Low · Effort: Trivial**
+
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 5). The exercise and cardio modals now use
+> sentence case ("Add exercise", "Edit exercise", "Edit cardio"), matching the rest of the app.
 
 "Add exercise" (section button) vs "Add Exercise" (modal title and modal button); sentence-case
 Settings labels vs the design system's uppercase micro labels. **Direction:** pick one casing
@@ -480,6 +510,9 @@ honest, e.g. "Import health data (JSON)."
 
 ### L6 — Recipes filter is not memoized
 **Severity: Low · Impact: Low · Effort: Trivial**
+
+> ✅ **Resolved** — shipped 2026-05-22 (Phase 5). The Recipes search/tag filter is now
+> wrapped in `useMemo`, keyed on the recipes, the query and the active filters.
 
 The Recipes search/tag filter recomputes on every render rather than via `useMemo`. Negligible
 today; cheap to fix. **Direction:** wrap in `useMemo` keyed on `[search, filters, recipes]`.
@@ -512,7 +545,7 @@ is a contained, philosophy-preserving correction.
   effort; the most important *architectural* fix. **M6** debounce writes alongside it.
 - **M10** add a real schema-migration chain before any schema change ships.
 
-**5 — Accessibility & polish**
+**5 — Accessibility & polish** · ✅ shipped 2026-05-22
 - **M8** touch targets, **M9** ARIA/focus, **M12** dynamic type, **M11** light theme,
   **L1** input validation, **L3** casing consistency, **L6** memoize the Recipes filter.
-- **M7** revisit the PR model — flag as a product decision for the owner.
+- **M7** the PR model — reviewed with the owner, who chose to keep it as-is (not changed).

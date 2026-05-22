@@ -84,6 +84,7 @@ export function HistoryScreen() {
                 className="fj-history-item"
                 role="button"
                 tabIndex={0}
+                aria-label={`Open workout from ${formatShort(dk)} — ${[title, sub].filter(Boolean).join(', ')}`}
                 onClick={() => viewWorkoutDate(dk)}
                 onKeyDown={(e) => e.key === 'Enter' && viewWorkoutDate(dk)}
               >
