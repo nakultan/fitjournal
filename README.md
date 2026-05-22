@@ -11,9 +11,7 @@ screen for free.
 
 **All five phases complete** — the app is fully responsive (a phone layout with
 a bottom nav and bottom-sheet modals) and installable on an iPhone home screen,
-on top of the full feature set and polish pass. See [`AUDIT.md`](AUDIT.md) for
-the full product audit — every finding has been actioned across five follow-up
-rounds of fixes.
+on top of the full feature set and polish pass.
 
 ## What it does
 

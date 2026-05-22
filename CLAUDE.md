@@ -3,7 +3,7 @@
 Personal, offline-first fitness journal. React 19 + TypeScript + Vite, shipped
 as an installable PWA. **All data is on-device** (IndexedDB) — there is no
 backend, no account, and no network dependency at runtime. See `README.md` for
-the product overview and `AUDIT.md` for the completed product audit.
+the product overview.
 
 ## Commands
 
@@ -120,10 +120,9 @@ database, and `navigator.storage.persist()` is requested to keep it durable.
 ## Project status
 
 All five build phases are done, plus a Vitest suite over the data/logic
-layer and five rounds of post-audit fixes (`AUDIT.md` → Phases 1–5). The
-original single-file app has been retired to `../archive/`. OS-level
-scheduled reminders are deliberately deferred — unreliable for an offline,
-server-less app.
+layer and five rounds of post-audit fixes. The original single-file app has
+been retired to `../archive/`. OS-level scheduled reminders are deliberately
+deferred — unreliable for an offline, server-less app.
 
 Since the audit, the core has been re-modelled for **per-set logging**: an
 `ExerciseEntry` holds a `SetEntry[]` (each set its own reps and weight),
