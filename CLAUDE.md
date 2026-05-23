@@ -199,3 +199,7 @@ hardened insight thresholds so sparse-data warnings stop misfiring; a
 *Log to Health* button on the summary that opens a `FitJournalLogWorkout`
 Shortcut with the day's totals; an *Apple Health · use* pill on the Today
 weight banner that one-tap-fills the day's body weight from the last sync.
+
+The post-strategy-review roadmap is complete — every Critical, Important and
+Nice-to-have item from the review is shipped to production. There is no
+active build queue.
