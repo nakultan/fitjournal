@@ -119,8 +119,10 @@ action, not from the nav.
 - `lib/feedback.ts` is the feedback helper — `celebrate()` (a synthesised Web
   Audio chime plus a haptic buzz, for PRs and milestones) and `tap()` (a soft
   haptic, for everyday confirmations); both degrade silently and are safe to call.
-- `lib/backup.ts` exposes `downloadBackup()` — the shared JSON-export helper
-  used by Settings, the backup reminder, and the save-error banner.
+- `lib/backup.ts` exposes `downloadBackup()` (the shared JSON-export helper
+  used by Settings, the backup reminder, and the save-error banner) and
+  `downloadCsv()` / `exportCsv()` (flatten the journal to a one-row-per-set
+  CSV, with bodyweight, cardio, and day notes folded in).
 - `lib/theme.ts` exposes `applyTheme()` — sets the `data-theme` attribute and a
   pre-paint localStorage hint that `index.html` reads to avoid a theme flash.
 - `lib/router.ts` is a tiny hash router — `useRoute()` reads `location.hash` and
@@ -133,10 +135,13 @@ action, not from the nav.
   resized so the longest edge ≤ 1280 px, and returned as a JPEG data-URL so the
   on-device journal and JSON backup stay small.
 - `lib/healthBridge.ts` is the Apple Health bridge — `parseHealthPayload`
-  validates a JSON payload (every field a finite number; junk is dropped) and
+  validates a JSON payload (every field a finite number; junk is dropped),
   `readHealthFromURL` consumes a `?health=<json>` query parameter on first
-  load, then `history.replaceState`s it away so a reload cannot replay a stale
-  import. The same parser is used by the manual JSON file import in Settings.
+  load then `history.replaceState`s it away so a reload cannot replay a stale
+  import, and `buildLogWorkoutURL` builds a `shortcuts://run-shortcut?…` URL
+  that opens a companion `FitJournalLogWorkout` Shortcut with the day's
+  totals. The inbound parser is also used by the manual JSON file import in
+  Settings.
 
 ## Data safety
 
@@ -182,3 +187,15 @@ chimes at zero. A new per-exercise **Detail** view (`pages/ExerciseDetail.tsx`)
 shows top-set weight and an Epley 1RM estimate as Sparklines, plus the full
 session history; reached by tapping any strength row in Progress → Exercises.
 `Preferences.restTimerSeconds` (default 120) drives the timer length.
+
+Polish round: an optional `Workout.note` (with a `setDayNote` action) shown
+inline on Today, in History rows and in the workout summary; ▲/▼
+`<ReorderButtons/>` on Today exercises and Plan template rows
+(`reorderExercise` store action for the former, local moves for the latter);
+a CSV export beside the JSON one in Settings; a calm 3-tap `<FirstRun/>`
+modal mounted from `App.tsx`, gated by `Preferences.firstRunDismissed`;
+hardened insight thresholds so sparse-data warnings stop misfiring; a
+`<CountUp/>` component used on the post-workout summary stats; a
+*Log to Health* button on the summary that opens a `FitJournalLogWorkout`
+Shortcut with the day's totals; an *Apple Health · use* pill on the Today
+weight banner that one-tap-fills the day's body weight from the last sync.

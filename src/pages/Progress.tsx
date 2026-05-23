@@ -16,6 +16,7 @@ import {
   MapPin,
   Moon,
   Scale,
+  StickyNote,
   Target,
   Timer,
   TrendingUp,
@@ -845,9 +846,15 @@ function HistorySection() {
                       {d.toLocaleDateString('en-US', { month: 'short' })}
                     </span>
                   </div>
-                  <div>
+                  <div className="fj-history-item__main">
                     <div className="fj-history-item__title">{title}</div>
                     <div className="fj-history-item__sub">{sub}</div>
+                    {w.note && (
+                      <div className="fj-history-item__note" title={w.note}>
+                        <StickyNote size={12} />
+                        {w.note}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="fj-tag-row">

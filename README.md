@@ -17,9 +17,11 @@ on top of the full feature set and polish pass.
 
 - **Today** — a hub showing your streak, weekly-goal progress and today's planned
   workout; log body weight, cardio, and exercises set by set (tap any entry to
-  edit it); tap *Start* (or the *Session* chip) to enter an in-workout view with
-  checkable set rows and an automatic rest timer; finish with a session recap —
-  and a celebration when you set a record
+  edit it, or reorder with the ▲/▼ chevrons); jot a short *day note* — energy,
+  sleep, soreness — that follows the workout into History and the summary; tap
+  *Start* (or the *Session* chip) to enter an in-workout view with checkable
+  set rows and an automatic rest timer; finish with a session recap — and a
+  celebration when you set a record
 - **Progress** — one screen with three tabs: an **Overview** (streak, weekly
   recap, body-weight trend, 30-day stats, charts, automatic insights, muscle
   balance), **Exercises** (strength & cardio personal records, per-exercise
@@ -30,8 +32,9 @@ on top of the full feature set and polish pass.
 - **Recipes** — a searchable, taggable recipe keeper with a photo per recipe
   (downscaled), optional per-serving macros, a serving scaler, checkable
   ingredients and a focused cook mode that keeps the screen awake
-- **Settings** — preferences (units, goals, a light/dark theme), backup export &
-  restore, and Apple Health sync via a Shortcut (with a JSON file as a fallback)
+- **Settings** — preferences (units, goals, a light/dark theme), backup export
+  (JSON or CSV) & restore, and Apple Health sync via a Shortcut (with a JSON
+  file as a fallback)
 
 ## Running it
 
@@ -66,7 +69,9 @@ npm run typecheck
   directly. A companion Apple Shortcut reads your Health data and hands it to
   FitJournal via a `?health=` URL parameter — one tap, or a daily automation.
   Settings → *Sync with Apple Health* has the setup steps; the synced metrics
-  show up on the Progress Overview.
+  show up on the Progress Overview. A synced body weight can be one-tap-applied
+  to the Today weight banner, and a second optional Shortcut can write a
+  finished workout back to Apple Health from the summary screen.
 
 ## Project structure
 

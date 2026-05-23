@@ -512,11 +512,13 @@ export function computeInsights(data: AppData, reference: Date): Insight[] {
     }
   }
 
-  // Weekly volume trend — this week's sets vs last week's.
+  // Weekly volume trend — this week's sets vs last week's. Both weeks must
+  // carry enough volume to be worth comparing, or a near-empty week throws
+  // off the percentage and we'd misfire ("volume up 200%" off two sets).
   const trendWeeks = computeWeeklyStats(workouts, reference, 2)
   const prevWeek = trendWeeks[0]
   const thisWeek = trendWeeks[1]
-  if (prevWeek.totalSets >= 12 && thisWeek.totalSets > 0) {
+  if (prevWeek.totalSets >= 12 && thisWeek.totalSets >= 8) {
     const change = Math.round(
       ((thisWeek.totalSets - prevWeek.totalSets) / prevWeek.totalSets) * 100,
     )
@@ -553,9 +555,15 @@ export function computeInsights(data: AppData, reference: Date): Insight[] {
     })
   }
 
+  // Muscle balance — only meaningful once there's enough volume to compare;
+  // a single chest set vs a single back set isn't an "imbalance" worth a
+  // warning. The minimums below match the 1.8× chest/back and 30%-of-upper
+  // legs thresholds, set so a sparse hobbyist doesn't get scolded.
   const balance = computeMuscleBalance(workouts, reference)
-  if (balance.chest && balance.back) {
-    const ratio = balance.chest / balance.back
+  const chest = balance.chest ?? 0
+  const back = balance.back ?? 0
+  if (chest > 0 && back > 0 && chest + back >= 12) {
+    const ratio = chest / back
     if (ratio > 1.8) {
       out.push({
         id: 'imb-back',
@@ -570,9 +578,9 @@ export function computeInsights(data: AppData, reference: Date): Insight[] {
       })
     }
   }
-  const upper =
-    (balance.chest ?? 0) + (balance.back ?? 0) + (balance.shoulders ?? 0) + (balance.arms ?? 0)
-  if (balance.legs && upper > 0 && balance.legs / upper < 0.3) {
+  const upper = chest + back + (balance.shoulders ?? 0) + (balance.arms ?? 0)
+  const legs = balance.legs ?? 0
+  if (legs > 0 && upper > 0 && upper + legs >= 16 && legs / upper < 0.3) {
     out.push({
       id: 'imb-legs',
       tone: 'warning',

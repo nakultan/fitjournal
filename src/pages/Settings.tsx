@@ -3,8 +3,8 @@ import { Download, HeartPulse, SlidersHorizontal, Upload } from 'lucide-react'
 import { Button, Modal, PageHeader, Toggle, useToast } from '@/components'
 import { useStore } from '@/data/store-context'
 import { importData } from '@/data/storage'
-import { downloadBackup } from '@/lib/backup'
-import { parseHealthPayload } from '@/lib/healthBridge'
+import { downloadBackup, downloadCsv } from '@/lib/backup'
+import { LOG_WORKOUT_SHORTCUT_NAME, parseHealthPayload } from '@/lib/healthBridge'
 import type {
   AppData,
   DistanceUnit,
@@ -41,6 +41,11 @@ export function SettingsScreen() {
     downloadBackup(data)
     markBackedUp()
     showToast('Backup downloaded', 'success')
+  }
+
+  const exportCsv = (): void => {
+    downloadCsv(data)
+    showToast('CSV downloaded', 'success')
   }
 
   const handleImportFile = (file: File): void => {
@@ -219,13 +224,18 @@ export function SettingsScreen() {
           <div>
             <div className="fj-settings-row__label">Back up your data</div>
             <div className="fj-settings-row__desc">
-              Everything is stored only on this device. Download a backup file regularly so
-              nothing is lost.
+              Everything is stored only on this device. Download a JSON backup regularly so
+              nothing is lost — or a CSV for spreadsheet analysis.
             </div>
           </div>
-          <Button variant="secondary" onClick={exportBackup}>
-            <Download size={15} /> Export
-          </Button>
+          <div className="fj-row" style={{ gap: 'var(--space-2)' }}>
+            <Button variant="secondary" onClick={exportBackup}>
+              <Download size={15} /> JSON
+            </Button>
+            <Button variant="secondary" onClick={exportCsv}>
+              <Download size={15} /> CSV
+            </Button>
+          </div>
         </div>
         <div className="fj-settings-row">
           <div>
@@ -305,6 +315,45 @@ export function SettingsScreen() {
           </ol>
           <p className="fj-howto__note">
             Numbers only — anything non-numeric is silently dropped on import.
+          </p>
+        </details>
+        <details className="fj-howto">
+          <summary>How to log workouts back to Health</summary>
+          <p className="fj-howto__intro">
+            Optional companion. After tapping <em>Finish &amp; review workout</em>, a{' '}
+            <strong>Log to Health</strong> button appears on the summary — it opens
+            this Shortcut with the day&apos;s totals as JSON text.
+          </p>
+          <ol className="fj-howto__steps">
+            <li>
+              Create a new Shortcut and name it exactly{' '}
+              <code>{LOG_WORKOUT_SHORTCUT_NAME}</code>.
+            </li>
+            <li>
+              Add <strong>Get Dictionary from Input</strong> (Shortcut Input). Fields
+              available:
+              <span className="fj-howto__keys">
+                <code>date</code>
+                <code>exerciseCount</code>
+                <code>totalSets</code>
+                <code>totalVolume</code>
+                <code>weightUnit</code>
+                <code>cardioMinutes</code>
+                <code>bodyWeight</code>
+              </span>
+            </li>
+            <li>
+              Add <strong>Log Workout</strong> (HealthKit) — use{' '}
+              <code>cardioMinutes</code> for the duration and pick a workout type that
+              fits your training.
+            </li>
+            <li>
+              Optional: write a body-mass sample to Health when <code>bodyWeight</code>{' '}
+              is present.
+            </li>
+          </ol>
+          <p className="fj-howto__note">
+            The button only shows once you&apos;ve done at least one inbound sync.
           </p>
         </details>
         <div className="fj-settings-row">

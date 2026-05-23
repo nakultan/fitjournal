@@ -35,10 +35,14 @@ export interface StoreValue {
   // `restore*` re-insert a deleted entry at its original index (for undo);
   // `update*` replace an existing entry, matched by its id
   setBodyWeight: (dateKey: string, weight: number | null) => void
+  /** Set (or clear, via empty string) the day-level journal note. */
+  setDayNote: (dateKey: string, note: string) => void
   addExercise: (dateKey: string, entry: ExerciseEntry) => boolean
   updateExercise: (dateKey: string, entry: ExerciseEntry) => void
   deleteExercise: (dateKey: string, id: string) => void
   restoreExercise: (dateKey: string, entry: ExerciseEntry, index: number) => void
+  /** Move an exercise within the day by index. No-op for invalid indices. */
+  reorderExercise: (dateKey: string, fromIndex: number, toIndex: number) => void
   addCardio: (dateKey: string, entry: CardioEntry) => boolean
   updateCardio: (dateKey: string, entry: CardioEntry) => void
   deleteCardio: (dateKey: string, id: string) => void

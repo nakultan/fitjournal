@@ -42,6 +42,23 @@ Run `npm run preview`, open the app, and click through:
 - [ ] **Exercise detail** — Progress → Exercises → tap a strength row → the
       detail screen shows top-set & estimated-1RM trend lines and a session
       history; tapping a history row jumps to that day in Today
+- [ ] **Day note** — write a note on Today, navigate to another day and back;
+      the note persists; the Progress history row shows it inline; finishing
+      the workout shows it in the summary modal
+- [ ] **Reorder** — Today exercise rows and Plan template rows expose ▲/▼
+      buttons; clicks reorder without opening the row's edit modal; disabled
+      at the top/bottom of the list
+- [ ] **CSV export** — Settings → CSV downloads a `.csv` with one row per
+      logged set, cardio entry, body-weight reading and day note
+- [ ] **First-run welcome** — clear IndexedDB (or open in a fresh browser
+      profile) and reload; the welcome modal appears once with unit and
+      weekly-goal controls; Skip or Get started dismisses it for good
+- [ ] **Health weight prefill** — with a synced `bodyMass` and an empty
+      weight for the day, the Today weight banner shows a one-tap *Apple
+      Health · X · use* pill that fills it in
+- [ ] **Log to Health** — after at least one inbound Health sync, finishing
+      a workout shows a *Log to Health* button alongside *Done* that opens
+      `shortcuts://run-shortcut?name=FitJournalLogWorkout&…`
 - [ ] **Settings → Export** — downloads a backup file
 - [ ] **Settings → Import** — restoring shows the confirmation dialog and first
       downloads a snapshot of the current data

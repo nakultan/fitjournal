@@ -110,6 +110,19 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     setBodyWeight: (dateKey, weight) =>
       setData((d) => withWorkout(d, dateKey, (w) => ({ ...w, bodyWeight: weight }))),
 
+    setDayNote: (dateKey, note) =>
+      setData((d) =>
+        withWorkout(d, dateKey, (w) => {
+          const trimmed = note.trim()
+          if (!trimmed) {
+            const { note: _drop, ...rest } = w
+            void _drop
+            return rest
+          }
+          return { ...w, note: trimmed }
+        }),
+      ),
+
     addExercise: (dateKey, entry) => {
       const isPR = wouldBeStrengthPR(data.workouts, entry.name, topSetWeight(entry))
       setData((d) =>
@@ -136,6 +149,25 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
         withWorkout(d, dateKey, (w) => {
           const exercises = [...w.exercises]
           exercises.splice(Math.min(Math.max(index, 0), exercises.length), 0, entry)
+          return { ...w, exercises }
+        }),
+      ),
+    reorderExercise: (dateKey, fromIndex, toIndex) =>
+      setData((d) =>
+        withWorkout(d, dateKey, (w) => {
+          const last = w.exercises.length - 1
+          if (
+            fromIndex === toIndex ||
+            fromIndex < 0 ||
+            fromIndex > last ||
+            toIndex < 0 ||
+            toIndex > last
+          ) {
+            return w
+          }
+          const exercises = [...w.exercises]
+          const [moved] = exercises.splice(fromIndex, 1)
+          exercises.splice(toIndex, 0, moved)
           return { ...w, exercises }
         }),
       ),

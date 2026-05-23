@@ -69,6 +69,8 @@ export interface Workout {
   bodyWeight: number | null
   exercises: ExerciseEntry[]
   cardio: CardioEntry[]
+  /** Free-text day note — energy, sleep, soreness, mood. Optional. */
+  note?: string
 }
 
 /** A planned exercise inside a template or weekly plan (no weight/notes). */
@@ -130,6 +132,8 @@ export interface Preferences {
   theme: ThemePreference
   /** Default rest-timer length, in seconds, for the in-workout session. */
   restTimerSeconds?: number
+  /** True once the user has gone through the first-run welcome modal. */
+  firstRunDismissed?: boolean
 }
 
 /**

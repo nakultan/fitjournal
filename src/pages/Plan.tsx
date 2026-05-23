@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { CalendarRange, LayoutGrid, Plus, Trash2 } from 'lucide-react'
-import { Button, Card, ConfirmModal, Input, Modal, PageHeader, useToast } from '@/components'
+import {
+  Button,
+  Card,
+  ConfirmModal,
+  Input,
+  Modal,
+  PageHeader,
+  ReorderButtons,
+  useToast,
+} from '@/components'
 import { useStore } from '@/data/store-context'
 import { MUSCLE_GROUPS } from '@/data/constants'
 import { DAY_NAMES } from '@/lib/dates'
@@ -138,6 +147,15 @@ function TemplateModal({
   const updateRow = (i: number, patch: Partial<TemplateExercise>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
 
+  const moveRow = (from: number, to: number) =>
+    setRows((rs) => {
+      if (to < 0 || to >= rs.length) return rs
+      const next = [...rs]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+
   const save = () => {
     const trimmed = name.trim()
     if (!trimmed) {
@@ -202,6 +220,12 @@ function TemplateModal({
           <div className="fj-col" style={{ gap: 'var(--space-2)' }}>
             {rows.map((r, i) => (
               <div key={i} className="fj-row" style={{ gap: 'var(--space-2)', flexWrap: 'nowrap' }}>
+                <ReorderButtons
+                  canUp={i > 0}
+                  canDown={i < rows.length - 1}
+                  onUp={() => moveRow(i, i - 1)}
+                  onDown={() => moveRow(i, i + 1)}
+                />
                 <input
                   className="fj-input"
                   style={{ flex: 2 }}

@@ -576,4 +576,46 @@ describe('computeInsights', () => {
     const insights = computeInsights(appData(workouts(spec)), parseKey('2026-05-10'))
     expect(insights.some((i) => i.id === 'milestone')).toBe(true)
   })
+
+  it('does not flag a chest/back imbalance on sparse data', () => {
+    // Two sets of chest, one of back — a ratio that would fire without the
+    // minimum-volume gate (chest + back = 3, well under the 12-set floor).
+    const w = workouts({
+      '2026-05-20': {
+        ex: [
+          exAt('Bench', 50, { muscle: 'chest', sets: 2, reps: 10 }),
+          exAt('Row', 50, { muscle: 'back', sets: 1, reps: 10 }),
+        ],
+      },
+    })
+    const insights = computeInsights(appData(w), REF)
+    expect(insights.some((i) => i.id === 'imb-back' || i.id === 'imb-chest')).toBe(false)
+  })
+
+  it('flags a chest/back imbalance once enough volume is logged', () => {
+    // 10 chest sets vs 3 back sets — total 13 (over the 12-set floor) and
+    // 10/3 ≈ 3.33 (over the 1.8× threshold). The warning should fire.
+    const w = workouts({
+      '2026-05-19': {
+        ex: [exAt('Bench', 50, { muscle: 'chest', sets: 10, reps: 10 })],
+      },
+      '2026-05-20': {
+        ex: [exAt('Row', 50, { muscle: 'back', sets: 3, reps: 10 })],
+      },
+    })
+    const insights = computeInsights(appData(w), REF)
+    expect(insights.some((i) => i.id === 'imb-back')).toBe(true)
+  })
+
+  it('does not flag a weekly trend swing on a near-empty week', () => {
+    // Last week had 12 sets; this week has only 4 — without the new
+    // thisWeek >= 8 gate this would surface a "volume down 67%" warning
+    // that's just normal week-to-week variance on a hobbyist's schedule.
+    const w = workouts({
+      '2026-05-12': { ex: [exAt('A', 50, { sets: 12, reps: 8 })] },
+      '2026-05-19': { ex: [exAt('A', 50, { sets: 4, reps: 8 })] },
+    })
+    const insights = computeInsights(appData(w), REF)
+    expect(insights.some((i) => i.id === 'trend-down' || i.id === 'trend-up')).toBe(false)
+  })
 })

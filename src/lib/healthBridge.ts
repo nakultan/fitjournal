@@ -3,9 +3,13 @@
  * no web API — so the data arrives from an Apple Shortcut that reads Health
  * and opens FitJournal with a `?health=<json>` query parameter. This module
  * reads that parameter, and also parses a manually imported JSON file; both
- * go through the same validating parser.
+ * go through the same validating parser. The reverse direction —
+ * `buildLogWorkoutURL` — opens a companion "log workout" Shortcut.
  */
-import type { HealthData } from '@/data/types'
+import type { HealthData, WeightUnit } from '@/data/types'
+
+/** The companion-Shortcut name the user installs to write workouts to Health. */
+export const LOG_WORKOUT_SHORTCUT_NAME = 'FitJournalLogWorkout'
 
 /** A finite number, or undefined — rejects NaN, Infinity, strings, null. */
 function finiteNumber(value: unknown): number | undefined {
@@ -88,4 +92,30 @@ export function readHealthFromURL(): HealthData | null {
   } catch {
     return null
   }
+}
+
+/** The shape the log-workout Shortcut receives as JSON text input. */
+export interface WorkoutLogPayload {
+  date: string
+  exerciseCount: number
+  totalSets: number
+  /** Σ reps × weight, in the user's preferred weight unit. */
+  totalVolume: number
+  weightUnit: WeightUnit
+  cardioMinutes: number
+  /** Optional — sent only if the day has a logged body weight. */
+  bodyWeight?: number
+}
+
+/**
+ * Build the URL that opens the companion log-workout Shortcut, passing the
+ * day's summary as JSON text input. The Shortcut decides how to turn this
+ * into a HealthKit Workout sample. Returns the URL; the caller assigns it
+ * to `location.href`. Fails silently on devices without Shortcuts installed.
+ */
+export function buildLogWorkoutURL(payload: WorkoutLogPayload): string {
+  const json = JSON.stringify(payload)
+  return `shortcuts://run-shortcut?name=${encodeURIComponent(
+    LOG_WORKOUT_SHORTCUT_NAME,
+  )}&input=text&text=${encodeURIComponent(json)}`
 }

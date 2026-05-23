@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Dumbbell,
   Flame,
+  HeartPulse,
   Lightbulb,
   Moon,
   PlayCircle,
@@ -24,13 +25,16 @@ import {
   Chip,
   Confetti,
   ConfirmModal,
+  CountUp,
   EmptyState,
   Input,
   Modal,
   PageHeader,
   ProgressRing,
+  ReorderButtons,
   useToast,
 } from '@/components'
+import { buildLogWorkoutURL } from '@/lib/healthBridge'
 import { useStore } from '@/data/store-context'
 import { CARDIO_LABELS, CARDIO_TYPES, MUSCLE_GROUPS, cardioSpeedUnit } from '@/data/constants'
 import {
@@ -59,7 +63,8 @@ import { uid } from '@/lib/uid'
 import { celebrate, tap } from '@/lib/feedback'
 
 export function TodayScreen() {
-  const { data, viewingDateKey, setViewingDateKey, startSession } = useStore()
+  const { data, viewingDateKey, setViewingDateKey, startSession, reorderExercise } =
+    useStore()
   const [exerciseModal, setExerciseModal] = useState<ExerciseEntry | 'new' | null>(null)
   const [cardioEdit, setCardioEdit] = useState<CardioEntry | null>(null)
   const [summaryOpen, setSummaryOpen] = useState(false)
@@ -200,6 +205,12 @@ export function TodayScreen() {
                     </span>
                     <div className="fj-ex-row__sets">{formatSets(e.sets, weightUnit)}</div>
                   </div>
+                  <ReorderButtons
+                    canUp={idx > 0}
+                    canDown={idx < workout.exercises.length - 1}
+                    onUp={() => reorderExercise(viewingDateKey, idx, idx - 1)}
+                    onDown={() => reorderExercise(viewingDateKey, idx, idx + 1)}
+                  />
                   <DeleteButton dateKey={viewingDateKey} kind="exercise" entry={e} index={idx} />
                 </div>
               )
@@ -207,6 +218,8 @@ export function TodayScreen() {
           </div>
         )}
       </section>
+
+      <DayNoteSection key={viewingDateKey} dateKey={viewingDateKey} />
 
       {isToday && dayLogged && (
         <div className="fj-finish">
@@ -389,21 +402,24 @@ function TodayHub() {
 /* ---------- Workout summary ---------- */
 export function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string; onClose: () => void }) {
   const { data } = useStore()
+  const weightUnit = data.preferences.weightUnit
   const summary = useMemo(
     () =>
       computeSessionSummary(
         data.workouts,
         dk,
-        data.preferences.weightUnit,
+        weightUnit,
         data.preferences.distanceUnit,
       ),
-    [data.workouts, dk, data.preferences.weightUnit, data.preferences.distanceUnit],
+    [data.workouts, dk, weightUnit, data.preferences.distanceUnit],
   )
   const streak = useMemo(
     () => computeStreak(data.workouts, data.weeklyPlan, parseKey(dk)),
     [data.workouts, data.weeklyPlan, dk],
   )
   const total = useMemo(() => totalWorkoutsLogged(data.workouts), [data.workouts])
+  const dayWorkout = data.workouts[dk]
+  const note = dayWorkout?.note
   const hasPR = summary.prs.length > 0
   const milestone = WORKOUT_MILESTONES.includes(total)
   const bigMoment = hasPR || milestone
@@ -415,10 +431,36 @@ export function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string;
     else tap()
   }, [bigMoment])
 
+  const logToHealth = (): void => {
+    const url = buildLogWorkoutURL({
+      date: dk,
+      exerciseCount: summary.exerciseCount,
+      totalSets: summary.totalSets,
+      totalVolume: Math.round(summary.totalVolume),
+      weightUnit,
+      cardioMinutes: summary.cardioMinutes,
+      ...(dayWorkout?.bodyWeight != null ? { bodyWeight: dayWorkout.bodyWeight } : {}),
+    })
+    location.href = url
+  }
+
   return (
     <>
       {bigMoment && <Confetti count={72} />}
-      <Modal open onClose={onClose} footer={<Button onClick={onClose}>Done</Button>}>
+      <Modal
+        open
+        onClose={onClose}
+        footer={
+          <>
+            {data.health && (
+              <Button variant="secondary" onClick={logToHealth}>
+                <HeartPulse size={15} /> Log to Health
+              </Button>
+            )}
+            <Button onClick={onClose}>Done</Button>
+          </>
+        }
+      >
         <div className="fj-summary">
           <div className="fj-summary__check">
             <CheckCircle2 size={44} />
@@ -433,24 +475,30 @@ export function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string;
 
           <div className="fj-summary__stats">
             <div>
-              <span className="fj-summary__num">{summary.exerciseCount}</span>
+              <span className="fj-summary__num">
+                <CountUp value={summary.exerciseCount} />
+              </span>
               <span className="fj-summary__unit">exercises</span>
             </div>
             <div>
-              <span className="fj-summary__num">{summary.totalSets}</span>
+              <span className="fj-summary__num">
+                <CountUp value={summary.totalSets} />
+              </span>
               <span className="fj-summary__unit">sets</span>
             </div>
             {summary.totalVolume > 0 && (
               <div>
                 <span className="fj-summary__num">
-                  {Math.round(summary.totalVolume).toLocaleString()}
+                  <CountUp value={Math.round(summary.totalVolume)} />
                 </span>
-                <span className="fj-summary__unit">{data.preferences.weightUnit} volume</span>
+                <span className="fj-summary__unit">{weightUnit} volume</span>
               </div>
             )}
             {summary.cardioCount > 0 && (
               <div>
-                <span className="fj-summary__num">{summary.cardioMinutes}</span>
+                <span className="fj-summary__num">
+                  <CountUp value={summary.cardioMinutes} />
+                </span>
                 <span className="fj-summary__unit">min cardio</span>
               </div>
             )}
@@ -473,6 +521,13 @@ export function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string;
             </div>
           )}
 
+          {note && (
+            <blockquote className="fj-summary__note">
+              <StickyNote size={15} />
+              <span>{note}</span>
+            </blockquote>
+          )}
+
           {milestone && (
             <div className="fj-summary__milestone">
               🎉 That&apos;s your {total}th logged workout — a real milestone.
@@ -490,6 +545,11 @@ function WeightBanner({ dateKey: dk }: { dateKey: string }) {
   const workout = data.workouts[dk]
   const bw = workout?.bodyWeight ?? null
   const date = parseKey(dk)
+  const weightUnit = data.preferences.weightUnit
+  // Offer to prefill from the last Apple Health sync — only when the day has
+  // no logged weight and a synced body-mass value exists.
+  const healthWeight = data.health?.bodyMass
+  const showPrefill = bw == null && typeof healthWeight === 'number' && healthWeight > 0
 
   const diff = (daysAgo: number): number | null => {
     const other = data.workouts[dateKey(addDays(date, -daysAgo))]?.bodyWeight
@@ -524,8 +584,17 @@ function WeightBanner({ dateKey: dk }: { dateKey: string }) {
                 )
               }
             />
-            <span className="fj-muted">{data.preferences.weightUnit}</span>
+            <span className="fj-muted">{weightUnit}</span>
           </div>
+          {showPrefill && (
+            <button
+              type="button"
+              className="fj-prefill"
+              onClick={() => setBodyWeight(dk, healthWeight)}
+            >
+              <HeartPulse size={13} /> Apple Health · {healthWeight} {weightUnit} · use
+            </button>
+          )}
         </div>
       </div>
       <div className="fj-weight-compare">
@@ -540,14 +609,14 @@ function WeightBanner({ dateKey: dk }: { dateKey: string }) {
             >
               {c.value == null
                 ? '—'
-                : `${c.value > 0 ? '+' : ''}${c.value} ${data.preferences.weightUnit}`}
+                : `${c.value > 0 ? '+' : ''}${c.value} ${weightUnit}`}
             </div>
           </div>
         ))}
         <div className="fj-weight-compare__item">
           <div className="fj-weight-compare__label">Goal</div>
           <div className="fj-weight-compare__value">
-            {data.preferences.goalWeight} {data.preferences.weightUnit}
+            {data.preferences.goalWeight} {weightUnit}
           </div>
         </div>
       </div>
@@ -662,6 +731,43 @@ function CardioRow({
       </div>
       <DeleteButton dateKey={dk} kind="cardio" entry={entry} index={index} />
     </Card>
+  )
+}
+
+/* ---------- Day note ---------- */
+/**
+ * Keyed by `dateKey` at the call site so the textarea remounts (with fresh
+ * state) when the user navigates between days. That way each keystroke can
+ * stay local — the store only sees the final value on blur — without
+ * leaking one day's draft into another.
+ */
+function DayNoteSection({ dateKey: dk }: { dateKey: string }) {
+  const { data, setDayNote } = useStore()
+  const stored = data.workouts[dk]?.note ?? ''
+  const [draft, setDraft] = useState(stored)
+
+  return (
+    <section className="fj-section">
+      <div className="fj-section__head">
+        <h2 className="fj-section__title">
+          <StickyNote size={18} /> Day note
+          <span className="fj-muted" style={{ fontWeight: 400 }}>
+            · optional
+          </span>
+        </h2>
+      </div>
+      <textarea
+        className="fj-input"
+        rows={2}
+        style={{ resize: 'vertical', width: '100%' }}
+        placeholder="How did today feel? Energy, sleep, soreness…"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          if (draft.trim() !== stored) setDayNote(dk, draft)
+        }}
+      />
+    </section>
   )
 }
 
