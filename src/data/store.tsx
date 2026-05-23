@@ -5,6 +5,7 @@ import { StoreContext } from './store-context'
 import type { StoreValue } from './store-context'
 import { loadData, requestPersistentStorage, saveData } from './storage'
 import { cardioMetric, topSetWeight, wouldBeCardioPR, wouldBeStrengthPR } from './logic'
+import { readHealthFromURL } from '@/lib/healthBridge'
 import { navigateTo, useRoute } from '@/lib/router'
 import { uid } from '@/lib/uid'
 import { applyTheme } from '@/lib/theme'
@@ -35,7 +36,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     let cancelled = false
     void requestPersistentStorage()
     void loadData().then((loaded) => {
-      if (!cancelled) setInitialData(loaded)
+      if (cancelled) return
+      // A companion Apple Shortcut can hand Health data to the app via a
+      // `?health=` URL parameter; merge it into the loaded data on the very
+      // first paint so it lands in state without a follow-up render. The
+      // helper strips the parameter so a reload cannot replay a stale import.
+      const urlHealth = readHealthFromURL()
+      setInitialData(urlHealth ? { ...loaded, health: urlHealth } : loaded)
     })
     return () => {
       cancelled = true

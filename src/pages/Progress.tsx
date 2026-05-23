@@ -7,14 +7,21 @@ import {
   CheckCircle2,
   Dumbbell,
   Flame,
+  Footprints,
+  Heart,
+  HeartPulse,
   History,
   Lightbulb,
   LineChart,
+  MapPin,
+  Moon,
   Scale,
   Target,
+  Timer,
   TrendingUp,
   Trophy,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import {
   Button,
   Card,
@@ -44,7 +51,7 @@ import {
   isLoggedWorkout,
 } from '@/data/logic'
 import { CARDIO_LABELS } from '@/data/constants'
-import type { CardioType } from '@/data/types'
+import type { CardioType, HealthData, WeightUnit } from '@/data/types'
 import { cn } from '@/lib/cn'
 import { formatShort, parseKey } from '@/lib/dates'
 
@@ -64,6 +71,88 @@ type TabId = (typeof TABS)[number]['id']
 const RECORD_COLS = { gridTemplateColumns: '2fr 1fr 1fr 1.4fr' }
 const PAGE_SIZE = 30
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
+
+/**
+ * The eight numeric metrics the Apple Health bridge can carry. A formatter
+ * that does not need the weight unit just declares one parameter — JS allows
+ * a function with fewer params to satisfy a signature with more.
+ */
+const HEALTH_FIELDS: {
+  key:
+    | 'steps'
+    | 'activeEnergy'
+    | 'exerciseMinutes'
+    | 'distanceMi'
+    | 'flightsClimbed'
+    | 'restingHeartRate'
+    | 'sleepHours'
+    | 'bodyMass'
+  label: string
+  Icon: LucideIcon
+  color?: string
+  format: (n: number, weightUnit: WeightUnit) => string
+}[] = [
+  {
+    key: 'steps',
+    label: 'Steps',
+    Icon: Footprints,
+    color: 'var(--color-accent)',
+    format: (n) => Math.round(n).toLocaleString(),
+  },
+  {
+    key: 'activeEnergy',
+    label: 'Active energy',
+    Icon: Flame,
+    color: 'var(--color-warning)',
+    format: (n) => `${Math.round(n).toLocaleString()} cal`,
+  },
+  {
+    key: 'exerciseMinutes',
+    label: 'Exercise',
+    Icon: Timer,
+    color: 'var(--color-success)',
+    format: (n) => `${Math.round(n)} min`,
+  },
+  {
+    key: 'distanceMi',
+    label: 'Distance',
+    Icon: MapPin,
+    format: (n) => `${n} mi`,
+  },
+  {
+    key: 'flightsClimbed',
+    label: 'Flights',
+    Icon: TrendingUp,
+    format: (n) => String(Math.round(n)),
+  },
+  {
+    key: 'restingHeartRate',
+    label: 'Resting HR',
+    Icon: Heart,
+    color: 'var(--color-danger)',
+    format: (n) => `${Math.round(n)} bpm`,
+  },
+  {
+    key: 'sleepHours',
+    label: 'Sleep',
+    Icon: Moon,
+    format: (n) => `${n} h`,
+  },
+  {
+    key: 'bodyMass',
+    label: 'Body weight',
+    Icon: Scale,
+    format: (n, weightUnit) => `${n} ${weightUnit}`,
+  },
+]
+
+function pickHealthTiles(health: HealthData, weightUnit: WeightUnit) {
+  return HEALTH_FIELDS.flatMap((f) => {
+    const v = health[f.key]
+    if (typeof v !== 'number') return []
+    return [{ key: f.key, label: f.label, Icon: f.Icon, color: f.color, value: f.format(v, weightUnit) }]
+  })
+}
 
 /**
  * One retrospective screen — Overview, Exercises and History — replacing the
@@ -183,6 +272,8 @@ function OverviewSection() {
       )}
 
       <WeightTrendSection />
+
+      <HealthSection />
 
       <div className="fj-stat-grid" style={{ marginBottom: 'var(--space-6)' }}>
         <StatTile
@@ -363,6 +454,45 @@ function WeightTrendSection() {
           </div>
         </div>
         <Sparkline values={series.map((p) => p.avg)} />
+      </Card>
+    </section>
+  )
+}
+
+/* ---------- Apple Health card ---------- */
+/**
+ * Render whatever Apple Health metrics are present, in a single calm card.
+ * Renders nothing when no Health data has been synced.
+ */
+function HealthSection() {
+  const { data } = useStore()
+  const health = data.health
+  if (!health) return null
+  const tiles = pickHealthTiles(health, data.preferences.weightUnit)
+  if (tiles.length === 0) return null
+  return (
+    <section className="fj-section">
+      <div className="fj-section__head">
+        <h2 className="fj-section__title">
+          <HeartPulse size={18} /> Apple Health
+        </h2>
+      </div>
+      <Card>
+        <div className="fj-stat-grid">
+          {tiles.map((t) => (
+            <StatTile
+              key={t.key}
+              icon={<t.Icon size={22} color={t.color} />}
+              value={t.value}
+              label={t.label}
+            />
+          ))}
+        </div>
+        {health.importedAt && (
+          <p className="fj-muted" style={{ marginTop: 'var(--space-3)' }}>
+            Last synced {new Date(health.importedAt).toLocaleString()}
+          </p>
+        )}
       </Card>
     </section>
   )

@@ -23,9 +23,11 @@ on top of the full feature set and polish pass.
   balance), **Exercises** (strength & cardio personal records, per-exercise
   goals, a PR timeline), and a **History** heatmap with past workouts
 - **Plan** — build workout templates and assign them to a weekly schedule
-- **Recipes** — a searchable, taggable recipe collection
+- **Recipes** — a searchable, taggable recipe keeper with a photo per recipe
+  (downscaled), optional per-serving macros, a serving scaler, checkable
+  ingredients and a focused cook mode that keeps the screen awake
 - **Settings** — preferences (units, goals, a light/dark theme), backup export &
-  restore, and health-data (JSON) import
+  restore, and Apple Health sync via a Shortcut (with a JSON file as a fallback)
 
 ## Running it
 
@@ -56,6 +58,11 @@ npm run typecheck
   your current data, so a restore can be undone. The app nudges you to export
   when it has been a while, and warns you if a save to the device fails. There
   is still no cloud safety net, so keeping a recent export is wise.
+- **Apple Health sync:** the app is a pure PWA, so it can't read HealthKit
+  directly. A companion Apple Shortcut reads your Health data and hands it to
+  FitJournal via a `?health=` URL parameter — one tap, or a daily automation.
+  Settings → *Sync with Apple Health* has the setup steps; the synced metrics
+  show up on the Progress Overview.
 
 ## Project structure
 

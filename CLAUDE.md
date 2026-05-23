@@ -30,7 +30,11 @@ data/logic + data/storage  (derived logic; IndexedDB persistence)
 - **`data/types.ts`** — the entire data model. `AppData` is the single saved
   object; `SCHEMA_VERSION` is bumped for each schema change, paired with a
   migration step in `storage.ts`. An `ExerciseEntry` carries a `SetEntry[]` —
-  one entry per logged set, each with its own reps and weight.
+  one entry per logged set, each with its own reps and weight. A `Recipe`
+  carries an optional downscaled `photo` (JPEG data-URL) and an optional
+  per-serving `nutrition` block; `HealthData` carries the three original
+  metrics plus five optional ones (active energy, exercise minutes, resting
+  heart rate, body mass, sleep) handed in by the Apple Shortcut bridge.
 - **`data/storage.ts`** — `loadData()` / `saveData()` / `defaultData()` /
   `exportData()` / `importData()` / `requestPersistentStorage()`. The journal
   lives in **IndexedDB**, so `loadData()` / `saveData()` are async; `loadData()`
@@ -63,9 +67,14 @@ Components read state with `useStore()` and mutate only through store actions.
 `src/pages/` — one file per screen, each exporting a single `*Screen` component
 (`TodayScreen`, `ProgressScreen`, `PlanScreen`, `RecipesScreen`,
 `SettingsScreen`). `ProgressScreen` carries an Overview / Exercises / History
-segmented control — the merged home of the former Records and History screens.
-Modals and rows are local, unexported sub-components. `components/AppShell.tsx`
-maps the active `page` to its screen and renders the sidebar.
+segmented control — the merged home of the former Records and History screens;
+the Overview also renders an *Apple Health* card with whatever metrics have
+been synced. `RecipesScreen` is a premium recipe keeper — sort control, photo
+banner per card, a detail view with a hero photo, per-serving macros, a
+serving scaler, checkable ingredients, and a full-screen Cook mode that holds
+the screen awake. Modals and rows are local, unexported sub-components.
+`components/AppShell.tsx` maps the active `page` to its screen and renders the
+sidebar.
 
 ## Styling
 
@@ -106,6 +115,14 @@ maps the active `page` to its screen and renders the sidebar.
 - `lib/router.ts` is a tiny hash router — `useRoute()` reads `location.hash` and
   `navigateTo()` writes it; the store derives `page` and the viewed day from it,
   so the browser and Android back button work.
+- `lib/image.ts` exposes `downscaleImage(file)` — recipe photos are read,
+  resized so the longest edge ≤ 1280 px, and returned as a JPEG data-URL so the
+  on-device journal and JSON backup stay small.
+- `lib/healthBridge.ts` is the Apple Health bridge — `parseHealthPayload`
+  validates a JSON payload (every field a finite number; junk is dropped) and
+  `readHealthFromURL` consumes a `?health=<json>` query parameter on first
+  load, then `history.replaceState`s it away so a reload cannot replay a stale
+  import. The same parser is used by the manual JSON file import in Settings.
 
 ## Data safety
 
@@ -137,3 +154,10 @@ The three retrospective screens (Progress, Records, History) have since been
 merged into one Progress screen with an Overview / Exercises / History
 segmented control; navigation now runs on a hash router (`lib/router.ts`), and
 the Overview carries a body-weight trend chart.
+
+Recipes is now a premium keeper — photos, optional per-serving macros, a
+serving scaler that scales ingredient quantities with a leading number,
+checkable ingredients, a focused full-screen Cook mode, and a sort control.
+Apple Health is integrated via a Shortcut bridge (`lib/healthBridge.ts`): the
+app stays a pure PWA, an iPhone Shortcut reads HealthKit and opens FitJournal
+with `?health=<json>`, and the data lands on the Progress Overview.

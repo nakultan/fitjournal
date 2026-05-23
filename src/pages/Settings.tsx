@@ -1,43 +1,49 @@
 import { useRef, useState } from 'react'
-import {
-  Download,
-  Footprints,
-  HeartPulse,
-  MapPin,
-  SlidersHorizontal,
-  TrendingUp,
-  Upload,
-} from 'lucide-react'
-import { Button, Card, Modal, PageHeader, StatTile, Toggle, useToast } from '@/components'
+import { Download, HeartPulse, SlidersHorizontal, Upload } from 'lucide-react'
+import { Button, Modal, PageHeader, Toggle, useToast } from '@/components'
 import { useStore } from '@/data/store-context'
 import { importData } from '@/data/storage'
 import { downloadBackup } from '@/lib/backup'
+import { parseHealthPayload } from '@/lib/healthBridge'
 import type {
   AppData,
   DistanceUnit,
-  HealthData,
   Preferences,
   ThemePreference,
   WeightUnit,
 } from '@/data/types'
 
+/** The eight numeric keys a Shortcut can hand to the bridge. */
+const HEALTH_KEYS = [
+  'steps',
+  'distanceMi',
+  'flightsClimbed',
+  'activeEnergy',
+  'exerciseMinutes',
+  'restingHeartRate',
+  'bodyMass',
+  'sleepHours',
+]
+
 export function SettingsScreen() {
   const { data, savePreferences, setHealth, restoreData, markBackedUp } = useStore()
   const { showToast } = useToast()
-  const fileRef = useRef<HTMLInputElement>(null)
+  const healthFileRef = useRef<HTMLInputElement>(null)
   const importFileRef = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<{ data: AppData; fileName: string } | null>(null)
   const prefs = data.preferences
+  const health = data.health
 
-  const patch = (change: Partial<Preferences>) => savePreferences({ ...prefs, ...change })
+  const patch = (change: Partial<Preferences>): void =>
+    savePreferences({ ...prefs, ...change })
 
-  const exportBackup = () => {
+  const exportBackup = (): void => {
     downloadBackup(data)
     markBackedUp()
     showToast('Backup downloaded', 'success')
   }
 
-  const handleImportFile = (file: File) => {
+  const handleImportFile = (file: File): void => {
     const reader = new FileReader()
     reader.onload = () => {
       try {
@@ -49,7 +55,7 @@ export function SettingsScreen() {
     reader.readAsText(file)
   }
 
-  const confirmImport = () => {
+  const confirmImport = (): void => {
     if (!pending) return
     // Snapshot the current data to a file first, so a mistaken restore can
     // be undone — the overwrite is otherwise irreversible.
@@ -59,19 +65,17 @@ export function SettingsScreen() {
     showToast('Backup restored — your previous data was downloaded first', 'success')
   }
 
-  const importHealth = (file: File) => {
+  const importHealthFile = (file: File): void => {
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        const json = JSON.parse(String(reader.result)) as Record<string, unknown>
-        const health: HealthData = {
-          steps: typeof json.steps === 'number' ? json.steps : null,
-          distanceMi: typeof json.distance_mi === 'number' ? json.distance_mi : null,
-          flightsClimbed: typeof json.flights_climbed === 'number' ? json.flights_climbed : null,
-          importedAt: new Date().toISOString(),
-          fileName: file.name,
+        const parsed: unknown = JSON.parse(String(reader.result))
+        const parsedHealth = parseHealthPayload(parsed, file.name)
+        if (!parsedHealth) {
+          showToast('No health numbers found in that file', 'warning')
+          return
         }
-        setHealth(health)
+        setHealth(parsedHealth)
         showToast('Health data imported', 'success')
       } catch {
         showToast('Could not read that file — check the JSON', 'warning')
@@ -80,7 +84,9 @@ export function SettingsScreen() {
     reader.readAsText(file)
   }
 
-  const health = data.health
+  // The exact URL the companion Shortcut should open — works whether the app
+  // is loaded from production, an installed PWA, or a local preview build.
+  const appUrl = typeof location !== 'undefined' ? location.origin + location.pathname : '/'
 
   return (
     <div className="fj-screen">
@@ -249,60 +255,81 @@ export function SettingsScreen() {
       <div className="fj-settings-group">
         <div className="fj-settings-group__title">
           <HeartPulse size={12} style={{ verticalAlign: '-1px', marginRight: 6 }} />
-          Health data
+          Apple Health
         </div>
         <div className="fj-settings-row">
           <div>
-            <div className="fj-settings-row__label">Import health data</div>
+            <div className="fj-settings-row__label">Sync with Apple Health</div>
             <div className="fj-settings-row__desc">
-              Export Steps, Distance and Flights from an iPhone Shortcut to a JSON file, then
-              import it here.
+              FitJournal stays a pure web app, so it can't read Health directly. An
+              Apple Shortcut reads your Health data and hands it to FitJournal in one tap.
+            </div>
+            {health?.importedAt && (
+              <div
+                className="fj-settings-row__desc"
+                style={{ color: 'var(--color-success)', marginTop: 4 }}
+              >
+                Last synced {new Date(health.importedAt).toLocaleString()}
+              </div>
+            )}
+          </div>
+        </div>
+        <details className="fj-howto">
+          <summary>How to set up the sync</summary>
+          <ol className="fj-howto__steps">
+            <li>In the Shortcuts app on your iPhone, create a new Shortcut.</li>
+            <li>
+              For each metric you want, add a <strong>Get Health Sample</strong> action — Steps,
+              Walking + Running Distance, Flights Climbed, Active Energy, Exercise Minutes,
+              Resting Heart Rate, Weight, Sleep.
+            </li>
+            <li>
+              Add a <strong>Dictionary</strong> action. Add one key per metric, using these names:
+              <span className="fj-howto__keys">
+                {HEALTH_KEYS.map((k) => (
+                  <code key={k}>{k}</code>
+                ))}
+              </span>
+              Set each value to its sample. Every field is optional — include only what you want
+              to sync.
+            </li>
+            <li>
+              Pass the Dictionary through <strong>Get Text from Input</strong>, then{' '}
+              <strong>URL Encode</strong> the text.
+            </li>
+            <li>
+              Add <strong>Open URLs</strong> with{' '}
+              <code>{appUrl}?health=</code> followed by the encoded text.
+            </li>
+            <li>Run it from the Home Screen, the share sheet, or a daily automation.</li>
+          </ol>
+          <p className="fj-howto__note">
+            Numbers only — anything non-numeric is silently dropped on import.
+          </p>
+        </details>
+        <div className="fj-settings-row">
+          <div>
+            <div className="fj-settings-row__label">Import from a file instead</div>
+            <div className="fj-settings-row__desc">
+              No Shortcut? Import a JSON file with the same fields as a one-off.
             </div>
           </div>
-          <Button variant="secondary" onClick={() => fileRef.current?.click()}>
-            Import JSON
+          <Button variant="secondary" onClick={() => healthFileRef.current?.click()}>
+            <Upload size={15} /> Import JSON
           </Button>
           <input
-            ref={fileRef}
+            ref={healthFileRef}
             type="file"
             accept=".json,application/json"
             style={{ display: 'none' }}
             onChange={(e) => {
               const file = e.target.files?.[0]
-              if (file) importHealth(file)
+              if (file) importHealthFile(file)
               e.target.value = ''
             }}
           />
         </div>
       </div>
-
-      {health && (health.steps != null || health.distanceMi != null || health.flightsClimbed != null) && (
-        <Card style={{ marginBottom: 'var(--space-4)' }}>
-          <div className="fj-stat-grid">
-            <StatTile
-              icon={<Footprints size={22} color="var(--color-accent)" />}
-              value={health.steps != null ? health.steps.toLocaleString() : '—'}
-              label="Steps"
-            />
-            <StatTile
-              icon={<MapPin size={22} color="var(--color-success)" />}
-              value={health.distanceMi != null ? `${health.distanceMi} mi` : '—'}
-              label="Distance"
-            />
-            <StatTile
-              icon={<TrendingUp size={22} color="var(--color-warning)" />}
-              value={health.flightsClimbed != null ? health.flightsClimbed : '—'}
-              label="Flights climbed"
-            />
-          </div>
-          {health.importedAt && (
-            <p className="fj-muted" style={{ marginTop: 'var(--space-3)' }}>
-              Imported from {health.fileName ?? 'a file'} ·{' '}
-              {new Date(health.importedAt).toLocaleString()}
-            </p>
-          )}
-        </Card>
-      )}
 
       <p className="fj-muted" style={{ textAlign: 'center', marginTop: 'var(--space-6)' }}>
         FitJournal runs entirely on this device — no account, no servers, no internet required.

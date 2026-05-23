@@ -85,6 +85,14 @@ export interface PlanDay {
   exercises: TemplateExercise[]
 }
 
+/** Optional per-serving nutrition for a recipe — shown as information only. */
+export interface RecipeNutrition {
+  calories?: number
+  protein?: number
+  carbs?: number
+  fat?: number
+}
+
 export interface Recipe {
   id: string
   name: string
@@ -97,6 +105,10 @@ export interface Recipe {
   notes: string
   favorite: boolean
   createdAt: string
+  /** A downscaled JPEG data-URL (see lib/image.ts); absent when no photo. */
+  photo?: string
+  /** Per-serving nutrition; every field optional. */
+  nutrition?: RecipeNutrition
 }
 
 export interface Preferences {
@@ -111,10 +123,20 @@ export interface Preferences {
   theme: ThemePreference
 }
 
+/**
+ * A snapshot of Apple Health metrics. The first three fields predate the
+ * Shortcut bridge; the rest were added with it (see lib/healthBridge.ts). A
+ * field is absent when that metric was not part of the sync.
+ */
 export interface HealthData {
   steps: number | null
   distanceMi: number | null
   flightsClimbed: number | null
+  activeEnergy?: number
+  exerciseMinutes?: number
+  restingHeartRate?: number
+  bodyMass?: number
+  sleepHours?: number
   importedAt: string | null
   fileName: string | null
 }

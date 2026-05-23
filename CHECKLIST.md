@@ -25,7 +25,15 @@ Run `npm run preview`, open the app, and click through:
       stats, body-weight trend, PRs and heatmap reflecting what was just logged
 - [ ] **Plan** — create a template and assign it to a weekday; deleting a
       template asks for confirmation
-- [ ] **Recipes** — add a recipe; deleting one asks for confirmation
+- [ ] **Recipes** — add a recipe with a photo (it downscales) and optional
+      macros; the card shows the photo and macros; sort by name / favorites /
+      quickest re-orders the grid; deleting one asks for confirmation
+- [ ] **Recipe detail** — the scaler scales servings and ingredient quantities
+      (lines with a leading number); ingredient rows check off with strike-
+      through; Cook mode opens full-screen, arrow keys step, Escape exits
+- [ ] **Apple Health sync** — open the app with `?health={"steps":8000}` in
+      the URL; the parameter strips away and the Progress Overview shows an
+      Apple Health card with the metric
 - [ ] **Settings → Export** — downloads a backup file
 - [ ] **Settings → Import** — restoring shows the confirmation dialog and first
       downloads a snapshot of the current data
