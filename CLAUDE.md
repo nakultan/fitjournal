@@ -46,11 +46,13 @@ data/logic + data/storage  (derived logic; IndexedDB persistence)
   silent data loss can never look saved.
 - **`data/logic.ts`** — *pure* derived computations: PRs, streaks (rest-day-
   aware, with a one-day grace), weekly & total stats, week-goal progress,
-  session summaries, muscle
-  balance, plateaus, insights/milestones, the activity heatmap. **Nothing
-  derived is ever stored** — it is always recomputed from `workouts`. This file
-  and `storage.ts` have co-located `*.test.ts` suites (run with `npm test`);
-  being pure makes them straightforward to unit-test.
+  session summaries, muscle balance, plateaus, insights/milestones, the
+  activity heatmap, per-exercise history (`computeExerciseHistory`) with an
+  Epley 1RM estimate (`estimate1RM`), and the cross-cutting helpers
+  `findLastTime` / `formatSets`. **Nothing derived is ever stored** — it is
+  always recomputed from `workouts`. This file and `storage.ts` have co-located
+  `*.test.ts` suites (run with `npm test`); being pure makes them
+  straightforward to unit-test.
 - **`data/store.tsx`** — `StoreProvider` loads the journal (async — IndexedDB)
   and then mounts `StoreReady`, which holds `AppData` in React state, persists
   it on change (trailing-debounced ~400ms, and flushed immediately when the app
@@ -66,15 +68,24 @@ Components read state with `useStore()` and mutate only through store actions.
 
 `src/pages/` — one file per screen, each exporting a single `*Screen` component
 (`TodayScreen`, `ProgressScreen`, `PlanScreen`, `RecipesScreen`,
-`SettingsScreen`). `ProgressScreen` carries an Overview / Exercises / History
-segmented control — the merged home of the former Records and History screens;
-the Overview also renders an *Apple Health* card with whatever metrics have
-been synced. `RecipesScreen` is a premium recipe keeper — sort control, photo
-banner per card, a detail view with a hero photo, per-serving macros, a
-serving scaler, checkable ingredients, and a full-screen Cook mode that holds
-the screen awake. Modals and rows are local, unexported sub-components.
-`components/AppShell.tsx` maps the active `page` to its screen and renders the
-sidebar.
+`SettingsScreen`, plus two sub-pages: `SessionScreen` and
+`ExerciseDetailScreen`). `ProgressScreen` carries an Overview / Exercises /
+History segmented control — the merged home of the former Records and History
+screens; the Overview also renders an *Apple Health* card with whatever
+metrics have been synced, and the Exercises strength rows navigate to
+`ExerciseDetailScreen`. `RecipesScreen` is a premium recipe keeper — sort
+control, photo banner per card, a detail view with a hero photo, per-serving
+macros, a serving scaler, checkable ingredients, and a full-screen Cook mode
+that holds the screen awake. `SessionScreen` is the live in-workout view —
+checkable set rows per exercise, with a rest-timer pill that fires the
+`lib/feedback.ts` chime + haptic at zero; reached from the *Start* button on
+Today (or the *Session* chip in Weight Lifting) and shares `ExerciseModal` /
+`WorkoutSummaryModal` exported from `Today.tsx`. `ExerciseDetailScreen` shows
+the top-set and Epley 1RM trend plus the session history for one exercise.
+Modals and rows are local, unexported sub-components. `components/AppShell.tsx`
+maps the active `page` to its screen and renders the sidebar; the bottom nav
+still holds five items — Session and Exercise Detail are sub-pages reached by
+action, not from the nav.
 
 ## Styling
 
@@ -113,8 +124,11 @@ sidebar.
 - `lib/theme.ts` exposes `applyTheme()` — sets the `data-theme` attribute and a
   pre-paint localStorage hint that `index.html` reads to avoid a theme flash.
 - `lib/router.ts` is a tiny hash router — `useRoute()` reads `location.hash` and
-  `navigateTo()` writes it; the store derives `page` and the viewed day from it,
-  so the browser and Android back button work.
+  `navigateTo(page, date?, exerciseKey?)` writes it. The store derives `page`,
+  the viewed day, and the viewed exercise key from it, so the browser and
+  Android back button work. Routes: `#/today/<date>`, `#/progress`, `#/plan`,
+  `#/recipes`, `#/settings`, `#/session`, `#/exercise/<urlencoded-name>`. A
+  bare `#/exercise` with no key is rewritten to Progress.
 - `lib/image.ts` exposes `downscaleImage(file)` — recipe photos are read,
   resized so the longest edge ≤ 1280 px, and returned as a JPEG data-URL so the
   on-device journal and JSON backup stay small.
@@ -161,3 +175,10 @@ checkable ingredients, a focused full-screen Cook mode, and a sort control.
 Apple Health is integrated via a Shortcut bridge (`lib/healthBridge.ts`): the
 app stays a pure PWA, an iPhone Shortcut reads HealthKit and opens FitJournal
 with `?health=<json>`, and the data lands on the Progress Overview.
+
+A live in-workout **Session** view (`pages/Session.tsx`) renders today's
+exercises as checkable set rows; checking a set starts a rest-timer pill that
+chimes at zero. A new per-exercise **Detail** view (`pages/ExerciseDetail.tsx`)
+shows top-set weight and an Epley 1RM estimate as Sparklines, plus the full
+session history; reached by tapping any strength row in Progress → Exercises.
+`Preferences.restTimerSeconds` (default 120) drives the timer length.

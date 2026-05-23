@@ -1472,6 +1472,172 @@
 }
 
 /* ============================================================
+   Phase 4 — In-workout session & per-exercise progression
+   ============================================================ */
+
+/* ---- Session screen ---------------------------------------- */
+.fj-screen--session {
+  padding-bottom: calc(var(--space-8) * 2);
+}
+.fj-session-ex__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.fj-session-sets {
+  display: flex;
+  flex-direction: column;
+}
+.fj-session-set {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 0;
+  border-top: 1px solid var(--color-border-soft);
+}
+.fj-session-set:first-child,
+.fj-session-set--head {
+  border-top: none;
+}
+.fj-session-set--head {
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+.fj-session-set--head .fj-session-set__num,
+.fj-session-set--head .fj-session-set__col {
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-dim);
+}
+.fj-session-set__num {
+  text-align: center;
+  font: var(--text-caption);
+  color: var(--color-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.fj-session-set__col {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+.fj-session-set .fj-input {
+  text-align: center;
+}
+.fj-session-set--done {
+  opacity: 0.6;
+}
+
+/* The big check button — a real 44px touch target */
+.fj-session-check {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.fj-session-check:hover {
+  border-color: var(--color-accent);
+}
+.fj-session-check--done,
+.fj-session-check--done:hover {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-on-accent);
+}
+
+.fj-session-actions {
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* ---- Rest timer (floating bottom pill) -------------------- */
+.fj-rest-timer {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 14px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-modal);
+  color: var(--color-text);
+  z-index: 90;
+  max-width: calc(100vw - var(--space-5) * 2);
+  animation: fj-toast-in var(--dur) var(--ease);
+}
+.fj-rest-timer--done {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+}
+.fj-rest-timer > svg {
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+.fj-rest-timer--done > svg {
+  color: var(--color-success);
+}
+.fj-rest-timer__main {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 0;
+}
+.fj-rest-timer__label {
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-dim);
+}
+.fj-rest-timer--done .fj-rest-timer__label {
+  color: var(--color-success);
+}
+.fj-rest-timer__time {
+  font: var(--text-heading);
+  font-variant-numeric: tabular-nums;
+}
+.fj-rest-timer__btn {
+  border: none;
+  background: transparent;
+  color: var(--color-accent);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: background var(--dur-fast) var(--ease);
+}
+.fj-rest-timer__btn:hover {
+  background: var(--color-hover);
+}
+.fj-rest-timer__btn--close {
+  color: var(--color-text-dim);
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Exercise detail — session history grid --------------- */
+.fj-ex-history__row {
+  grid-template-columns: 1.2fr 1fr 1fr 1fr;
+}
+
+/* ============================================================
    Responsive — phone & narrow layout (≤768px)
    The desktop layout above is untouched; every rule here applies
    only when the viewport is narrow.
@@ -1566,5 +1732,10 @@
   .fj-ex-row {
     padding-left: var(--space-3);
     padding-right: var(--space-3);
+  }
+
+  /* The rest timer clears the fixed bottom nav. */
+  .fj-rest-timer {
+    bottom: calc(64px + env(safe-area-inset-bottom) + var(--space-2));
   }
 }

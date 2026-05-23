@@ -17,11 +17,15 @@ on top of the full feature set and polish pass.
 
 - **Today** — a hub showing your streak, weekly-goal progress and today's planned
   workout; log body weight, cardio, and exercises set by set (tap any entry to
-  edit it); finish with a session recap — and a celebration when you set a record
+  edit it); tap *Start* (or the *Session* chip) to enter an in-workout view with
+  checkable set rows and an automatic rest timer; finish with a session recap —
+  and a celebration when you set a record
 - **Progress** — one screen with three tabs: an **Overview** (streak, weekly
   recap, body-weight trend, 30-day stats, charts, automatic insights, muscle
   balance), **Exercises** (strength & cardio personal records, per-exercise
-  goals, a PR timeline), and a **History** heatmap with past workouts
+  goals, a PR timeline — tap any strength row to open its progression view with
+  top-set and estimated-1RM trend lines and the full session history), and a
+  **History** heatmap with past workouts
 - **Plan** — build workout templates and assign them to a weekly schedule
 - **Recipes** — a searchable, taggable recipe keeper with a photo per recipe
   (downscaled), optional per-serving macros, a serving scaler, checkable

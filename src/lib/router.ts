@@ -8,13 +8,23 @@ import { useSyncExternalStore } from 'react'
 import type { PageId } from '@/data/types'
 import { todayKey } from './dates'
 
-const PAGES: PageId[] = ['today', 'progress', 'plan', 'recipes', 'settings']
+const PAGES: PageId[] = [
+  'today',
+  'progress',
+  'plan',
+  'recipes',
+  'settings',
+  'session',
+  'exercise',
+]
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export interface Route {
   page: PageId
   /** The day the Today screen is viewing — always a valid YYYY-MM-DD key. */
   date: string
+  /** The exercise (lowercased name) the Exercise Detail screen is viewing. */
+  exerciseKey?: string
 }
 
 /** Parse a route from a hash string (defaults to the live `location.hash`). */
@@ -23,18 +33,36 @@ export function parseRoute(hash: string = location.hash): Route {
   let page: PageId = (PAGES as string[]).includes(seg) ? (seg as PageId) : 'today'
   // Retired screens — old links land on the merged Progress screen.
   if (seg === 'records' || seg === 'history') page = 'progress'
+
+  let exerciseKey: string | undefined
+  if (page === 'exercise') {
+    if (sub) {
+      try {
+        exerciseKey = decodeURIComponent(sub)
+      } catch {
+        exerciseKey = sub
+      }
+    }
+    // A bare `#/exercise` with no key sends the user back to Progress rather
+    // than rendering an unidentified detail page.
+    if (!exerciseKey) page = 'progress'
+  }
+
   const date = page === 'today' && DATE_RE.test(sub ?? '') ? sub : todayKey()
-  return { page, date }
+  return { page, date, exerciseKey }
 }
 
-function hashFor(page: PageId, date?: string): string {
+function hashFor(page: PageId, date?: string, exerciseKey?: string): string {
   if (page === 'today' && date && date !== todayKey()) return `#/today/${date}`
+  if (page === 'exercise' && exerciseKey) {
+    return `#/exercise/${encodeURIComponent(exerciseKey)}`
+  }
   return `#/${page}`
 }
 
 /** Navigate by updating the URL hash (adds a browser history entry). */
-export function navigateTo(page: PageId, date?: string): void {
-  const next = hashFor(page, date)
+export function navigateTo(page: PageId, date?: string, exerciseKey?: string): void {
+  const next = hashFor(page, date, exerciseKey)
   if (location.hash !== next) location.hash = next
 }
 

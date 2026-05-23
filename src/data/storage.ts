@@ -23,6 +23,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   dailyReminder: true,
   weeklySummary: true,
   theme: 'system',
+  restTimerSeconds: 120,
 }
 
 /** Push / Pull / Legs — a friendly starting point for a fresh install. */

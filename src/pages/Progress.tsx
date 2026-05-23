@@ -500,7 +500,7 @@ function HealthSection() {
 
 /* ---------- Exercises (records) ---------- */
 function ExercisesSection() {
-  const { data } = useStore()
+  const { data, viewExercise } = useStore()
   const [goalKey, setGoalKey] = useState<string | null>(null)
   const weightUnit = data.preferences.weightUnit
 
@@ -535,7 +535,21 @@ function ExercisesSection() {
               const goal = data.goals[k]
               const reached = goal != null && pr.weight >= goal
               return (
-                <div key={k} className="fj-table__row" style={RECORD_COLS}>
+                <div
+                  key={k}
+                  className="fj-table__row fj-table__row--clickable"
+                  style={RECORD_COLS}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open ${pr.name} progression`}
+                  onClick={() => viewExercise(k)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      viewExercise(k)
+                    }
+                  }}
+                >
                   <span className="fj-cell-name" style={{ textTransform: 'capitalize' }}>
                     {pr.name}
                   </span>
@@ -558,7 +572,10 @@ function ExercisesSection() {
                             : 'var(--color-accent)',
                       font: 'var(--text-caption)',
                     }}
-                    onClick={() => setGoalKey(k)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setGoalKey(k)
+                    }}
                   >
                     {goal == null
                       ? 'Set goal'

@@ -17,6 +17,8 @@ export interface StoreValue {
   data: AppData
   page: PageId
   viewingDateKey: string
+  /** The exercise the Exercise Detail screen is viewing, or undefined. */
+  viewingExerciseKey?: string
   /** True when the most recent write to device storage failed. */
   saveFailed: boolean
 
@@ -24,6 +26,10 @@ export interface StoreValue {
   navigate: (page: PageId) => void
   setViewingDateKey: (key: string) => void
   viewWorkoutDate: (key: string) => void
+  /** Enter the in-workout session screen for today. */
+  startSession: () => void
+  /** Open the per-exercise progression detail by lowercased name key. */
+  viewExercise: (key: string) => void
 
   // workouts — `addExercise` / `addCardio` return true if a PR was set;
   // `restore*` re-insert a deleted entry at its original index (for undo);

@@ -9,6 +9,7 @@ import type {
   DayName,
   DistanceUnit,
   ExerciseEntry,
+  SetEntry,
   WeightUnit,
   Workout,
 } from './types'
@@ -28,6 +29,32 @@ export function exerciseKey(name: string): string {
 /** An exercise's top-set weight — the heaviest single set it holds (0 if none). */
 export function topSetWeight(e: ExerciseEntry): number {
   return e.sets.reduce((max, s) => Math.max(max, s.weight), 0)
+}
+
+/** "185×5, 185×5, 205×3 lbs" — a compact summary of an exercise's logged sets. */
+export function formatSets(sets: SetEntry[], unit: string): string {
+  if (sets.length === 0) return 'No sets'
+  return `${sets.map((s) => `${s.weight}×${s.reps}`).join(', ')} ${unit}`
+}
+
+/**
+ * The most recent logged instance of `name`, on a day strictly before
+ * `beforeDateKey`. Used to show a "last time" hint when planning the next set.
+ */
+export function findLastTime(
+  workouts: Workouts,
+  name: string,
+  beforeDateKey: string,
+): { entry: ExerciseEntry; date: string } | null {
+  const key = exerciseKey(name)
+  if (key.length < 2) return null
+  for (const dk of Object.keys(workouts).sort().reverse()) {
+    if (dk >= beforeDateKey) continue
+    for (const e of workouts[dk].exercises) {
+      if (exerciseKey(e.name) === key) return { entry: e, date: dk }
+    }
+  }
+  return null
 }
 
 /**
@@ -376,6 +403,71 @@ export function computePlateaus(workouts: Workouts): Plateau[] {
     }
   }
   return plateaus
+}
+
+// ------------------------------------------- per-exercise progression -----
+
+/**
+ * Epley one-rep-max estimate from a sub-maximal set: `weight × (1 + reps/30)`.
+ * Special-cased to return the weight directly when reps is 1 — the lifter is
+ * already at their max — and to return zero for non-positive inputs.
+ */
+export function estimate1RM(weight: number, reps: number): number {
+  if (weight <= 0 || reps <= 0) return 0
+  if (reps === 1) return weight
+  return weight * (1 + reps / 30)
+}
+
+export interface ExerciseHistoryPoint {
+  date: string
+  /** The display name as it was logged on the day. */
+  name: string
+  /** Heaviest single set on the day. */
+  topSet: number
+  /** Reps in that top-set, used to estimate 1RM. */
+  topSetReps: number
+  /** Epley-estimated 1RM from the top-set. */
+  oneRm: number
+  /** Total volume across the session for this exercise (Σ reps × weight). */
+  volume: number
+  /** Number of logged sets that day. */
+  totalSets: number
+}
+
+/**
+ * Every logged session of a single exercise (matched case-insensitively),
+ * oldest first. Each point carries the top-set weight, that set's reps, the
+ * Epley 1RM estimate from it, and the total volume on the day.
+ */
+export function computeExerciseHistory(
+  workouts: Workouts,
+  key: string,
+): ExerciseHistoryPoint[] {
+  const k = exerciseKey(key)
+  if (!k) return []
+  const out: ExerciseHistoryPoint[] = []
+  for (const dk of Object.keys(workouts).sort()) {
+    for (const e of workouts[dk].exercises) {
+      if (exerciseKey(e.name) !== k) continue
+      const topEntry = e.sets.reduce<SetEntry | null>(
+        (best, s) => (!best || s.weight > best.weight ? s : best),
+        null,
+      )
+      const topSet = topEntry?.weight ?? 0
+      const topSetReps = topEntry?.reps ?? 0
+      const volume = e.sets.reduce((sum, s) => sum + s.reps * s.weight, 0)
+      out.push({
+        date: dk,
+        name: e.name,
+        topSet,
+        topSetReps,
+        oneRm: estimate1RM(topSet, topSetReps),
+        volume,
+        totalSets: e.sets.length,
+      })
+    }
+  }
+  return out
 }
 
 // ----------------------------------------------------------- insights -----

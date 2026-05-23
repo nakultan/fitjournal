@@ -41,6 +41,8 @@ import {
   computeStrengthPRs,
   computeWeekProgress,
   exerciseKey,
+  findLastTime,
+  formatSets,
   isLoggedWorkout,
   topSetWeight,
   totalWorkoutsLogged,
@@ -51,14 +53,13 @@ import type {
   ExerciseEntry,
   MuscleGroup,
   SetEntry,
-  Workout,
 } from '@/data/types'
 import { addDays, dateKey, dayNameOf, formatLong, formatShort, parseKey, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
 import { celebrate, tap } from '@/lib/feedback'
 
 export function TodayScreen() {
-  const { data, viewingDateKey, setViewingDateKey } = useStore()
+  const { data, viewingDateKey, setViewingDateKey, startSession } = useStore()
   const [exerciseModal, setExerciseModal] = useState<ExerciseEntry | 'new' | null>(null)
   const [cardioEdit, setCardioEdit] = useState<CardioEntry | null>(null)
   const [summaryOpen, setSummaryOpen] = useState(false)
@@ -138,9 +139,16 @@ export function TodayScreen() {
           <h2 className="fj-section__title">
             <Dumbbell size={18} /> Weight Lifting
           </h2>
-          <Button size="sm" onClick={() => setExerciseModal('new')}>
-            Add exercise
-          </Button>
+          <div className="fj-row" style={{ gap: 'var(--space-2)' }}>
+            {isToday && workout && workout.exercises.length > 0 && (
+              <Button size="sm" variant="secondary" onClick={() => startSession()}>
+                <PlayCircle size={15} /> Session
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setExerciseModal('new')}>
+              Add exercise
+            </Button>
+          </div>
         </div>
 
         {data.templates.length > 0 && (
@@ -234,7 +242,7 @@ export function TodayScreen() {
 
 /* ---------- Today hub ---------- */
 function TodayHub() {
-  const { data, navigate, loadPlanIntoDay } = useStore()
+  const { data, navigate, loadPlanIntoDay, startSession } = useStore()
   const { showToast } = useToast()
   const todayK = todayKey()
 
@@ -265,6 +273,7 @@ function TodayHub() {
   const startPlan = () => {
     loadPlanIntoDay(todayK, dayName)
     showToast(plan?.templateName ? `Loaded ${plan.templateName}` : "Loaded today's plan", 'success')
+    startSession()
   }
 
   return (
@@ -378,7 +387,7 @@ function TodayHub() {
 }
 
 /* ---------- Workout summary ---------- */
-function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string; onClose: () => void }) {
+export function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string; onClose: () => void }) {
   const { data } = useStore()
   const summary = useMemo(
     () =>
@@ -715,29 +724,6 @@ function TemplateChip({ templateId, dateKey: dk }: { templateId: string; dateKey
   )
 }
 
-/** The most recent logged instance of `name`, on a day before `dk`. */
-function findLastTime(
-  workouts: Record<string, Workout>,
-  name: string,
-  dk: string,
-): { entry: ExerciseEntry; date: string } | null {
-  const key = name.trim().toLowerCase()
-  if (key.length < 2) return null
-  for (const dk2 of Object.keys(workouts).sort().reverse()) {
-    if (dk2 >= dk) continue
-    for (const e of workouts[dk2].exercises) {
-      if (e.name.toLowerCase() === key) return { entry: e, date: dk2 }
-    }
-  }
-  return null
-}
-
-/** "185×5, 185×5, 205×3 lbs" — a compact summary of an exercise's logged sets. */
-function formatSets(sets: SetEntry[], unit: string): string {
-  if (sets.length === 0) return 'No sets'
-  return `${sets.map((s) => `${s.weight}×${s.reps}`).join(', ')} ${unit}`
-}
-
 type SetDraft = { reps: string; weight: string }
 
 /** Stored sets → editable string rows; always yields at least one row. */
@@ -750,7 +736,7 @@ function setsToDraft(sets: SetEntry[]): SetDraft[] {
 }
 
 /* ---------- Add / edit exercise modal ---------- */
-function ExerciseModal({
+export function ExerciseModal({
   dateKey: dk,
   editing,
   onClose,

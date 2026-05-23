@@ -5,6 +5,7 @@ import {
   WORKOUT_MILESTONES,
   computeBestDay,
   computeCardioPRs,
+  computeExerciseHistory,
   computeHeatmap,
   computeInsights,
   computeMuscleBalance,
@@ -17,7 +18,10 @@ import {
   computeWeekProgress,
   computeWeeklyStats,
   computeWeightSeries,
+  estimate1RM,
   exerciseKey,
+  findLastTime,
+  formatSets,
   isLoggedWorkout,
   totalWorkoutsLogged,
   wouldBeCardioPR,
@@ -174,6 +178,99 @@ describe('wouldBeStrengthPR / wouldBeCardioPR', () => {
     const w = workouts({ '2026-05-01': { cardio: [cardioAt()] } })
     expect(wouldBeCardioPR(w, 'treadmill', 4)).toBe(true)
     expect(wouldBeCardioPR(w, 'treadmill', 3)).toBe(false)
+  })
+})
+
+/* ------------------------------------------- set summary & last-time ----- */
+
+describe('formatSets', () => {
+  it('joins each set as weight×reps with the unit appended', () => {
+    expect(
+      formatSets(
+        [
+          { reps: 5, weight: 185 },
+          { reps: 5, weight: 205 },
+          { reps: 3, weight: 215 },
+        ],
+        'lbs',
+      ),
+    ).toBe('185×5, 205×5, 215×3 lbs')
+  })
+  it('is a friendly placeholder for no sets', () => {
+    expect(formatSets([], 'lbs')).toBe('No sets')
+  })
+})
+
+describe('findLastTime', () => {
+  it('returns the most recent prior session of an exercise (case-insensitive)', () => {
+    const w = workouts({
+      '2026-05-10': { ex: [exAt('Bench Press', 100)] },
+      '2026-05-12': { ex: [exAt('bench press', 110)] },
+      '2026-05-20': { ex: [exAt('Bench Press', 120)] },
+    })
+    const hit = findLastTime(w, 'Bench Press', '2026-05-20')
+    expect(hit?.date).toBe('2026-05-12')
+    expect(hit?.entry.sets[0].weight).toBe(110)
+  })
+  it('ignores entries on or after the cutoff day', () => {
+    const w = workouts({ '2026-05-20': { ex: [exAt('Bench', 100)] } })
+    expect(findLastTime(w, 'Bench', '2026-05-20')).toBeNull()
+  })
+  it('returns null for a name that has never been logged', () => {
+    expect(findLastTime({}, 'Squat', '2026-05-20')).toBeNull()
+  })
+})
+
+/* ------------------------------------------- estimated 1RM & history ----- */
+
+describe('estimate1RM', () => {
+  it('returns the weight unchanged for a single rep', () => {
+    expect(estimate1RM(225, 1)).toBe(225)
+  })
+  it('applies the Epley formula for higher reps', () => {
+    expect(estimate1RM(225, 5)).toBeCloseTo(225 * (1 + 5 / 30), 6)
+  })
+  it('is zero for non-positive inputs', () => {
+    expect(estimate1RM(0, 5)).toBe(0)
+    expect(estimate1RM(225, 0)).toBe(0)
+    expect(estimate1RM(-1, 5)).toBe(0)
+  })
+})
+
+describe('computeExerciseHistory', () => {
+  it('aggregates every prior session, oldest first, with top-set and 1RM', () => {
+    const w = workouts({
+      '2026-05-01': { ex: [exAt('Bench Press', 135, { sets: 1, reps: 10 })] },
+      '2026-05-02': {
+        ex: [
+          {
+            id: 'm',
+            name: 'bench press',
+            muscle: 'chest',
+            sets: [
+              { reps: 5, weight: 185 },
+              { reps: 5, weight: 205 },
+              { reps: 3, weight: 215 },
+            ],
+          },
+          exAt('Squat', 225, { muscle: 'legs' }),
+        ],
+      },
+    })
+    const hist = computeExerciseHistory(w, 'BENCH PRESS')
+    expect(hist).toHaveLength(2)
+    expect(hist[0].date).toBe('2026-05-01')
+    expect(hist[0].topSet).toBe(135)
+    expect(hist[1].topSet).toBe(215)
+    expect(hist[1].topSetReps).toBe(3)
+    expect(hist[1].oneRm).toBeCloseTo(215 * (1 + 3 / 30), 6)
+    expect(hist[1].volume).toBe(5 * 185 + 5 * 205 + 3 * 215)
+    expect(hist[1].totalSets).toBe(3)
+  })
+
+  it('returns an empty list for an unknown or empty key', () => {
+    expect(computeExerciseHistory({}, 'whatever')).toEqual([])
+    expect(computeExerciseHistory({}, '')).toEqual([])
   })
 })
 

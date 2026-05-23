@@ -30,7 +30,14 @@ export type RecipeTag =
   | 'quick'
   | 'vegetarian'
 
-export type PageId = 'today' | 'progress' | 'plan' | 'recipes' | 'settings'
+export type PageId =
+  | 'today'
+  | 'progress'
+  | 'plan'
+  | 'recipes'
+  | 'settings'
+  | 'session'
+  | 'exercise'
 
 /** One logged set — a number of reps at a given weight. */
 export interface SetEntry {
@@ -121,6 +128,8 @@ export interface Preferences {
   weeklySummary: boolean
   /** Colour theme: follow the OS, or force light / dark. */
   theme: ThemePreference
+  /** Default rest-timer length, in seconds, for the in-workout session. */
+  restTimerSeconds?: number
 }
 
 /**

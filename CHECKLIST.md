@@ -34,6 +34,14 @@ Run `npm run preview`, open the app, and click through:
 - [ ] **Apple Health sync** — open the app with `?health={"steps":8000}` in
       the URL; the parameter strips away and the Progress Overview shows an
       Apple Health card with the metric
+- [ ] **In-workout session** — tap *Start* on Today (or the *Session* chip in
+      Weight Lifting) → the live session opens; editing weight/reps writes
+      through to the log; tapping the check button starts the rest-timer pill;
+      *+15s* extends it, the chime fires at zero, and *Finish workout* opens
+      the summary then returns to Today
+- [ ] **Exercise detail** — Progress → Exercises → tap a strength row → the
+      detail screen shows top-set & estimated-1RM trend lines and a session
+      history; tapping a history row jumps to that day in Today
 - [ ] **Settings → Export** — downloads a backup file
 - [ ] **Settings → Import** — restoring shows the confirmation dialog and first
       downloads a snapshot of the current data

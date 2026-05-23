@@ -16,6 +16,8 @@ import { ProgressScreen } from '@/pages/Progress'
 import { PlanScreen } from '@/pages/Plan'
 import { RecipesScreen } from '@/pages/Recipes'
 import { SettingsScreen } from '@/pages/Settings'
+import { SessionScreen } from '@/pages/Session'
+import { ExerciseDetailScreen } from '@/pages/ExerciseDetail'
 
 const NAV: { id: PageId; label: string; Icon: LucideIcon }[] = [
   { id: 'today', label: 'Today', Icon: NotebookPen },
@@ -31,6 +33,8 @@ const SCREENS: Record<PageId, ComponentType> = {
   plan: PlanScreen,
   recipes: RecipesScreen,
   settings: SettingsScreen,
+  session: SessionScreen,
+  exercise: ExerciseDetailScreen,
 }
 
 export function AppShell() {

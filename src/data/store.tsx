@@ -98,11 +98,14 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     data,
     page: route.page,
     viewingDateKey: route.date,
+    viewingExerciseKey: route.exerciseKey,
     saveFailed,
 
     navigate: (page) => navigateTo(page),
     setViewingDateKey: (key) => navigateTo('today', key),
     viewWorkoutDate: (key) => navigateTo('today', key),
+    startSession: () => navigateTo('session'),
+    viewExercise: (key) => navigateTo('exercise', undefined, key),
 
     setBodyWeight: (dateKey, weight) =>
       setData((d) => withWorkout(d, dateKey, (w) => ({ ...w, bodyWeight: weight }))),
