@@ -38,6 +38,7 @@ import {
 } from '@/components'
 import { useStore } from '@/data/store-context'
 import {
+  WEIGHT_MAX,
   computeCardioPRs,
   computeHeatmap,
   computeInsights,
@@ -786,11 +787,19 @@ export function GoalModal({
         label={`Target weight (${data.preferences.weightUnit})`}
         type="number"
         inputMode="decimal"
+        min={0}
+        max={WEIGHT_MAX}
         placeholder="0"
         value={target}
         onChange={(e) => setTarget(e.target.value)}
+        aria-invalid={Number(target) > WEIGHT_MAX || undefined}
         autoFocus
       />
+      {Number(target) > WEIGHT_MAX && (
+        <div className="fj-input-warn" role="note" style={{ paddingLeft: 0 }}>
+          That&apos;s a lot of weight — double-check.
+        </div>
+      )}
     </Modal>
   )
 }

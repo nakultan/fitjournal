@@ -82,6 +82,10 @@ export function SettingsScreen() {
           ) : undefined
         }
       />
+      <div className="fj-settings-trust" role="note">
+        <Lock size={14} aria-hidden="true" />
+        <span>Everything stays on this device — no account, no servers.</span>
+      </div>
 
       {!section && <SettingsIndex onPick={(s) => viewSettings(s)} />}
       {section === 'preferences' && <PreferencesSection />}
@@ -261,8 +265,19 @@ function PreferencesSection() {
 }
 
 /* ---------- Data ---------- */
+function relativeTime(ms: number): string {
+  const diff = Math.max(0, Date.now() - ms)
+  if (diff < 60_000) return 'just now'
+  const mins = Math.round(diff / 60_000)
+  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`
+  const hours = Math.round(mins / 60)
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  const days = Math.round(hours / 24)
+  return `${days} day${days === 1 ? '' : 's'} ago`
+}
+
 function DataSection() {
-  const { data, restoreData, markBackedUp } = useStore()
+  const { data, restoreData, markBackedUp, lastSavedAt } = useStore()
   const { showToast } = useToast()
   const importFileRef = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<{ data: AppData; fileName: string } | null>(null)
@@ -340,6 +355,20 @@ function DataSection() {
             e.target.value = ''
           }}
         />
+      </div>
+
+      <div className="fj-settings-meta">
+        <span>
+          Auto-saved{' '}
+          {lastSavedAt > 0 ? relativeTime(lastSavedAt) : 'as you go'}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          Last backup{' '}
+          {data.lastBackupAt
+            ? relativeTime(new Date(data.lastBackupAt).getTime())
+            : 'never'}
+        </span>
       </div>
 
       {pending && (
@@ -550,6 +579,31 @@ function AboutSection() {
           </div>
         </div>
       </div>
+      <details className="fj-howto">
+        <summary>What&apos;s new</summary>
+        <ul className="fj-howto__steps">
+          <li>
+            Resume Session pill — pick a live workout back up from any screen.
+          </li>
+          <li>
+            Focused Today layout (Preferences) — collapses cardio, body weight, and
+            day note into add-row buttons until you need them.
+          </li>
+          <li>
+            Plan: tap a day to assign a template — no more stacked dropdowns.
+          </li>
+          <li>
+            Settings is grouped into cards with deep-link routes.
+          </li>
+          <li>
+            Recipes: launch Cook mode straight from the grid.
+          </li>
+          <li>
+            Quieter Progress Overview — charts and insights collapse behind a single
+            toggle so the top of the screen stays calm.
+          </li>
+        </ul>
+      </details>
     </div>
   )
 }

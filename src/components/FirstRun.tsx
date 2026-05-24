@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Minus, Plus } from 'lucide-react'
+import { Lock, Minus, Plus } from 'lucide-react'
 import { Button } from './Button'
 import { Chip } from './Chip'
 import { Modal } from './Modal'
@@ -45,10 +45,14 @@ export function FirstRun() {
         </>
       }
     >
-      <p style={{ marginBottom: 'var(--space-4)' }}>
+      <p style={{ marginBottom: 'var(--space-3)' }}>
         Two quick choices, then you&apos;re in. Both are changeable later in
         Settings.
       </p>
+      <div className="fj-settings-trust" role="note" style={{ marginBottom: 'var(--space-4)' }}>
+        <Lock size={14} aria-hidden="true" />
+        <span>Everything stays on this device — no account, no servers.</span>
+      </div>
       <div className="fj-field" style={{ marginBottom: 'var(--space-4)' }}>
         <label className="fj-field__label">Weights in</label>
         <div className="fj-row">

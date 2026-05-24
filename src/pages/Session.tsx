@@ -17,7 +17,7 @@ import {
   useToast,
 } from '@/components'
 import { useStore } from '@/data/store-context'
-import { findLastTime, formatSets } from '@/data/logic'
+import { findLastTime, formatSets, REPS_MAX, WEIGHT_MAX } from '@/data/logic'
 import type { ExerciseEntry, SetEntry } from '@/data/types'
 import { cn } from '@/lib/cn'
 import { formatLong, formatShort, parseKey, todayKey } from '@/lib/dates'
@@ -304,44 +304,61 @@ function SessionSetRow({
   onUpdate: (patch: Partial<SetEntry>) => void
   onToggle: () => void
 }) {
+  const weightOver = set.weight > WEIGHT_MAX
+  const repsOver = set.reps > REPS_MAX
   return (
     <div className={cn('fj-session-set', done && 'fj-session-set--done')}>
-      <span className="fj-session-set__num">{index + 1}</span>
-      <input
-        className="fj-input"
-        type="number"
-        min={0}
-        inputMode="decimal"
-        aria-label={`Set ${index + 1} weight (${weightUnit})`}
-        placeholder="0"
-        value={set.weight || ''}
-        onChange={(e) =>
-          onUpdate({ weight: Math.max(0, Number(e.target.value) || 0) })
-        }
-      />
-      <input
-        className="fj-input"
-        type="number"
-        min={0}
-        inputMode="numeric"
-        aria-label={`Set ${index + 1} reps`}
-        placeholder="0"
-        value={set.reps || ''}
-        onChange={(e) =>
-          onUpdate({ reps: Math.max(0, Math.round(Number(e.target.value) || 0)) })
-        }
-      />
-      <button
-        type="button"
-        className={cn('fj-session-check', done && 'fj-session-check--done')}
-        aria-label={
-          done ? `Set ${index + 1} done — tap to undo` : `Mark set ${index + 1} done`
-        }
-        aria-pressed={done}
-        onClick={onToggle}
-      >
-        {done && <CheckCircle2 size={20} />}
-      </button>
+      <div className="fj-session-set__row">
+        <span className="fj-session-set__num">{index + 1}</span>
+        <input
+          className="fj-input"
+          type="number"
+          min={0}
+          max={WEIGHT_MAX}
+          inputMode="decimal"
+          aria-label={`Set ${index + 1} weight (${weightUnit})`}
+          aria-invalid={weightOver || undefined}
+          placeholder="0"
+          value={set.weight || ''}
+          onChange={(e) =>
+            onUpdate({ weight: Math.max(0, Number(e.target.value) || 0) })
+          }
+        />
+        <input
+          className="fj-input"
+          type="number"
+          min={0}
+          max={REPS_MAX}
+          inputMode="numeric"
+          aria-label={`Set ${index + 1} reps`}
+          aria-invalid={repsOver || undefined}
+          placeholder="0"
+          value={set.reps || ''}
+          onChange={(e) =>
+            onUpdate({ reps: Math.max(0, Math.round(Number(e.target.value) || 0)) })
+          }
+        />
+        <button
+          type="button"
+          className={cn('fj-session-check', done && 'fj-session-check--done')}
+          aria-label={
+            done ? `Set ${index + 1} done — tap to undo` : `Mark set ${index + 1} done`
+          }
+          aria-pressed={done}
+          onClick={onToggle}
+        >
+          {done && <CheckCircle2 size={20} />}
+        </button>
+      </div>
+      {(weightOver || repsOver) && (
+        <div className="fj-input-warn" role="note">
+          {weightOver && repsOver
+            ? `That's a lot — double-check the weight and reps.`
+            : weightOver
+              ? `That's a lot of weight — double-check.`
+              : `That's a lot of reps — double-check.`}
+        </div>
+      )}
     </div>
   )
 }

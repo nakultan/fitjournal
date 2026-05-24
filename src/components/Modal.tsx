@@ -1,9 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { KeyboardEvent, ReactNode } from 'react'
-
-/** Elements inside the dialog that can receive keyboard focus. */
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+import type { MouseEvent as ReactMouseEvent, ReactNode, SyntheticEvent } from 'react'
 
 interface ModalProps {
   open: boolean
@@ -15,65 +11,57 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, footer }: ModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
 
-  // On open, move focus into the dialog; on close, return it where it was.
+  // Use the native dialog top-layer + focus trap by calling showModal/close.
+  // Capture the prior focus on open so we restore it on close — the browser
+  // restores focus to whatever fired the showing, but it can be wrong when the
+  // trigger has since unmounted (e.g. row-action menus).
   useEffect(() => {
     if (!open) return
     const dialog = dialogRef.current
+    if (!dialog) return
     const restoreTo = document.activeElement as HTMLElement | null
-    if (dialog && !dialog.contains(restoreTo)) {
-      const first = dialog.querySelector<HTMLElement>(FOCUSABLE)
-      ;(first ?? dialog).focus()
+    if (!dialog.open) dialog.showModal()
+    return () => {
+      if (dialog.open) dialog.close()
+      restoreTo?.focus?.()
     }
-    return () => restoreTo?.focus?.()
   }, [open])
 
   if (!open) return null
 
-  // Escape closes; Tab is trapped within the dialog. Handling this on the
-  // dialog (not window) means a stacked modal handles it first and stops it,
-  // so only the topmost dialog ever reacts.
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      e.stopPropagation()
-      onClose()
-      return
-    }
-    if (e.key !== 'Tab' || !dialogRef.current) return
-    e.stopPropagation()
-    const items = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)]
-    if (items.length === 0) {
-      e.preventDefault()
-      return
-    }
-    const first = items[0]
-    const last = items[items.length - 1]
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault()
-      last.focus()
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault()
-      first.focus()
-    }
+  // Backdrop click — the click lands on the <dialog> element itself when the
+  // user clicks outside the rendered box. Use the bounding rect to distinguish.
+  const onClick = (e: ReactMouseEvent<HTMLDialogElement>) => {
+    if (e.target !== dialogRef.current) return
+    const rect = dialogRef.current.getBoundingClientRect()
+    const inside =
+      rect.top <= e.clientY &&
+      e.clientY <= rect.bottom &&
+      rect.left <= e.clientX &&
+      e.clientX <= rect.right
+    if (!inside) onClose()
+  }
+
+  // The cancel event fires on Escape. Prevent the default (which would close
+  // the dialog without informing React) and route through our onClose.
+  const onCancel = (e: SyntheticEvent<HTMLDialogElement>) => {
+    e.preventDefault()
+    onClose()
   }
 
   return (
-    <div className="fj-modal-overlay" role="presentation" onClick={onClose}>
-      <div
-        className="fj-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        ref={dialogRef}
-        tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={onKeyDown}
-      >
-        {title && <h2 className="fj-modal__title">{title}</h2>}
-        <div className="fj-modal__body">{children}</div>
-        {footer && <div className="fj-modal__footer">{footer}</div>}
-      </div>
-    </div>
+    <dialog
+      ref={dialogRef}
+      className="fj-modal"
+      aria-label={title}
+      onClick={onClick}
+      onCancel={onCancel}
+    >
+      {title && <h2 className="fj-modal__title">{title}</h2>}
+      <div className="fj-modal__body">{children}</div>
+      {footer && <div className="fj-modal__footer">{footer}</div>}
+    </dialog>
   )
 }

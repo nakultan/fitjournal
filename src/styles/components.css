@@ -76,21 +76,10 @@
   padding: var(--space-5);
 }
 
-/* ---- Modal ------------------------------------------------- */
-.fj-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--color-overlay);
-  backdrop-filter: blur(16px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4);
-  z-index: 100;
-  animation: fj-overlay-in var(--dur) var(--ease);
-}
+/* ---- Modal (native <dialog>) ------------------------------- */
 .fj-modal {
   background: var(--color-surface);
+  color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
@@ -99,7 +88,15 @@
   max-width: 100%;
   max-height: 85vh;
   overflow-y: auto;
+  margin: auto;
+}
+.fj-modal[open] {
   animation: fj-modal-in var(--dur) var(--ease);
+}
+.fj-modal::backdrop {
+  background: var(--color-overlay);
+  backdrop-filter: blur(16px);
+  animation: fj-overlay-in var(--dur) var(--ease);
 }
 @keyframes fj-overlay-in {
   from {
@@ -171,6 +168,14 @@
 }
 .fj-input--error {
   border-color: var(--color-danger);
+}
+.fj-input[aria-invalid='true'] {
+  border-color: var(--color-warning);
+}
+.fj-input-warn {
+  font: var(--text-caption);
+  color: var(--color-warning);
+  padding: 2px 0 0 30px;
 }
 .fj-select {
   appearance: none;
@@ -659,17 +664,16 @@
    ============================================================ */
 @media (max-width: 768px) {
   /* Modals slide up from the bottom as sheets */
-  .fj-modal-overlay {
-    align-items: flex-end;
-    padding: 0;
-  }
   .fj-modal {
     width: 100%;
     max-width: 100%;
     max-height: 92vh;
+    margin: auto auto 0;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     border-bottom: none;
     padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  }
+  .fj-modal[open] {
     animation-name: fj-sheet-in;
   }
   @keyframes fj-sheet-in {

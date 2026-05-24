@@ -263,3 +263,28 @@ whose state persists in `localStorage` (P2.5). `RecipeCard` got a
 `.fj-recipe-card__cook` `<ChefHat>` button next to the favorite star (only when
 `recipe.steps.length > 0`) that launches Cook mode straight from the grid; the
 existing detail path still works (P2.6).
+
+P3 — the polish round — is shipped (2026-05-24), closing the audit. `Modal` is
+now a native `<dialog>` (`showModal()` / `close()`, `::backdrop` for the overlay,
+free focus trap + Escape via the `cancel` event, mobile sheet preserved via
+`margin: auto auto 0` + `fj-sheet-in` keyframe on `[open]`) — the manual focus
+trap and `.fj-modal-overlay` wrapper are gone (P3.1). `data/logic.ts` exports
+`WEIGHT_MAX = 2000` and `REPS_MAX = 200`; Session set rows, Today's
+`ExerciseModal` set rows, and Progress' `GoalModal` target weight all carry a
+`max` attribute + `aria-invalid` + a calm `.fj-input-warn` line ("That's a lot
+of weight — double-check.") when exceeded — never blocking, just a typo
+guardrail (P3.2). Settings → Your data now shows a `.fj-settings-meta` row
+with "Auto-saved [relative time] · Last backup [date / never]" using a
+`relativeTime()` helper (P3.3). A `<button className="fj-skip-link">` skip-to-content
+link sits as the first child of `.fj-app`; it focus-traps to
+`<main id="fj-main" tabIndex={-1}>` programmatically (button + `onClick`, not
+`href="#fj-main"` — the hash router would parse that as a route) and is hidden
+via `transform: translateY(-200%)` until `:focus` (P3.4). P3.5 (in-page Settings
+anchor nav) was deliberately dropped — P2.3 already shipped grouped Settings
+cards with deep-link routes, so the stopgap was redundant. Trust is reinforced
+with a `.fj-settings-trust` strip (lock icon + "Everything stays on this device
+— no account, no servers.") rendered under PageHeader on every Settings screen,
+and the same strip placed in `FirstRun` between the intro and the unit/goal
+fields (P3.6). Settings → About gained a discreet `<details className="fj-howto">`
+"What's new" expander reusing the existing how-to pattern; lists the recent
+user-visible additions (P3.7).

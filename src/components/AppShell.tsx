@@ -43,6 +43,13 @@ export function AppShell() {
 
   return (
     <div className="fj-app">
+      <button
+        type="button"
+        className="fj-skip-link"
+        onClick={() => document.getElementById('fj-main')?.focus()}
+      >
+        Skip to content
+      </button>
       <aside className="fj-sidebar">
         <div className="fj-sidebar__logo">
           <div className="fj-logo-mark">
@@ -63,7 +70,7 @@ export function AppShell() {
           ))}
         </nav>
       </aside>
-      <main className="fj-main">
+      <main className="fj-main" id="fj-main" tabIndex={-1}>
         <Screen />
       </main>
     </div>

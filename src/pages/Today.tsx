@@ -38,6 +38,8 @@ import { buildLogWorkoutURL } from '@/lib/healthBridge'
 import { useStore } from '@/data/store-context'
 import { CARDIO_LABELS, CARDIO_TYPES, MUSCLE_GROUPS, cardioSpeedUnit } from '@/data/constants'
 import {
+  REPS_MAX,
+  WEIGHT_MAX,
   WORKOUT_MILESTONES,
   computeInsights,
   computeSessionSummary,
@@ -1041,48 +1043,72 @@ export function ExerciseModal({
           <div className="fj-field">
             <label className="fj-field__label">Sets</label>
             <div className="fj-col" style={{ gap: 'var(--space-2)' }}>
-              {rows.map((r, i) => (
-                <div key={i} className="fj-row" style={{ gap: 'var(--space-2)', flexWrap: 'nowrap' }}>
-                  <span
-                    className="fj-muted"
-                    style={{ width: 18, textAlign: 'center', flexShrink: 0 }}
-                  >
-                    {i + 1}
-                  </span>
-                  <input
-                    className="fj-input"
-                    style={{ flex: 1, minWidth: 0 }}
-                    type="number"
-                    min={0}
-                    inputMode="decimal"
-                    placeholder={`Weight (${weightUnit})`}
-                    aria-label={`Set ${i + 1} weight`}
-                    value={r.weight}
-                    onChange={(e) => updateRow(i, { weight: e.target.value })}
-                  />
-                  <input
-                    className="fj-input"
-                    style={{ flex: 1, minWidth: 0 }}
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    placeholder="Reps"
-                    aria-label={`Set ${i + 1} reps`}
-                    value={r.reps}
-                    onChange={(e) => updateRow(i, { reps: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    className="fj-icon-btn fj-icon-btn--danger"
-                    aria-label={`Remove set ${i + 1}`}
-                    disabled={rows.length === 1}
-                    style={rows.length === 1 ? { opacity: 0.3 } : undefined}
-                    onClick={() => removeRow(i)}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
+              {rows.map((r, i) => {
+                const weightNum = Number(r.weight)
+                const repsNum = Number(r.reps)
+                const weightOver = Number.isFinite(weightNum) && weightNum > WEIGHT_MAX
+                const repsOver = Number.isFinite(repsNum) && repsNum > REPS_MAX
+                return (
+                  <div key={i} className="fj-col" style={{ gap: 'var(--space-1)' }}>
+                    <div
+                      className="fj-row"
+                      style={{ gap: 'var(--space-2)', flexWrap: 'nowrap' }}
+                    >
+                      <span
+                        className="fj-muted"
+                        style={{ width: 18, textAlign: 'center', flexShrink: 0 }}
+                      >
+                        {i + 1}
+                      </span>
+                      <input
+                        className="fj-input"
+                        style={{ flex: 1, minWidth: 0 }}
+                        type="number"
+                        min={0}
+                        max={WEIGHT_MAX}
+                        inputMode="decimal"
+                        placeholder={`Weight (${weightUnit})`}
+                        aria-label={`Set ${i + 1} weight`}
+                        aria-invalid={weightOver || undefined}
+                        value={r.weight}
+                        onChange={(e) => updateRow(i, { weight: e.target.value })}
+                      />
+                      <input
+                        className="fj-input"
+                        style={{ flex: 1, minWidth: 0 }}
+                        type="number"
+                        min={0}
+                        max={REPS_MAX}
+                        inputMode="numeric"
+                        placeholder="Reps"
+                        aria-label={`Set ${i + 1} reps`}
+                        aria-invalid={repsOver || undefined}
+                        value={r.reps}
+                        onChange={(e) => updateRow(i, { reps: e.target.value })}
+                      />
+                      <button
+                        type="button"
+                        className="fj-icon-btn fj-icon-btn--danger"
+                        aria-label={`Remove set ${i + 1}`}
+                        disabled={rows.length === 1}
+                        style={rows.length === 1 ? { opacity: 0.3 } : undefined}
+                        onClick={() => removeRow(i)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    {(weightOver || repsOver) && (
+                      <div className="fj-input-warn" role="note" style={{ paddingLeft: 28 }}>
+                        {weightOver && repsOver
+                          ? `That's a lot — double-check the weight and reps.`
+                          : weightOver
+                            ? `That's a lot of weight — double-check.`
+                            : `That's a lot of reps — double-check.`}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
             <Button
               variant="ghost"

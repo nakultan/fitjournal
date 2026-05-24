@@ -21,6 +21,11 @@ type WeeklyPlan = AppData['weeklyPlan']
 
 const DAY_MS = 86_400_000
 
+/** Soft input ceilings. Inputs accept higher values but surface a calm
+ *  "looks unusual" warning — typo guardrail, not a hard limit. */
+export const WEIGHT_MAX = 2000
+export const REPS_MAX = 200
+
 /** Lowercased exercise name — the key PRs and goals are tracked by. */
 export function exerciseKey(name: string): string {
   return name.trim().toLowerCase()
