@@ -9,6 +9,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  min-height: 44px;
   border: none;
   border-radius: var(--radius-pill);
   font-weight: 600;
@@ -79,7 +80,7 @@
 .fj-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--color-overlay);
   backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
@@ -208,7 +209,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--color-on-accent);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   transition: transform var(--dur) var(--ease);
 }
@@ -274,6 +275,12 @@
   animation-timing-function: linear;
   animation-fill-mode: forwards;
 }
+.fj-confetti__piece--c0 { background: var(--color-accent); }
+.fj-confetti__piece--c1 { background: var(--color-success); }
+.fj-confetti__piece--c2 { background: var(--color-warning); }
+.fj-confetti__piece--c3 { background: var(--color-danger); }
+.fj-confetti__piece--c4 { background: var(--color-confetti-purple); }
+.fj-confetti__piece--c5 { background: var(--color-confetti-yellow); }
 @keyframes fj-confetti-fall {
   0% {
     transform: translate(0, 0) rotate(0deg);
@@ -560,10 +567,7 @@
     }
   }
 
-  /* Comfortable, ≥44px tap targets on touch (WCAG 2.5.5) */
-  .fj-btn {
-    min-height: 44px;
-  }
+  /* Comfortable tap targets on touch — sm gets extra breathing room */
   .fj-btn--sm {
     padding: 9px 14px;
   }

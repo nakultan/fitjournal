@@ -133,7 +133,7 @@ function TemplateModal({
   templateId: string | null
   onClose: () => void
 }) {
-  const { data, saveTemplate, deleteTemplate } = useStore()
+  const { data, saveTemplate, deleteTemplate, restoreTemplate } = useStore()
   const { showToast } = useToast()
   const existing = templateId ? (data.templates.find((t) => t.id === templateId) ?? null) : null
 
@@ -176,10 +176,16 @@ function TemplateModal({
 
   const remove = () => {
     if (existing) {
+      const index = data.templates.findIndex((t) => t.id === existing.id)
       deleteTemplate(existing.id)
-      showToast('Template deleted')
+      onClose()
+      showToast('Template deleted', 'default', {
+        label: 'Undo',
+        onAction: () => restoreTemplate(existing, index),
+      })
+    } else {
+      onClose()
     }
-    onClose()
   }
 
   return (

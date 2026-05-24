@@ -54,6 +54,7 @@ export interface StoreValue {
   // templates
   saveTemplate: (template: Template) => void
   deleteTemplate: (id: string) => void
+  restoreTemplate: (template: Template, index: number) => void
 
   // weekly plan
   assignPlanDay: (day: DayName, templateId: string | null) => void
@@ -63,6 +64,7 @@ export interface StoreValue {
   // recipes
   saveRecipe: (recipe: Recipe) => void
   deleteRecipe: (id: string) => void
+  restoreRecipe: (recipe: Recipe, index: number) => void
   toggleRecipeFavorite: (id: string) => void
 
   // goals

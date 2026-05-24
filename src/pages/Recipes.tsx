@@ -529,7 +529,7 @@ function RecipeDetail({
   onClose: () => void
   onEdit: (id: string) => void
 }) {
-  const { data, deleteRecipe } = useStore()
+  const { data, deleteRecipe, restoreRecipe } = useStore()
   const { showToast } = useToast()
   const recipe = data.recipes.find((x) => x.id === recipeId)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -709,9 +709,13 @@ function RecipeDetail({
           title="Delete this recipe?"
           message={`"${r.name}" and its ingredients, steps and notes will be permanently removed.`}
           onConfirm={() => {
+            const index = data.recipes.findIndex((x) => x.id === r.id)
             deleteRecipe(r.id)
-            showToast('Recipe deleted')
             onClose()
+            showToast('Recipe deleted', 'default', {
+              label: 'Undo',
+              onAction: () => restoreRecipe(r, index),
+            })
           }}
           onCancel={() => setConfirmingDelete(false)}
         />

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 
-const COLORS = ['#0a84ff', '#30d158', '#ff9f0a', '#ff453a', '#bf5af2', '#ffd60a']
+const COLOR_COUNT = 6
 
 interface Piece {
   id: number
@@ -28,7 +28,6 @@ export function Confetti({ count = 46 }: { count?: number }) {
               left: `${Math.random() * 100}%`,
               width: size,
               height: size * 0.42,
-              background: COLORS[i % COLORS.length],
               animationDelay: `${Math.random() * 0.5}s`,
               animationDuration: `${2 + Math.random() * 1.6}s`,
               '--fj-drift': `${(Math.random() - 0.5) * 140}px`,
@@ -46,7 +45,11 @@ export function Confetti({ count = 46 }: { count?: number }) {
   return (
     <div className="fj-confetti" aria-hidden="true">
       {pieces.map((p) => (
-        <span key={p.id} className="fj-confetti__piece" style={p.style} />
+        <span
+          key={p.id}
+          className={`fj-confetti__piece fj-confetti__piece--c${p.id % COLOR_COUNT}`}
+          style={p.style}
+        />
       ))}
     </div>
   )

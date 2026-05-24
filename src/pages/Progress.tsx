@@ -717,9 +717,13 @@ function GoalModal({
     onClose()
   }
   const clear = () => {
+    const oldTarget = data.goals[exerciseKey]
     removeGoal(exerciseKey)
-    showToast('Goal removed')
     onClose()
+    showToast('Goal removed', 'default', {
+      label: 'Undo',
+      onAction: () => oldTarget != null && setGoal(exerciseKey, oldTarget),
+    })
   }
 
   return (

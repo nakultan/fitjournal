@@ -87,6 +87,16 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-modal: 0 24px 80px rgba(0, 0, 0, 0.6);
 
+  /* ---- Brand (theme-independent) ---- */
+  /* Second stop of the logo gradient — always vibrant regardless of theme. */
+  --color-brand-2: #5e5ce6;
+  /* Scrim behind modals — always dark regardless of theme. */
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  /* Confetti extended palette — accent/success/warning/danger cover 4 of 6;
+     these two cover the remaining slots. */
+  --color-confetti-purple: #bf5af2;
+  --color-confetti-yellow: #ffd60a;
+
   /* Tells the browser/native UI this is a dark interface. */
   color-scheme: dark;
 }

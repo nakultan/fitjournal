@@ -30,11 +30,11 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-brand-2));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-on-accent);
   flex-shrink: 0;
 }
 .fj-logo-text {
@@ -1650,8 +1650,8 @@
   flex-shrink: 0;
 }
 .fj-reorder__btn {
-  width: 32px;
-  height: 22px;
+  width: 44px;
+  height: 32px;
   border: none;
   background: transparent;
   color: var(--color-text-dim);

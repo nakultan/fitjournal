@@ -244,6 +244,12 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
       }),
     deleteTemplate: (id) =>
       setData((d) => ({ ...d, templates: d.templates.filter((t) => t.id !== id) })),
+    restoreTemplate: (template, index) =>
+      setData((d) => {
+        const templates = [...d.templates]
+        templates.splice(Math.min(Math.max(index, 0), templates.length), 0, template)
+        return { ...d, templates }
+      }),
 
     assignPlanDay: (day, templateId) =>
       setData((d) => {
@@ -300,6 +306,12 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
       }),
     deleteRecipe: (id) =>
       setData((d) => ({ ...d, recipes: d.recipes.filter((r) => r.id !== id) })),
+    restoreRecipe: (recipe, index) =>
+      setData((d) => {
+        const recipes = [...d.recipes]
+        recipes.splice(Math.min(Math.max(index, 0), recipes.length), 0, recipe)
+        return { ...d, recipes }
+      }),
     toggleRecipeFavorite: (id) =>
       setData((d) => ({
         ...d,
