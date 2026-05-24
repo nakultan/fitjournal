@@ -59,6 +59,10 @@ data/logic + data/storage  (derived logic; IndexedDB persistence)
   is hidden or closed), and exposes typed actions that do immutable updates.
   The current `page` and viewed day come from the URL hash via `lib/router.ts`;
   the store also tracks `saveFailed` — true when the most recent persist failed.
+  Undo-capable delete actions: `restoreExercise` / `restoreCardio` (Today),
+  `restoreTemplate` (Plan), `restoreRecipe` (Recipes) — each re-inserts the
+  deleted entry at its original index; `removeGoal` undo uses the existing
+  `setGoal` action, capturing the old value in a closure before deletion.
 - **`data/store-context.ts`** — `StoreContext`, the `useStore()` hook, and the
   `StoreValue` interface.
 
@@ -91,6 +95,11 @@ action, not from the nav.
 
 - **Design tokens** live in `styles/tokens.css` (colour, spacing, type, radius,
   motion). **Never hardcode raw colours/sizes** — always use a `var(--…)` token.
+  Theme-independent tokens (in `:root` only, not duplicated in light-theme
+  blocks): `--color-brand-2` (#5e5ce6, logo gradient second stop),
+  `--color-overlay` (rgba scrim behind modals), `--color-confetti-purple` and
+  `--color-confetti-yellow` (extended confetti palette slots 4–5; slots 0–3 use
+  the existing accent/success/warning/danger tokens).
 - **Theming:** `tokens.css` carries a dark palette (the default) and a light
   palette. The theme follows the OS `prefers-color-scheme` unless an explicit
   `<html data-theme="light|dark">` overrides it — set by `lib/theme.ts` from the
@@ -98,6 +107,11 @@ action, not from the nav.
   setting.
 - `styles/components.css` styles the design-system components; `styles/app.css`
   styles the shell and screens. Every class is prefixed `fj-`.
+  Touch targets: all `.fj-btn` carry `min-height: 44px` globally (not just in
+  the mobile breakpoint). Reorder buttons (`.fj-reorder__btn`) are 44 × 32 px,
+  clearing WCAG 2.2 SC 2.5.8. The session set-check (`.fj-session-check`) is
+  44 × 44 px. Confetti piece colours are assigned via CSS classes
+  (`.fj-confetti__piece--c0` … `--c5`) referencing tokens, not inline JS styles.
 - Icons are **Lucide** (`lucide-react`). Emoji are reserved for celebratory
   moments only.
 - **Responsive:** a single `@media (max-width: 768px)` block at the end of
@@ -201,5 +215,12 @@ Shortcut with the day's totals; an *Apple Health · use* pill on the Today
 weight banner that one-tap-fills the day's body weight from the last sync.
 
 The post-strategy-review roadmap is complete — every Critical, Important and
-Nice-to-have item from the review is shipped to production. There is no
-active build queue.
+Nice-to-have item from the review is shipped to production.
+
+A UX audit (2026-05-23, commit 83c5514) applied Nielsen, Hick, Fitts,
+cognitive load, progressive disclosure, Jakob, WCAG 2.2, and behavioral
+reinforcement lenses across all 7 screens, producing a 29-item P0–P3
+backlog tracked at `../UX-AUDIT.md`. P0 is shipped: reorder button touch
+targets fixed (WCAG 2.5.8), Undo toasts extended to template/recipe/goal
+deletes, four hardcoded-colour escapes resolved to tokens, and
+`min-height: 44px` globalised on `.fj-btn`.
