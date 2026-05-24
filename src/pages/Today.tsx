@@ -77,6 +77,12 @@ export function TodayScreen() {
   const isToday = viewingDateKey === todayKey()
   const dayLogged = isLoggedWorkout(workout)
   const weightUnit = data.preferences.weightUnit
+  const isFocused = data.preferences.todayLayout === 'focused'
+  // In focused mode the cardio form stays hidden even when entries already exist —
+  // tapping "+ Add cardio" reveals it. In classic mode it auto-expands once cardio
+  // is logged, matching the original Phase-1 behavior.
+  const cardioFormVisible =
+    cardioExpanded || (!isFocused && !!workout && workout.cardio.length > 0)
 
   const shiftDate = (days: number) => setViewingDateKey(dateKey(addDays(date, days)))
 
@@ -116,22 +122,20 @@ export function TodayScreen() {
 
       {isToday && <TodayHub />}
 
-      <WeightBanner dateKey={viewingDateKey} />
+      <WeightBanner dateKey={viewingDateKey} focused={isFocused} />
 
       <section className="fj-section">
         <div className="fj-section__head">
           <h2 className="fj-section__title">
             <Activity size={18} /> Cardio
           </h2>
-          {!(workout && workout.cardio.length > 0) && !cardioExpanded && (
+          {!cardioFormVisible && (
             <Button size="sm" variant="secondary" onClick={() => setCardioExpanded(true)}>
               <Plus size={14} /> Add cardio
             </Button>
           )}
         </div>
-        {(cardioExpanded || (workout && workout.cardio.length > 0)) && (
-          <CardioForm dateKey={viewingDateKey} />
-        )}
+        {cardioFormVisible && <CardioForm dateKey={viewingDateKey} />}
         {workout && workout.cardio.length > 0 && (
           <div className="fj-col" style={{ marginTop: 'var(--space-3)' }}>
             {workout.cardio.map((c, idx) => (
@@ -245,7 +249,7 @@ export function TodayScreen() {
         )}
       </section>
 
-      <DayNoteSection key={viewingDateKey} dateKey={viewingDateKey} />
+      <DayNoteSection key={viewingDateKey} dateKey={viewingDateKey} focused={isFocused} />
 
       {isToday && dayLogged && (
         <div className="fj-finish">
@@ -566,8 +570,9 @@ export function WorkoutSummaryModal({ dateKey: dk, onClose }: { dateKey: string;
 }
 
 /* ---------- Body weight ---------- */
-function WeightBanner({ dateKey: dk }: { dateKey: string }) {
+function WeightBanner({ dateKey: dk, focused }: { dateKey: string; focused: boolean }) {
   const { data, setBodyWeight } = useStore()
+  const [expanded, setExpanded] = useState(false)
   const workout = data.workouts[dk]
   const bw = workout?.bodyWeight ?? null
   const date = parseKey(dk)
@@ -576,6 +581,23 @@ function WeightBanner({ dateKey: dk }: { dateKey: string }) {
   // no logged weight and a synced body-mass value exists.
   const healthWeight = data.health?.bodyMass
   const showPrefill = bw == null && typeof healthWeight === 'number' && healthWeight > 0
+
+  // Focused mode collapses the banner to a tappable affordance when the day
+  // has nothing to show — no logged weight, no Health prefill on offer.
+  const isCollapsed = focused && !expanded && bw == null && !showPrefill
+  if (isCollapsed) {
+    return (
+      <button
+        type="button"
+        className="fj-add-row"
+        onClick={() => setExpanded(true)}
+        style={{ marginBottom: 'var(--space-6)' }}
+      >
+        <Scale size={16} />
+        <span>+ Body weight</span>
+      </button>
+    )
+  }
 
   const diff = (daysAgo: number): number | null => {
     const other = data.workouts[dateKey(addDays(date, -daysAgo))]?.bodyWeight
@@ -767,10 +789,28 @@ function CardioRow({
  * stay local — the store only sees the final value on blur — without
  * leaking one day's draft into another.
  */
-function DayNoteSection({ dateKey: dk }: { dateKey: string }) {
+function DayNoteSection({ dateKey: dk, focused }: { dateKey: string; focused: boolean }) {
   const { data, setDayNote } = useStore()
   const stored = data.workouts[dk]?.note ?? ''
   const [draft, setDraft] = useState(stored)
+  const [expanded, setExpanded] = useState(false)
+
+  // Focused mode hides the textarea until the user opts in (or a note exists).
+  const isCollapsed = focused && !expanded && stored === ''
+  if (isCollapsed) {
+    return (
+      <section className="fj-section">
+        <button
+          type="button"
+          className="fj-add-row"
+          onClick={() => setExpanded(true)}
+        >
+          <StickyNote size={16} />
+          <span>+ Day note</span>
+        </button>
+      </section>
+    )
+  }
 
   return (
     <section className="fj-section">

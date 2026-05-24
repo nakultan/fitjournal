@@ -100,6 +100,8 @@ export function RecipesScreen() {
   const [sort, setSort] = useState<SortId>('recent')
   const [editing, setEditing] = useState<{ id: string | null } | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [cookingId, setCookingId] = useState<string | null>(null)
+  const cookingRecipe = cookingId ? data.recipes.find((r) => r.id === cookingId) : null
 
   const toggleFilter = (tag: string): void =>
     setFilters((prev) => {
@@ -184,7 +186,12 @@ export function RecipesScreen() {
       {visible.length > 0 ? (
         <div className="fj-card-grid">
           {visible.map((r) => (
-            <RecipeCard key={r.id} recipe={r} onOpen={() => setDetailId(r.id)} />
+            <RecipeCard
+              key={r.id}
+              recipe={r}
+              onOpen={() => setDetailId(r.id)}
+              onCook={() => setCookingId(r.id)}
+            />
           ))}
         </div>
       ) : (
@@ -224,15 +231,32 @@ export function RecipesScreen() {
           }}
         />
       )}
+      {cookingRecipe && (
+        <CookMode
+          key={cookingRecipe.id}
+          recipeName={cookingRecipe.name}
+          steps={cookingRecipe.steps}
+          onClose={() => setCookingId(null)}
+        />
+      )}
     </div>
   )
 }
 
-function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) {
+function RecipeCard({
+  recipe,
+  onOpen,
+  onCook,
+}: {
+  recipe: Recipe
+  onOpen: () => void
+  onCook: () => void
+}) {
   const { toggleRecipeFavorite } = useStore()
   const totalTime = recipe.prepTime + recipe.cookTime
   const calories = recipe.nutrition?.calories
   const protein = recipe.nutrition?.protein
+  const hasSteps = recipe.steps.length > 0
   return (
     <Card padded={false} className="fj-recipe-card" onClick={onOpen}>
       <div className="fj-recipe-card__photo">
@@ -245,17 +269,31 @@ function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) 
       <div className="fj-recipe-card__body">
         <div className="fj-recipe-card__head">
           <span className="fj-recipe-card__title">{recipe.name}</span>
-          <button
-            className={cn('fj-fav-btn', recipe.favorite && 'fj-fav-btn--on')}
-            aria-label="Toggle favorite"
-            aria-pressed={recipe.favorite}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleRecipeFavorite(recipe.id)
-            }}
-          >
-            <Star size={18} fill={recipe.favorite ? 'currentColor' : 'none'} />
-          </button>
+          <div className="fj-recipe-card__actions">
+            {hasSteps && (
+              <button
+                className="fj-recipe-card__cook"
+                aria-label={`Start cook mode — ${recipe.name}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onCook()
+                }}
+              >
+                <ChefHat size={16} />
+              </button>
+            )}
+            <button
+              className={cn('fj-fav-btn', recipe.favorite && 'fj-fav-btn--on')}
+              aria-label="Toggle favorite"
+              aria-pressed={recipe.favorite}
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleRecipeFavorite(recipe.id)
+              }}
+            >
+              <Star size={18} fill={recipe.favorite ? 'currentColor' : 'none'} />
+            </button>
+          </div>
         </div>
         {recipe.tags.length > 0 && (
           <div className="fj-tag-row">

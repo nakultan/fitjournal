@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
   AlertTriangle,
   BarChart3,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Dumbbell,
   Flame,
   Footprints,
@@ -187,9 +188,20 @@ export function ProgressScreen() {
   )
 }
 
+const OVERVIEW_EXPAND_KEY = 'fj-overview-expanded'
+
 /* ---------- Overview ---------- */
 function OverviewSection() {
   const { data } = useStore()
+  const [showDetails, setShowDetails] = useState<boolean>(() => {
+    if (typeof localStorage === 'undefined') return false
+    return localStorage.getItem(OVERVIEW_EXPAND_KEY) === '1'
+  })
+
+  useEffect(() => {
+    if (typeof localStorage === 'undefined') return
+    localStorage.setItem(OVERVIEW_EXPAND_KEY, showDetails ? '1' : '0')
+  }, [showDetails])
 
   const { streak, week, stats, weekly, insights, balance } = useMemo(() => {
     const now = new Date()
@@ -299,6 +311,16 @@ function OverviewSection() {
         />
       </div>
 
+      {!showDetails && (
+        <div className="fj-overview-more">
+          <Button variant="secondary" onClick={() => setShowDetails(true)}>
+            <ChevronDown size={16} /> Show charts, insights & muscle balance
+          </Button>
+        </div>
+      )}
+
+      {showDetails && (
+      <>
       <section className="fj-section">
         <div className="fj-section__head">
           <h2 className="fj-section__title">
@@ -391,6 +413,8 @@ function OverviewSection() {
           />
         )}
       </section>
+      </>
+      )}
     </>
   )
 }

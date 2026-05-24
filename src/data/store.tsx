@@ -106,6 +106,7 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     page: route.page,
     viewingDateKey: route.date,
     viewingExerciseKey: route.exerciseKey,
+    viewingSettingsSection: route.settingsSection,
     saveFailed,
     lastSavedAt,
 
@@ -114,6 +115,7 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     viewWorkoutDate: (key) => navigateTo('today', key),
     startSession: () => navigateTo('session'),
     viewExercise: (key) => navigateTo('exercise', undefined, key),
+    viewSettings: (section) => navigateTo('settings', undefined, undefined, section ?? undefined),
 
     setBodyWeight: (dateKey, weight) =>
       setData((d) => withWorkout(d, dateKey, (w) => ({ ...w, bodyWeight: weight }))),

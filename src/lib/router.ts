@@ -19,12 +19,18 @@ const PAGES: PageId[] = [
 ]
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
+/** Sub-sections of the Settings screen, addressable by hash route. */
+export type SettingsSection = 'preferences' | 'data' | 'health' | 'about'
+const SETTINGS_SECTIONS: SettingsSection[] = ['preferences', 'data', 'health', 'about']
+
 export interface Route {
   page: PageId
   /** The day the Today screen is viewing — always a valid YYYY-MM-DD key. */
   date: string
   /** The exercise (lowercased name) the Exercise Detail screen is viewing. */
   exerciseKey?: string
+  /** When on Settings, the active sub-section; absent on the cards index. */
+  settingsSection?: SettingsSection
 }
 
 /** Parse a route from a hash string (defaults to the live `location.hash`). */
@@ -48,21 +54,37 @@ export function parseRoute(hash: string = location.hash): Route {
     if (!exerciseKey) page = 'progress'
   }
 
+  let settingsSection: SettingsSection | undefined
+  if (page === 'settings' && sub && (SETTINGS_SECTIONS as string[]).includes(sub)) {
+    settingsSection = sub as SettingsSection
+  }
+
   const date = page === 'today' && DATE_RE.test(sub ?? '') ? sub : todayKey()
-  return { page, date, exerciseKey }
+  return { page, date, exerciseKey, settingsSection }
 }
 
-function hashFor(page: PageId, date?: string, exerciseKey?: string): string {
+function hashFor(
+  page: PageId,
+  date?: string,
+  exerciseKey?: string,
+  settingsSection?: SettingsSection,
+): string {
   if (page === 'today' && date && date !== todayKey()) return `#/today/${date}`
   if (page === 'exercise' && exerciseKey) {
     return `#/exercise/${encodeURIComponent(exerciseKey)}`
   }
+  if (page === 'settings' && settingsSection) return `#/settings/${settingsSection}`
   return `#/${page}`
 }
 
 /** Navigate by updating the URL hash (adds a browser history entry). */
-export function navigateTo(page: PageId, date?: string, exerciseKey?: string): void {
-  const next = hashFor(page, date, exerciseKey)
+export function navigateTo(
+  page: PageId,
+  date?: string,
+  exerciseKey?: string,
+  settingsSection?: SettingsSection,
+): void {
+  const next = hashFor(page, date, exerciseKey, settingsSection)
   if (location.hash !== next) location.hash = next
 }
 

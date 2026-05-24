@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarRange, LayoutGrid, Plus, Trash2 } from 'lucide-react'
+import { CalendarRange, Check, LayoutGrid, Moon, Pencil, Plus, Trash2 } from 'lucide-react'
 import {
   Button,
   Card,
@@ -15,16 +15,12 @@ import { useStore } from '@/data/store-context'
 import { MUSCLE_GROUPS } from '@/data/constants'
 import { DAY_NAMES } from '@/lib/dates'
 import { uid } from '@/lib/uid'
-import type { MuscleGroup, TemplateExercise } from '@/data/types'
+import type { DayName, MuscleGroup, TemplateExercise } from '@/data/types'
 
 export function PlanScreen() {
   const { data, assignPlanDay, removePlanExercise } = useStore()
   const [templateModal, setTemplateModal] = useState<{ id: string | null } | null>(null)
-
-  const dayOptions = [
-    { value: '', label: 'Rest day' },
-    ...data.templates.map((t) => ({ value: t.id, label: t.name })),
-  ]
+  const [assigning, setAssigning] = useState<DayName | null>(null)
 
   return (
     <div className="fj-screen">
@@ -82,24 +78,24 @@ export function PlanScreen() {
         </div>
         {DAY_NAMES.map((day) => {
           const plan = data.weeklyPlan[day]
+          const label = plan?.templateName ?? 'Rest day'
+          const isRest = !plan
           return (
-            <div key={day} className="fj-plan-day">
-              <div className="fj-plan-day__head">
+            <Card key={day} padded={false} className="fj-plan-day">
+              <button
+                type="button"
+                className="fj-plan-day__head"
+                onClick={() => setAssigning(day)}
+                aria-label={`${day} — currently ${label}. Tap to change.`}
+              >
                 <span className="fj-plan-day__name">{day}</span>
-                <select
-                  className="fj-select"
-                  style={{ width: 184 }}
-                  value={plan?.templateId ?? ''}
-                  onChange={(e) => assignPlanDay(day, e.target.value || null)}
-                >
-                  {dayOptions.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {plan && plan.exercises.length > 0 ? (
+                <span className={'fj-plan-day__assign' + (isRest ? ' fj-plan-day__assign--rest' : '')}>
+                  {isRest ? <Moon size={14} aria-hidden="true" /> : null}
+                  <span className="fj-plan-day__assign-text">{label}</span>
+                  <Pencil size={14} aria-hidden="true" className="fj-plan-day__pencil" />
+                </span>
+              </button>
+              {plan && plan.exercises.length > 0 && (
                 <div className="fj-plan-day__body">
                   {plan.exercises.map((e, i) => (
                     <div key={i} className="fj-plan-ex">
@@ -117,10 +113,8 @@ export function PlanScreen() {
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="fj-plan-rest">Rest day</div>
               )}
-            </div>
+            </Card>
           )
         })}
       </section>
@@ -132,7 +126,68 @@ export function PlanScreen() {
           onClose={() => setTemplateModal(null)}
         />
       )}
+      {assigning && (
+        <AssignDaySheet
+          day={assigning}
+          currentTemplateId={data.weeklyPlan[assigning]?.templateId ?? null}
+          onPick={(templateId) => {
+            assignPlanDay(assigning, templateId)
+            setAssigning(null)
+          }}
+          onClose={() => setAssigning(null)}
+        />
+      )}
     </div>
+  )
+}
+
+/**
+ * Bottom-sheet picker for assigning a template (or rest) to a weekday. On
+ * mobile this avoids the iOS native select picker — the heaviest
+ * interaction in the old design — in favor of a quick tappable list.
+ */
+function AssignDaySheet({
+  day,
+  currentTemplateId,
+  onPick,
+  onClose,
+}: {
+  day: DayName
+  currentTemplateId: string | null
+  onPick: (templateId: string | null) => void
+  onClose: () => void
+}) {
+  const { data } = useStore()
+  const choices: { id: string | null; label: string; sub: string }[] = [
+    { id: null, label: 'Rest day', sub: 'No workout planned' },
+    ...data.templates.map((t) => ({
+      id: t.id,
+      label: t.name,
+      sub: t.subtitle || `${t.exercises.length} exercise${t.exercises.length === 1 ? '' : 's'}`,
+    })),
+  ]
+  return (
+    <Modal open onClose={onClose} title={`Assign ${day}`}>
+      <div className="fj-col" style={{ gap: 'var(--space-2)' }}>
+        {choices.map((c) => {
+          const selected = c.id === currentTemplateId
+          return (
+            <button
+              key={c.id ?? '__rest'}
+              type="button"
+              className={'fj-assign-choice' + (selected ? ' fj-assign-choice--on' : '')}
+              onClick={() => onPick(c.id)}
+            >
+              <span className="fj-assign-choice__main">
+                <span className="fj-assign-choice__label">{c.label}</span>
+                <span className="fj-assign-choice__sub">{c.sub}</span>
+              </span>
+              {selected && <Check size={18} color="var(--color-accent)" />}
+            </button>
+          )
+        })}
+      </div>
+    </Modal>
   )
 }
 

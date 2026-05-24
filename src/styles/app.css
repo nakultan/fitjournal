@@ -600,10 +600,44 @@
 .fj-history-item:hover {
   border-color: var(--color-border);
 }
-.fj-history-more {
+.fj-history-more,
+.fj-overview-more {
   display: flex;
   justify-content: center;
   margin-top: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+/* ---- Compact tappable row, used by focused-mode collapsers - */
+.fj-add-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 48px;
+  padding: 12px var(--space-4);
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-dim);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+.fj-add-row:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+.fj-add-row:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .fj-history-item__left {
   display: flex;
@@ -732,8 +766,6 @@
 
 /* ---- Weekly planner ---------------------------------------- */
 .fj-plan-day {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: var(--space-2);
 }
@@ -742,12 +774,49 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: 12px var(--space-4);
   background: var(--color-inset);
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  min-height: 44px;
+  transition: background var(--dur-fast) var(--ease);
+}
+.fj-plan-day__head:hover {
+  background: var(--color-hover);
+}
+.fj-plan-day__head:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 .fj-plan-day__name {
   font-weight: 600;
   font-size: 0.875rem;
+}
+.fj-plan-day__assign {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.fj-plan-day__assign--rest {
+  color: var(--color-text-dim);
+  font-style: italic;
+}
+.fj-plan-day__assign-text {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fj-plan-day__pencil {
+  color: var(--color-text-dim);
+  opacity: 0.7;
 }
 .fj-plan-day__body {
   padding: var(--space-2) var(--space-4) var(--space-3);
@@ -767,10 +836,46 @@
   flex: 1;
   font-weight: 500;
 }
-.fj-plan-rest {
-  padding: var(--space-3) var(--space-4);
+
+/* ---- Assign-day choice list (Plan bottom sheet) ----------- */
+.fj-assign-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 12px 14px;
+  min-height: 56px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.fj-assign-choice:hover {
+  background: var(--color-hover);
+}
+.fj-assign-choice--on {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+.fj-assign-choice__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.fj-assign-choice__label {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+.fj-assign-choice__sub {
   font: var(--text-caption);
-  font-style: italic;
   color: var(--color-text-dim);
 }
 
@@ -844,6 +949,32 @@
 }
 .fj-fav-btn--on {
   color: var(--color-warning);
+}
+.fj-recipe-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+.fj-recipe-card__cook {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-dim);
+  padding: 2px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--dur-fast) var(--ease);
+}
+.fj-recipe-card__cook::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+}
+.fj-recipe-card__cook:hover {
+  color: var(--color-accent);
 }
 .fj-tag {
   padding: 2px 8px;
@@ -1227,14 +1358,7 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   margin-bottom: var(--space-4);
-}
-.fj-settings-group__title {
-  font: var(--text-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--color-text-muted);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-inset);
+  border: 1px solid var(--color-border-soft);
 }
 .fj-settings-row {
   display: flex;
@@ -1244,6 +1368,9 @@
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--color-border-soft);
 }
+.fj-settings-row:first-child {
+  border-top: none;
+}
 .fj-settings-row__label {
   font-size: 0.875rem;
 }
@@ -1251,6 +1378,53 @@
   font: var(--text-caption);
   color: var(--color-text-dim);
   margin-top: 2px;
+}
+
+/* ---- Settings index — grouped cards w/ deep-link routes --- */
+.fj-settings-index {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fj-settings-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  cursor: pointer;
+  min-height: 64px;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+.fj-settings-card:hover {
+  border-color: var(--color-accent);
+  background: var(--color-hover);
+}
+.fj-settings-card__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+.fj-settings-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fj-settings-card__title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+.fj-settings-card__sub {
+  font: var(--text-caption);
+  color: var(--color-text-dim);
 }
 
 /* ============================================================

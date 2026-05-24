@@ -11,6 +11,7 @@ import type {
   Template,
   TemplateExercise,
 } from './types'
+import type { SettingsSection } from '@/lib/router'
 
 /** Everything a component can read and do with app state. */
 export interface StoreValue {
@@ -19,6 +20,9 @@ export interface StoreValue {
   viewingDateKey: string
   /** The exercise the Exercise Detail screen is viewing, or undefined. */
   viewingExerciseKey?: string
+  /** When Settings is active, the sub-section (preferences / data / health / about);
+   *  undefined means the Settings cards index. */
+  viewingSettingsSection?: SettingsSection
   /** True when the most recent write to device storage failed. */
   saveFailed: boolean
   /** Timestamp (Date.now()) of the last successful save; 0 before first save. */
@@ -32,6 +36,8 @@ export interface StoreValue {
   startSession: () => void
   /** Open the per-exercise progression detail by lowercased name key. */
   viewExercise: (key: string) => void
+  /** Open a specific Settings sub-section by hash route; null returns to the cards index. */
+  viewSettings: (section: SettingsSection | null) => void
 
   // workouts — `addExercise` / `addCardio` return true if a PR was set;
   // `restore*` re-insert a deleted entry at its original index (for undo);

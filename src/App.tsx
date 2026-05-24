@@ -4,6 +4,7 @@ import {
   BackupReminder,
   FirstRun,
   InstallHint,
+  ResumeSessionPill,
   SaveErrorBanner,
   UpdatePrompt,
 } from '@/components'
@@ -13,6 +14,7 @@ export default function App() {
     <StoreProvider>
       <SaveErrorBanner />
       <AppShell />
+      <ResumeSessionPill />
       <FirstRun />
       <BackupReminder />
       <InstallHint />

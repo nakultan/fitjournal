@@ -241,3 +241,25 @@ pill buttons got `min-width/height: 44px` + a `<RotateCcw>` icon on +15s
 (P1.9); `.fj-fav-btn::before` extends the star touch area to ≥44×44 (P1.10);
 HistorySection reordered: Past workouts list comes first, heatmap below
 (P1.11).
+
+P2 — the real design round — is also shipped (2026-05-23). `Preferences.todayLayout`
+(`'classic' | 'focused'`, default classic) drives Today's density: focused mode
+collapses `WeightBanner` to a `.fj-add-row` "+ Body weight" button when no weight
+is logged and no Apple Health prefill is available, keeps the cardio form hidden
+even when cardio entries exist, and collapses the Day note to a "+ Day note"
+affordance until tapped (P2.1). The Plan weekly schedule is rewritten as 7
+tappable `<Card>` rows; each opens an `AssignDaySheet` modal listing "Rest day" +
+every template as `.fj-assign-choice` rows (P2.2). Settings is now grouped cards
+with deep-link hash routes — `lib/router.ts` carries a `SettingsSection` type
+(`preferences | data | health | about`); `navigateTo(page, date, exerciseKey,
+settingsSection?)` and the store's `viewSettings(section)` / `viewingSettingsSection`
+write and read them. Default `#/settings` shows the cards index; each
+`#/settings/<section>` renders just that section with a "Settings" back button
+(P2.3). A new `<ResumeSessionPill/>` (mounted from `App.tsx`) floats above the
+bottom nav on every screen except Today and Session when today already has
+exercises (P2.4). Progress Overview hides the Weekly sets chart + Insights +
+Muscle balance behind a single "Show charts, insights & muscle balance" toggle
+whose state persists in `localStorage` (P2.5). `RecipeCard` got a
+`.fj-recipe-card__cook` `<ChefHat>` button next to the favorite star (only when
+`recipe.steps.length > 0`) that launches Cook mode straight from the grid; the
+existing detail path still works (P2.6).

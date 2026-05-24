@@ -120,6 +120,14 @@ export interface Recipe {
   nutrition?: RecipeNutrition
 }
 
+/**
+ * Today screen layout: `classic` always renders Body Weight, Cardio form and
+ * Day Note in full (the original Phase 1–5 layout). `focused` collapses each
+ * to a tappable affordance until used — for power users who want to scroll
+ * straight to logging without the density tax.
+ */
+export type TodayLayout = 'classic' | 'focused'
+
 export interface Preferences {
   weightUnit: WeightUnit
   distanceUnit: DistanceUnit
@@ -134,6 +142,8 @@ export interface Preferences {
   restTimerSeconds?: number
   /** True once the user has gone through the first-run welcome modal. */
   firstRunDismissed?: boolean
+  /** Today screen density — see TodayLayout. Defaults to `classic`. */
+  todayLayout?: TodayLayout
 }
 
 /**
