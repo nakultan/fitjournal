@@ -1,9 +1,15 @@
 # FitJournal — codebase guide
 
 Personal, offline-first fitness journal. React 19 + TypeScript + Vite, shipped
-as an installable PWA. **All data is on-device** (IndexedDB) — there is no
-backend, no account, and no network dependency at runtime. See `README.md` for
-the product overview.
+as an installable PWA. **All data is on-device today** (IndexedDB) — no backend,
+no account, no network dependency at runtime. See `README.md` for the product
+overview.
+
+> **Direction note (2026-05-24):** the early-phase *privacy-first* non-negotiable
+> has been retired so the product can grow into a multi-device profile via a
+> backend + accounts. Nothing is built yet — the architecture below still
+> describes the live, local-only app. When sync work begins, IndexedDB stays the
+> source of truth and sync is layered on top so offline-first is preserved.
 
 ## Commands
 
@@ -288,3 +294,26 @@ and the same strip placed in `FirstRun` between the intro and the unit/goal
 fields (P3.6). Settings → About gained a discreet `<details className="fj-howto">`
 "What's new" expander reusing the existing how-to pattern; lists the recent
 user-visible additions (P3.7).
+
+A post-launch regression-fix pass shipped 2026-05-24 (build + 67 tests clean)
+covering four user-reported issues:
+
+- **Goal-weight input no longer accumulates a leading 0 on iPhone.**
+  `Settings.tsx`'s goal-weight `<input>` renders empty when `goalWeight === 0`
+  (with a `"0"` placeholder), declares `inputMode="decimal"`, and calls
+  `e.currentTarget.select()` on focus so a tap-and-type replaces the existing
+  value rather than appending to it. The weekly-goal input gets the same
+  `onFocus` select-all + `inputMode="numeric"` for parity.
+- **FirstRun tap/hover lag eliminated.** `.fj-btn`, `.fj-chip` and
+  `.fj-scaler__btn` now carry `touch-action: manipulation` to kill iOS Safari's
+  300 ms double-tap-to-zoom wait; `.fj-chip` and `.fj-scaler__btn` lost their
+  `background`/`color` transitions so the active state flips instantly under
+  the finger.
+- **`.fj-ring` gained `flex-shrink: 0`** so the ProgressRing can never be
+  squeezed by its parent flex row (which previously let the SVG visually
+  overlap adjacent text on narrow viewports).
+- **Today hub stacks vertically on mobile.** A new rule inside the
+  `@media (max-width: 768px)` block flips `.fj-hub__top` to
+  `flex-direction: column` and turns `.fj-hub__divider` into a full-width
+  horizontal rule, so the streak stat and the weekly-progress ring each get
+  the full card width rather than fighting over ~130 px each.

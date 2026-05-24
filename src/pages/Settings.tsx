@@ -192,10 +192,13 @@ function PreferencesSection() {
         <input
           className="fj-input"
           type="number"
+          inputMode="decimal"
           min={0}
           aria-label="Goal weight"
           style={{ width: 120, textAlign: 'center' }}
-          value={prefs.goalWeight}
+          value={prefs.goalWeight || ''}
+          placeholder="0"
+          onFocus={(e) => e.currentTarget.select()}
           onChange={(e) => patch({ goalWeight: Math.max(0, Number(e.target.value) || 0) })}
         />
       </div>
@@ -207,11 +210,13 @@ function PreferencesSection() {
         <input
           className="fj-input"
           type="number"
+          inputMode="numeric"
           min={1}
           max={7}
           aria-label="Weekly workout goal"
           style={{ width: 120, textAlign: 'center' }}
           value={prefs.weeklyGoal}
+          onFocus={(e) => e.currentTarget.select()}
           onChange={(e) =>
             patch({ weeklyGoal: Math.max(1, Math.min(7, Number(e.target.value) || 1)) })
           }

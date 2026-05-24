@@ -97,10 +97,12 @@ Once loaded, the app caches itself and works with no internet.
   installs with its own icon, runs full-screen, and works offline. No App
   Store, no Apple fee.
 
-**Each install keeps its own data.** Storage is per-device, so your iPhone and
-your desktop hold separate journals — there is no cloud sync. To move data
-between them, use Settings → Export on one device and Settings → Import on the
-other.
+**Each install keeps its own data today.** Storage is per-device, so your
+iPhone and your desktop currently hold separate journals. To move data between
+them, use Settings → Export on one device and Settings → Import on the other.
+A real multi-device profile (sign in once, your data follows) is being scoped
+as the next major direction; until it ships, the export/import workflow is the
+bridge.
 
 ## Deployment
 

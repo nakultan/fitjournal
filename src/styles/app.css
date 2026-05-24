@@ -1152,7 +1152,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
+  touch-action: manipulation;
 }
 .fj-scaler__btn:hover:not(:disabled) {
   background: var(--color-hover);
@@ -2129,6 +2129,19 @@
   .fj-ex-row {
     padding-left: var(--space-3);
     padding-right: var(--space-3);
+  }
+
+  /* Today hub: stack streak + week stats vertically so neither the ring nor
+     the text are squeezed by the cramped two-column layout. */
+  .fj-hub__top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+  .fj-hub__divider {
+    width: 100%;
+    height: 1px;
+    align-self: auto;
   }
 
   /* The rest timer clears the fixed bottom nav. */
