@@ -307,7 +307,11 @@ function OverviewSection() {
         </div>
         {hasWeekly ? (
           <Card>
-            <div className="fj-chart">
+            <div
+              className="fj-chart"
+              role="img"
+              aria-label={`Weekly sets — last 8 weeks. This week: ${weekly[weekly.length - 1]?.totalSets ?? 0} sets. Peak: ${maxSets} sets.`}
+            >
               {weekly.map((w) => (
                 <div key={w.label} className="fj-chart__col">
                   <div
@@ -454,7 +458,10 @@ function WeightTrendSection() {
             </div>
           </div>
         </div>
-        <Sparkline values={series.map((p) => p.avg)} />
+        <Sparkline
+          values={series.map((p) => p.avg)}
+          label={`Body-weight trend — ${first.weight} to ${latest.weight} ${unit} over ${series.length} readings`}
+        />
       </Card>
     </section>
   )
@@ -688,7 +695,7 @@ function ExercisesSection() {
   )
 }
 
-function GoalModal({
+export function GoalModal({
   exerciseKey,
   exerciseName,
   currentBest,
@@ -784,38 +791,6 @@ function HistorySection() {
     <>
       <section className="fj-section">
         <div className="fj-section__head">
-          <h2 className="fj-section__title">Activity — last 13 weeks</h2>
-        </div>
-        <Card>
-          <div className="fj-heatmap__grid">
-            {heatmap.map((cell) => (
-              <div
-                key={cell.dateKey}
-                className="fj-heatmap__cell"
-                data-level={cell.future ? 0 : cell.level}
-                title={
-                  formatShort(cell.dateKey) +
-                  (cell.count > 0
-                    ? ` — ${cell.count} ${cell.count === 1 ? 'entry' : 'entries'}`
-                    : '')
-                }
-              />
-            ))}
-          </div>
-          <div className="fj-heatmap__legend">
-            <span>Less</span>
-            <div className="fj-heatmap__cell" data-level="0" style={{ width: 12 }} />
-            <div className="fj-heatmap__cell" data-level="1" style={{ width: 12 }} />
-            <div className="fj-heatmap__cell" data-level="2" style={{ width: 12 }} />
-            <div className="fj-heatmap__cell" data-level="3" style={{ width: 12 }} />
-            <div className="fj-heatmap__cell" data-level="4" style={{ width: 12 }} />
-            <span>More</span>
-          </div>
-        </Card>
-      </section>
-
-      <section className="fj-section">
-        <div className="fj-section__head">
           <h2 className="fj-section__title">Past workouts</h2>
         </div>
         {loggedDates.length > 0 ? (
@@ -885,6 +860,42 @@ function HistorySection() {
             </Button>
           </div>
         )}
+      </section>
+
+      <section className="fj-section">
+        <div className="fj-section__head">
+          <h2 className="fj-section__title">Activity — last 13 weeks</h2>
+        </div>
+        <Card>
+          <div
+            className="fj-heatmap__grid"
+            role="img"
+            aria-label={`Activity heatmap — last 13 weeks. ${loggedDates.length} workouts logged.`}
+          >
+            {heatmap.map((cell) => (
+              <div
+                key={cell.dateKey}
+                className="fj-heatmap__cell"
+                data-level={cell.future ? 0 : cell.level}
+                title={
+                  formatShort(cell.dateKey) +
+                  (cell.count > 0
+                    ? ` — ${cell.count} ${cell.count === 1 ? 'entry' : 'entries'}`
+                    : '')
+                }
+              />
+            ))}
+          </div>
+          <div className="fj-heatmap__legend">
+            <span>Less</span>
+            <div className="fj-heatmap__cell" data-level="0" style={{ width: 12 }} />
+            <div className="fj-heatmap__cell" data-level="1" style={{ width: 12 }} />
+            <div className="fj-heatmap__cell" data-level="2" style={{ width: 12 }} />
+            <div className="fj-heatmap__cell" data-level="3" style={{ width: 12 }} />
+            <div className="fj-heatmap__cell" data-level="4" style={{ width: 12 }} />
+            <span>More</span>
+          </div>
+        </Card>
       </section>
     </>
   )

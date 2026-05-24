@@ -21,6 +21,8 @@ export interface StoreValue {
   viewingExerciseKey?: string
   /** True when the most recent write to device storage failed. */
   saveFailed: boolean
+  /** Timestamp (Date.now()) of the last successful save; 0 before first save. */
+  lastSavedAt: number
 
   // navigation
   navigate: (page: PageId) => void

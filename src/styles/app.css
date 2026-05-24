@@ -832,6 +832,15 @@
   cursor: pointer;
   color: var(--color-text-dim);
   padding: 2px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.fj-fav-btn::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
 }
 .fj-fav-btn--on {
   color: var(--color-warning);
@@ -1016,6 +1025,15 @@
 .fj-scaler__reset:hover {
   background: var(--color-accent-soft);
 }
+/* Sub-section h3 heading inside recipe detail / modal content */
+.fj-detail-sub {
+  font: var(--text-micro);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  margin: 0 0 var(--space-2);
+}
+
 .fj-ingredient-list {
   list-style: none;
   padding: 0;
@@ -1124,6 +1142,17 @@
   font-weight: 500;
   color: var(--color-text);
   margin: 0;
+}
+.fj-cook__wakelock {
+  font: var(--text-micro);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--color-success);
+  flex: 1;
+  text-align: center;
+}
+.fj-cook__wakelock--dim {
+  color: var(--color-text-dim);
 }
 .fj-cook__nav {
   display: flex;
@@ -1364,6 +1393,24 @@
 .fj-finish__hint {
   font: var(--text-caption);
   color: var(--color-text-dim);
+}
+
+/* ---- Today first-time empty hero -------------------------- */
+.fj-today-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-5);
+}
+.fj-today-hero__title {
+  font: var(--text-title);
+}
+.fj-today-hero__sub {
+  font: var(--text-body);
+  color: var(--color-text-muted);
+  max-width: 28ch;
 }
 
 /* ---- Workout summary --------------------------------------- */
@@ -1616,11 +1663,17 @@
   background: transparent;
   color: var(--color-accent);
   cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
   padding: 4px 10px;
   border-radius: var(--radius-sm);
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   transition: background var(--dur-fast) var(--ease);
 }
 .fj-rest-timer__btn:hover {
@@ -1629,9 +1682,6 @@
 .fj-rest-timer__btn--close {
   color: var(--color-text-dim);
   padding: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* ---- Exercise detail — session history grid --------------- */

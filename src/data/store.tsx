@@ -58,6 +58,7 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
   const [data, setData] = useState<AppData>(initialData)
   const route = useRoute()
   const [saveFailed, setSaveFailed] = useState(false)
+  const [lastSavedAt, setLastSavedAt] = useState(0)
   const latestData = useRef(data)
 
   // Persist on change, debounced — a burst of edits becomes one write
@@ -67,7 +68,10 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
   useEffect(() => {
     latestData.current = data
     const timer = setTimeout(() => {
-      void saveData(data).then((ok) => setSaveFailed(!ok))
+      void saveData(data).then((ok) => {
+        setSaveFailed(!ok)
+        if (ok) setLastSavedAt(Date.now())
+      })
     }, SAVE_DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [data])
@@ -81,7 +85,10 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
   // closed, so a recent change cannot be lost if the OS reclaims the tab.
   useEffect(() => {
     const flush = () => {
-      void saveData(latestData.current).then((ok) => setSaveFailed(!ok))
+      void saveData(latestData.current).then((ok) => {
+        setSaveFailed(!ok)
+        if (ok) setLastSavedAt(Date.now())
+      })
     }
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden') flush()
@@ -100,6 +107,7 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     viewingDateKey: route.date,
     viewingExerciseKey: route.exerciseKey,
     saveFailed,
+    lastSavedAt,
 
     navigate: (page) => navigateTo(page),
     setViewingDateKey: (key) => navigateTo('today', key),

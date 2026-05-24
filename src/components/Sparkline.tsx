@@ -1,15 +1,18 @@
 /**
  * A compact SVG line chart for trends — the body-weight trend on Progress, and
- * (later) per-exercise progression. Renders nothing for fewer than two points.
+ * per-exercise progression. Renders nothing for fewer than two points.
+ * Pass `label` to give screen readers a text summary; omit to hide from AT.
  */
 export function Sparkline({
   values,
   height = 64,
   stroke = 'var(--color-accent)',
+  label,
 }: {
   values: number[]
   height?: number
   stroke?: string
+  label?: string
 }) {
   if (values.length < 2) return null
 
@@ -35,7 +38,9 @@ export function Sparkline({
       width="100%"
       height={height}
       preserveAspectRatio="none"
-      aria-hidden="true"
+      role={label ? 'img' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : 'true'}
     >
       <polyline
         points={points}

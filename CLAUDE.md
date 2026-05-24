@@ -224,3 +224,20 @@ backlog tracked at `../UX-AUDIT.md`. P0 is shipped: reorder button touch
 targets fixed (WCAG 2.5.8), Undo toasts extended to template/recipe/goal
 deletes, four hardcoded-colour escapes resolved to tokens, and
 `min-height: 44px` globalised on `.fj-btn`.
+
+P1 is shipped (2026-05-23): `lastSavedAt` in store + a 6 px `.fj-save-dot`
+ripple on `PageHeader` (P1.1); `GoalModal` exported and the ExerciseDetail
+goal tile made a tappable button that opens it (P1.2); `Sparkline` gained a
+`label?` prop — ExerciseDetail, body-weight trend, weekly bar chart, and
+heatmap all carry `aria-label` summaries (P1.3); Cardio section on Today
+collapses to an "+ Add cardio" affordance when no cardio logged (P1.4);
+RecipeDetail section headings (Nutrition / Ingredients / Steps / Notes)
+converted to `<h3 className="fj-detail-sub">` (P1.5); CookMode surfaces
+"Screen stays on" / "Screen may dim" in its top bar via `wakeLockActive` /
+`wakeLockDenied` state (P1.6); Today shows a `.fj-today-hero` "Ready to
+train?" hero when the day is completely empty (P1.7); Plan shows an
+`EmptyState` with a Create CTA when no templates exist (P1.8); rest-timer
+pill buttons got `min-width/height: 44px` + a `<RotateCcw>` icon on +15s
+(P1.9); `.fj-fav-btn::before` extends the star touch area to ≥44×44 (P1.10);
+HistorySection reordered: Past workouts list comes first, heatmap below
+(P1.11).

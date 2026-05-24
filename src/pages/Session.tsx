@@ -5,6 +5,7 @@ import {
   Clock,
   Dumbbell,
   Plus,
+  RotateCcw,
   Sparkles,
   X,
 } from 'lucide-react'
@@ -366,6 +367,7 @@ function RestTimerBar({ timer }: { timer: ReturnType<typeof useRestTimer> }) {
           aria-label="Add 15 seconds"
           onClick={() => timer.add(15)}
         >
+          <RotateCcw size={14} />
           +15s
         </button>
       )}

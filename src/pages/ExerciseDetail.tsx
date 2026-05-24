@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   ChevronLeft,
   Dumbbell,
@@ -11,6 +11,7 @@ import { Button, Card, EmptyState, PageHeader, Sparkline, StatTile } from '@/com
 import { useStore } from '@/data/store-context'
 import { computeExerciseHistory, computeStrengthPRs } from '@/data/logic'
 import { formatShort } from '@/lib/dates'
+import { GoalModal } from '@/pages/Progress'
 
 /**
  * Per-exercise progression — top-set weight and an Epley 1RM estimate over
@@ -19,6 +20,7 @@ import { formatShort } from '@/lib/dates'
  */
 export function ExerciseDetailScreen() {
   const { data, viewingExerciseKey, navigate, viewWorkoutDate } = useStore()
+  const [goalOpen, setGoalOpen] = useState(false)
   const key = viewingExerciseKey
   const weightUnit = data.preferences.weightUnit
 
@@ -87,13 +89,18 @@ export function ExerciseDetailScreen() {
           value={history.length}
           label="Sessions"
         />
-        {goal != null && (
+        <button
+          type="button"
+          className="fj-goal-tile-btn"
+          onClick={() => setGoalOpen(true)}
+          aria-label={goal != null ? `Edit goal: ${goal} ${weightUnit}` : 'Set a goal'}
+        >
           <StatTile
             icon={<Target size={22} color="var(--color-accent)" />}
-            value={goal}
+            value={goal ?? '—'}
             label={`Goal (${weightUnit})`}
           />
-        )}
+        </button>
       </div>
 
       <section className="fj-section">
@@ -104,7 +111,10 @@ export function ExerciseDetailScreen() {
         </div>
         <Card>
           {topSeries.length >= 2 ? (
-            <Sparkline values={topSeries} />
+            <Sparkline
+              values={topSeries}
+              label={`Top-set weight over ${topSeries.length} sessions — ${topSeries[0]} to ${topSeries[topSeries.length - 1]} ${weightUnit}`}
+            />
           ) : (
             <p className="fj-muted">Log a second session to see the trend.</p>
           )}
@@ -120,7 +130,11 @@ export function ExerciseDetailScreen() {
         <Card>
           {oneRmSeries.length >= 2 ? (
             <>
-              <Sparkline values={oneRmSeries} stroke="var(--color-success)" />
+              <Sparkline
+                values={oneRmSeries}
+                stroke="var(--color-success)"
+                label={`Estimated 1RM over ${oneRmSeries.length} sessions — ${oneRmSeries[0]} to ${oneRmSeries[oneRmSeries.length - 1]} ${weightUnit}`}
+              />
               <p className="fj-muted" style={{ marginTop: 'var(--space-2)' }}>
                 Epley estimate from the top set of each session.
               </p>
@@ -172,6 +186,15 @@ export function ExerciseDetailScreen() {
             ))}
         </div>
       </section>
+
+      {goalOpen && key && (
+        <GoalModal
+          exerciseKey={key}
+          exerciseName={displayName}
+          currentBest={pr?.weight ?? 0}
+          onClose={() => setGoalOpen(false)}
+        />
+      )}
     </div>
   )
 }

@@ -598,9 +598,9 @@ function RecipeDetail({
           </div>
           {hasMacros && nutrition && (
             <div>
-              <div className="fj-field__label" style={{ marginBottom: 'var(--space-2)' }}>
+              <h3 className="fj-detail-sub">
                 Nutrition <span className="fj-muted">· per serving</span>
-              </div>
+              </h3>
               <div className="fj-macros">
                 {nutrition.calories != null && (
                   <Macro value={nutrition.calories} label="Calories" />
@@ -649,9 +649,7 @@ function RecipeDetail({
           )}
           {r.ingredients.length > 0 && (
             <div>
-              <div className="fj-field__label" style={{ marginBottom: 'var(--space-2)' }}>
-                Ingredients
-              </div>
+              <h3 className="fj-detail-sub">Ingredients</h3>
               <ul className="fj-ingredient-list">
                 {r.ingredients.map((ing, i) => {
                   const isChecked = checked.has(i)
@@ -683,7 +681,7 @@ function RecipeDetail({
                   marginBottom: 'var(--space-2)',
                 }}
               >
-                <span className="fj-field__label">Steps</span>
+                <h3 className="fj-detail-sub" style={{ margin: 0 }}>Steps</h3>
                 <Button size="sm" variant="secondary" onClick={() => setCooking(true)}>
                   <ChefHat size={15} /> Cook mode
                 </Button>
@@ -697,9 +695,7 @@ function RecipeDetail({
           )}
           {r.notes && (
             <div>
-              <div className="fj-field__label" style={{ marginBottom: 'var(--space-2)' }}>
-                Notes
-              </div>
+              <h3 className="fj-detail-sub">Notes</h3>
               <p className="fj-muted">{r.notes}</p>
             </div>
           )}
@@ -750,6 +746,8 @@ function CookMode({
   onClose: () => void
 }) {
   const [index, setIndex] = useState(0)
+  const [wakeLockActive, setWakeLockActive] = useState(false)
+  const [wakeLockDenied, setWakeLockDenied] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
   // Focus the dialog on mount so the keyboard shortcuts work without a click.
@@ -766,15 +764,21 @@ function CookMode({
     const acquire = (): void => {
       if (released || document.visibilityState !== 'visible') return
       const api = navigator.wakeLock
-      if (!api) return
+      if (!api) {
+        setWakeLockDenied(true)
+        return
+      }
       api
         .request('screen')
         .then((s) => {
           if (released) void s.release().catch(() => {})
-          else sentinel = s
+          else {
+            sentinel = s
+            setWakeLockActive(true)
+          }
         })
         .catch(() => {
-          /* wake lock denied or unsupported — the screen may dim, no more */
+          setWakeLockDenied(true)
         })
     }
 
@@ -823,6 +827,12 @@ function CookMode({
         <span className="fj-cook__count">
           Step {index + 1} of {steps.length}
         </span>
+        {wakeLockActive && !wakeLockDenied && (
+          <span className="fj-cook__wakelock" aria-live="polite">Screen stays on</span>
+        )}
+        {wakeLockDenied && (
+          <span className="fj-cook__wakelock fj-cook__wakelock--dim" aria-live="polite">Screen may dim</span>
+        )}
         <button
           type="button"
           className="fj-icon-btn"

@@ -3,6 +3,7 @@ import { CalendarRange, LayoutGrid, Plus, Trash2 } from 'lucide-react'
 import {
   Button,
   Card,
+  EmptyState,
   ConfirmModal,
   Input,
   Modal,
@@ -35,29 +36,42 @@ export function PlanScreen() {
             <LayoutGrid size={18} /> Templates
           </h2>
         </div>
-        <div className="fj-card-grid">
-          {data.templates.map((t) => (
-            <Card
-              key={t.id}
-              className="fj-template-card"
-              onClick={() => setTemplateModal({ id: t.id })}
-            >
-              <div className="fj-template-card__title">{t.name}</div>
-              <div className="fj-template-card__sub">{t.subtitle || '—'}</div>
-              <div className="fj-template-card__ex">
-                {t.exercises.slice(0, 6).map((e, i) => (
-                  <div key={i}>
-                    {e.name} — {e.sets}×{e.reps}
-                  </div>
-                ))}
-              </div>
-            </Card>
-          ))}
-          <button className="fj-add-card" onClick={() => setTemplateModal({ id: null })}>
-            <Plus size={28} />
-            Create template
-          </button>
-        </div>
+        {data.templates.length === 0 ? (
+          <EmptyState
+            icon={<LayoutGrid size={40} />}
+            title="No templates yet"
+            description="Templates are reusable workout blueprints. Create one and load it on any training day."
+            action={
+              <Button onClick={() => setTemplateModal({ id: null })}>
+                <Plus size={16} /> Create template
+              </Button>
+            }
+          />
+        ) : (
+          <div className="fj-card-grid">
+            {data.templates.map((t) => (
+              <Card
+                key={t.id}
+                className="fj-template-card"
+                onClick={() => setTemplateModal({ id: t.id })}
+              >
+                <div className="fj-template-card__title">{t.name}</div>
+                <div className="fj-template-card__sub">{t.subtitle || '—'}</div>
+                <div className="fj-template-card__ex">
+                  {t.exercises.slice(0, 6).map((e, i) => (
+                    <div key={i}>
+                      {e.name} — {e.sets}×{e.reps}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ))}
+            <button className="fj-add-card" onClick={() => setTemplateModal({ id: null })}>
+              <Plus size={28} />
+              Create template
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="fj-section">

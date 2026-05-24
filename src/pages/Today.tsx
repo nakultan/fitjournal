@@ -68,6 +68,7 @@ export function TodayScreen() {
   const [exerciseModal, setExerciseModal] = useState<ExerciseEntry | 'new' | null>(null)
   const [cardioEdit, setCardioEdit] = useState<CardioEntry | null>(null)
   const [summaryOpen, setSummaryOpen] = useState(false)
+  const [cardioExpanded, setCardioExpanded] = useState(false)
   const dateInputRef = useRef<HTMLInputElement>(null)
 
   const date = parseKey(viewingDateKey)
@@ -122,8 +123,15 @@ export function TodayScreen() {
           <h2 className="fj-section__title">
             <Activity size={18} /> Cardio
           </h2>
+          {!(workout && workout.cardio.length > 0) && !cardioExpanded && (
+            <Button size="sm" variant="secondary" onClick={() => setCardioExpanded(true)}>
+              <Plus size={14} /> Add cardio
+            </Button>
+          )}
         </div>
-        <CardioForm dateKey={viewingDateKey} />
+        {(cardioExpanded || (workout && workout.cardio.length > 0)) && (
+          <CardioForm dateKey={viewingDateKey} />
+        )}
         {workout && workout.cardio.length > 0 && (
           <div className="fj-col" style={{ marginTop: 'var(--space-3)' }}>
             {workout.cardio.map((c, idx) => (
@@ -166,11 +174,29 @@ export function TodayScreen() {
         )}
 
         {!workout || workout.exercises.length === 0 ? (
-          <EmptyState
-            icon={<Dumbbell size={40} />}
-            title="No exercises logged"
-            description="Add an exercise or load one of your templates to get started."
-          />
+          isToday && !workout?.note && workout?.bodyWeight == null && !workout?.cardio.length ? (
+            <div className="fj-today-hero">
+              <Dumbbell size={48} color="var(--color-text-dim)" />
+              <p className="fj-today-hero__title">Ready to train?</p>
+              <p className="fj-today-hero__sub">Pick a template or add an exercise to start logging today&apos;s workout.</p>
+              <div className="fj-row" style={{ gap: 'var(--space-3)', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Button onClick={() => setExerciseModal('new')}>
+                  <Plus size={16} /> Add exercise
+                </Button>
+                {data.templates.length === 0 && (
+                  <Button variant="secondary" onClick={() => setCardioExpanded(true)}>
+                    <Activity size={16} /> Log cardio
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Dumbbell size={40} />}
+              title="No exercises logged"
+              description="Add an exercise or load one of your templates to get started."
+            />
+          )
         ) : (
           <div className="fj-table">
             {workout.exercises.map((e, idx) => {
