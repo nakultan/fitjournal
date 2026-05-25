@@ -6,6 +6,7 @@ import {
   computeBestDay,
   computeCardioPRs,
   computeExerciseHistory,
+  computeGoalTrajectory,
   computeHeatmap,
   computeInsights,
   computeMuscleBalance,
@@ -23,6 +24,7 @@ import {
   findLastTime,
   formatSets,
   isLoggedWorkout,
+  recommendNextSession,
   totalWorkoutsLogged,
   wouldBeCardioPR,
   wouldBeStrengthPR,
@@ -605,6 +607,67 @@ describe('computeInsights', () => {
     })
     const insights = computeInsights(appData(w), REF)
     expect(insights.some((i) => i.id === 'imb-back')).toBe(true)
+  })
+
+  it('returns null from recommendNextSession when there is no history', () => {
+    expect(recommendNextSession([], REF)).toBeNull()
+  })
+
+  it('bumps the next-session weight after recent, complete sessions', () => {
+    const w = workouts({
+      '2026-05-13': { ex: [exAt('Bench', 180, { sets: 3, reps: 8 })] },
+      '2026-05-19': { ex: [exAt('Bench', 180, { sets: 3, reps: 8 })] },
+    })
+    const rec = recommendNextSession(computeExerciseHistory(w, 'bench'), REF)
+    expect(rec).toEqual({ sets: 3, reps: 8, weight: 185, bumped: true })
+  })
+
+  it('repeats the last session when reps are too low to bump', () => {
+    const w = workouts({
+      '2026-05-13': { ex: [exAt('Bench', 200, { sets: 3, reps: 3 })] },
+      '2026-05-19': { ex: [exAt('Bench', 200, { sets: 3, reps: 3 })] },
+    })
+    const rec = recommendNextSession(computeExerciseHistory(w, 'bench'), REF)
+    expect(rec).toEqual({ sets: 3, reps: 3, weight: 200, bumped: false })
+  })
+
+  it('does not bump after a long layoff', () => {
+    const w = workouts({
+      '2026-03-01': { ex: [exAt('Bench', 180, { sets: 3, reps: 8 })] },
+    })
+    const rec = recommendNextSession(computeExerciseHistory(w, 'bench'), REF)
+    expect(rec).toEqual({ sets: 3, reps: 8, weight: 180, bumped: false })
+  })
+
+  it('computes a goal trajectory from a rising trend', () => {
+    const w = workouts({
+      '2026-05-01': { ex: [exAt('Bench', 170, { sets: 3, reps: 5 })] },
+      '2026-05-08': { ex: [exAt('Bench', 175, { sets: 3, reps: 5 })] },
+      '2026-05-15': { ex: [exAt('Bench', 180, { sets: 3, reps: 5 })] },
+    })
+    const trajectory = computeGoalTrajectory(computeExerciseHistory(w, 'bench'), 250)
+    // Climbing roughly 5 lb a week from 180 (1RM ~210) → still some weeks to go.
+    expect(trajectory?.remaining).toBeGreaterThan(0)
+    expect(trajectory?.weeks).toBeGreaterThan(0)
+  })
+
+  it('hides weeks-to-goal when the trend is flat or negative', () => {
+    const w = workouts({
+      '2026-05-01': { ex: [exAt('Bench', 180, { sets: 3, reps: 5 })] },
+      '2026-05-08': { ex: [exAt('Bench', 180, { sets: 3, reps: 5 })] },
+      '2026-05-15': { ex: [exAt('Bench', 180, { sets: 3, reps: 5 })] },
+    })
+    const trajectory = computeGoalTrajectory(computeExerciseHistory(w, 'bench'), 250)
+    expect(trajectory?.weeks).toBeNull()
+    expect(trajectory?.remaining).toBeGreaterThan(0)
+  })
+
+  it('returns null when the goal is already reached', () => {
+    const w = workouts({
+      '2026-05-15': { ex: [exAt('Bench', 260, { sets: 3, reps: 5 })] },
+    })
+    const trajectory = computeGoalTrajectory(computeExerciseHistory(w, 'bench'), 250)
+    expect(trajectory).toBeNull()
   })
 
   it('does not flag a weekly trend swing on a near-empty week', () => {

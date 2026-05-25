@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity,
   AlertTriangle,
   BarChart3,
+  BookOpen,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
@@ -55,8 +56,9 @@ import {
 } from '@/data/logic'
 import { CARDIO_LABELS } from '@/data/constants'
 import type { CardioType, HealthData, WeightUnit } from '@/data/types'
+import type { ProgressSection } from '@/lib/router'
 import { cn } from '@/lib/cn'
-import { formatShort, parseKey } from '@/lib/dates'
+import { addDays, formatShort, parseKey } from '@/lib/dates'
 
 const TONE_ICON = {
   success: CheckCircle2,
@@ -64,16 +66,26 @@ const TONE_ICON = {
   info: Lightbulb,
 }
 
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'exercises', label: 'Exercises' },
-  { id: 'history', label: 'History' },
-] as const
-type TabId = (typeof TABS)[number]['id']
-
 const RECORD_COLS = { gridTemplateColumns: '2fr 1fr 1fr 1.4fr' }
 const PAGE_SIZE = 30
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
+
+/**
+ * Three rooms — Story (the recap), Records (PRs, goals, timeline) and
+ * History (past workouts, heatmap). Each gets its own hash route so the
+ * browser back button respects the room transition, and the room picker
+ * doubles as a metaphor index reminding the lifter what's in each room.
+ */
+const ROOMS: {
+  id: ProgressSection
+  label: string
+  metaphor: string
+  Icon: LucideIcon
+}[] = [
+  { id: 'story', label: 'Story', metaphor: 'Your trend at a glance', Icon: BookOpen },
+  { id: 'records', label: 'Records', metaphor: 'PRs, goals & timeline', Icon: Trophy },
+  { id: 'history', label: 'History', metaphor: 'Every logged day', Icon: CalendarDays },
+]
 
 /**
  * The eight numeric metrics the Apple Health bridge can carry. A formatter
@@ -158,41 +170,137 @@ function pickHealthTiles(health: HealthData, weightUnit: WeightUnit) {
 }
 
 /**
- * One retrospective screen — Overview, Exercises and History — replacing the
- * three separate tabs the audit found fragmented "how am I doing?" into.
+ * Three rooms in one screen — Story (the recap), Records (PRs + goals) and
+ * History (the diary). Each is a real hash route, so the back button works
+ * between them and a room can be deep-linked. The picker above stays put
+ * across rooms; the metaphor labels remind the lifter where each piece lives.
  */
 export function ProgressScreen() {
-  const [tab, setTab] = useState<TabId>('overview')
+  const { viewingProgressSection, viewProgress } = useStore()
+  const section: ProgressSection = viewingProgressSection ?? 'story'
+  const meta = ROOMS.find((r) => r.id === section) ?? ROOMS[0]
 
   return (
     <div className="fj-screen">
-      <PageHeader title="Progress" subtitle="Trends, records and history" />
-
-      <div className="fj-segmented">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            aria-pressed={tab === t.id}
-            className={cn('fj-segmented__btn', tab === t.id && 'fj-segmented__btn--active')}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'overview' && <OverviewSection />}
-      {tab === 'exercises' && <ExercisesSection />}
-      {tab === 'history' && <HistorySection />}
+      <PageHeader title="Progress" subtitle={meta.metaphor} />
+      <ProgressRoomPicker active={section} onPick={viewProgress} />
+      {section === 'story' && <StorySection />}
+      {section === 'records' && <RecordsSection />}
+      {section === 'history' && <HistorySection />}
     </div>
   )
 }
 
+/**
+ * The room picker — a three-card row with metaphor icons. Behaves like a
+ * routed segmented control: arrow keys move focus and select the next room,
+ * matching the WAI-ARIA tablist pattern so screen readers announce the
+ * transition. Render order matches `ROOMS`.
+ */
+function ProgressRoomPicker({
+  active,
+  onPick,
+}: {
+  active: ProgressSection
+  onPick: (section: ProgressSection) => void
+}) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([])
+
+  const onKey = (idx: number) => (ev: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return
+    ev.preventDefault()
+    const next = ev.key === 'ArrowRight' ? (idx + 1) % ROOMS.length : (idx - 1 + ROOMS.length) % ROOMS.length
+    refs.current[next]?.focus()
+    onPick(ROOMS[next].id)
+  }
+
+  return (
+    <div className="fj-rooms" role="tablist" aria-label="Progress rooms">
+      {ROOMS.map((r, i) => {
+        const isActive = r.id === active
+        return (
+          <button
+            key={r.id}
+            ref={(el) => {
+              refs.current[i] = el
+            }}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            tabIndex={isActive ? 0 : -1}
+            className={cn('fj-rooms__btn', isActive && 'fj-rooms__btn--active')}
+            onClick={() => onPick(r.id)}
+            onKeyDown={onKey(i)}
+          >
+            <r.Icon size={18} aria-hidden="true" />
+            <span className="fj-rooms__label">{r.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * One-line hero summary at the top of Story — the loudest signal in the
+ * recent data. Returns null when nothing rises above noise, so the room
+ * falls through to a calm "Train once and a story starts" empty state
+ * rather than forcing a thin number.
+ */
+function computeStoryHero(
+  workouts: Record<string, import('@/data/types').Workout>,
+  reference: Date,
+  weeklyGoal: number,
+): { text: string; sub: string } | null {
+  const stats = computeTotalStats(workouts, reference)
+  if (stats.totalWorkouts === 0) return null
+  // Tonnage delta — last 30 days vs the 30 before.
+  const tonnage = (start: Date, end: Date): number => {
+    let total = 0
+    for (const dk of Object.keys(workouts)) {
+      const d = parseKey(dk)
+      if (d < start || d > end) continue
+      for (const e of workouts[dk].exercises) {
+        for (const s of e.sets) total += s.reps * s.weight
+      }
+    }
+    return total
+  }
+  const recent = tonnage(addDays(reference, -30), reference)
+  const prior = tonnage(addDays(reference, -60), addDays(reference, -31))
+  if (recent > 0 && prior > 0) {
+    const pct = Math.round(((recent - prior) / prior) * 100)
+    if (Math.abs(pct) >= 10) {
+      return {
+        text: `${pct > 0 ? '+' : ''}${pct}% tonnage this month.`,
+        sub: `${Math.round(recent).toLocaleString()} vs ${Math.round(prior).toLocaleString()} last month.`,
+      }
+    }
+  }
+  const streak = computeStreak(workouts, {}, reference)
+  if (streak.current >= 3) {
+    return {
+      text: `${streak.current}-day streak in motion.`,
+      sub: `Longest: ${streak.longest} days. Planned rest days keep it alive.`,
+    }
+  }
+  const week = computeWeekProgress(workouts, reference, weeklyGoal)
+  if (week.done >= 1) {
+    return {
+      text: `${week.done} of ${week.goal} workouts this week.`,
+      sub:
+        week.done >= week.goal
+          ? 'Weekly goal reached.'
+          : `${week.remaining} to go — pace yourself.`,
+    }
+  }
+  return null
+}
+
 const OVERVIEW_EXPAND_KEY = 'fj-overview-expanded'
 
-/* ---------- Overview ---------- */
-function OverviewSection() {
+/* ---------- Story (was Overview) ---------- */
+function StorySection() {
   const { data } = useStore()
   const [showDetails, setShowDetails] = useState<boolean>(() => {
     if (typeof localStorage === 'undefined') return false
@@ -204,7 +312,7 @@ function OverviewSection() {
     localStorage.setItem(OVERVIEW_EXPAND_KEY, showDetails ? '1' : '0')
   }, [showDetails])
 
-  const { streak, week, stats, weekly, insights, balance } = useMemo(() => {
+  const { streak, week, stats, weekly, insights, balance, hero } = useMemo(() => {
     const now = new Date()
     return {
       streak: computeStreak(data.workouts, data.weeklyPlan, now),
@@ -213,8 +321,20 @@ function OverviewSection() {
       weekly: computeWeeklyStats(data.workouts, now, 8),
       insights: computeInsights(data, now),
       balance: computeMuscleBalance(data.workouts, now),
+      hero: computeStoryHero(data.workouts, now, data.preferences.weeklyGoal),
     }
   }, [data])
+
+  // No data at all — render the calm metaphor empty state and stop.
+  if (stats.totalWorkouts === 0 && week.done === 0 && streak.current === 0) {
+    return (
+      <EmptyState
+        icon={<BookOpen size={40} />}
+        title="Train once and a story starts."
+        description="Log a workout on Today and the trends, streaks and insights appear here."
+      />
+    )
+  }
 
   const maxSets = Math.max(...weekly.map((w) => w.totalSets), 1)
   const hasWeekly = weekly.some((w) => w.workoutCount > 0)
@@ -239,6 +359,13 @@ function OverviewSection() {
 
   return (
     <>
+      {hero && (
+        <Card className="fj-story-hero" style={{ marginBottom: 'var(--space-5)' }}>
+          <div className="fj-story-hero__line">{hero.text}</div>
+          <div className="fj-story-hero__sub">{hero.sub}</div>
+        </Card>
+      )}
+
       {data.preferences.weeklySummary && (
         <Card className="fj-recap" style={{ marginBottom: 'var(--space-5)' }}>
           <ProgressRing
@@ -531,8 +658,8 @@ function HealthSection() {
   )
 }
 
-/* ---------- Exercises (records) ---------- */
-function ExercisesSection() {
+/* ---------- Records (was Exercises) ---------- */
+function RecordsSection() {
   const { data, viewExercise } = useStore()
   const [goalKey, setGoalKey] = useState<string | null>(null)
   const weightUnit = data.preferences.weightUnit
@@ -621,8 +748,8 @@ function ExercisesSection() {
         ) : (
           <EmptyState
             icon={<Trophy size={40} />}
-            title="No records yet"
-            description="Log exercises with a weight and your bests appear here automatically."
+            title="Your first PR is one rep away."
+            description="Log an exercise with a weight and your top set lands here as the bar to beat."
           />
         )}
       </section>
@@ -702,7 +829,7 @@ function ExercisesSection() {
           <EmptyState
             icon={<History size={40} />}
             title="No PR history yet"
-            description="Records you set will be listed here as you train."
+            description="Records you set show up here in the order you set them."
           />
         )}
       </section>
@@ -882,8 +1009,8 @@ function HistorySection() {
         ) : (
           <EmptyState
             icon={<CalendarDays size={40} />}
-            title="No workout history"
-            description="Your logged workouts will appear here."
+            title="The heatmap is waiting."
+            description="Every day you train fills another square. Log one to start the grid."
           />
         )}
         {loggedDates.length > visibleCount && (

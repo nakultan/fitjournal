@@ -26,6 +26,13 @@ const DEFAULT_PREFERENCES: Preferences = {
   restTimerSeconds: 120,
 }
 
+/** Push / Pull / Legs — the seeded starter templates. Exported so the Plan
+ *  empty state can re-seed if the user nukes everything and wants the
+ *  starting templates back. */
+export function seedPushPullLegs(): Template[] {
+  return seedTemplates()
+}
+
 /** Push / Pull / Legs — a friendly starting point for a fresh install. */
 function seedTemplates(): Template[] {
   return [

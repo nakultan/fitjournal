@@ -23,6 +23,15 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 export type SettingsSection = 'preferences' | 'data' | 'health' | 'about'
 const SETTINGS_SECTIONS: SettingsSection[] = ['preferences', 'data', 'health', 'about']
 
+/** Sub-rooms of the Progress screen, addressable by hash route.
+ *  - `story`   — weekly recap, body weight, insights (was "Overview")
+ *  - `records` — PRs, goals, PR timeline (was "Exercises", renamed for clarity)
+ *  - `history` — past workouts + activity heatmap
+ *  A bare `#/progress` redirects to `story`. */
+export type ProgressSection = 'story' | 'records' | 'history'
+const PROGRESS_SECTIONS: ProgressSection[] = ['story', 'records', 'history']
+export const DEFAULT_PROGRESS_SECTION: ProgressSection = 'story'
+
 export interface Route {
   page: PageId
   /** The day the Today screen is viewing — always a valid YYYY-MM-DD key. */
@@ -31,6 +40,8 @@ export interface Route {
   exerciseKey?: string
   /** When on Settings, the active sub-section; absent on the cards index. */
   settingsSection?: SettingsSection
+  /** When on Progress, the active room (defaults to `story`). */
+  progressSection?: ProgressSection
 }
 
 /** Parse a route from a hash string (defaults to the live `location.hash`). */
@@ -59,8 +70,16 @@ export function parseRoute(hash: string = location.hash): Route {
     settingsSection = sub as SettingsSection
   }
 
+  let progressSection: ProgressSection | undefined
+  if (page === 'progress') {
+    progressSection =
+      sub && (PROGRESS_SECTIONS as string[]).includes(sub)
+        ? (sub as ProgressSection)
+        : DEFAULT_PROGRESS_SECTION
+  }
+
   const date = page === 'today' && DATE_RE.test(sub ?? '') ? sub : todayKey()
-  return { page, date, exerciseKey, settingsSection }
+  return { page, date, exerciseKey, settingsSection, progressSection }
 }
 
 function hashFor(
@@ -68,12 +87,16 @@ function hashFor(
   date?: string,
   exerciseKey?: string,
   settingsSection?: SettingsSection,
+  progressSection?: ProgressSection,
 ): string {
   if (page === 'today' && date && date !== todayKey()) return `#/today/${date}`
   if (page === 'exercise' && exerciseKey) {
     return `#/exercise/${encodeURIComponent(exerciseKey)}`
   }
   if (page === 'settings' && settingsSection) return `#/settings/${settingsSection}`
+  if (page === 'progress' && progressSection && progressSection !== DEFAULT_PROGRESS_SECTION) {
+    return `#/progress/${progressSection}`
+  }
   return `#/${page}`
 }
 
@@ -83,8 +106,9 @@ export function navigateTo(
   date?: string,
   exerciseKey?: string,
   settingsSection?: SettingsSection,
+  progressSection?: ProgressSection,
 ): void {
-  const next = hashFor(page, date, exerciseKey, settingsSection)
+  const next = hashFor(page, date, exerciseKey, settingsSection, progressSection)
   if (location.hash !== next) location.hash = next
 }
 

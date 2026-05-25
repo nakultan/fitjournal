@@ -107,6 +107,7 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     viewingDateKey: route.date,
     viewingExerciseKey: route.exerciseKey,
     viewingSettingsSection: route.settingsSection,
+    viewingProgressSection: route.progressSection,
     saveFailed,
     lastSavedAt,
 
@@ -116,6 +117,8 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     startSession: () => navigateTo('session'),
     viewExercise: (key) => navigateTo('exercise', undefined, key),
     viewSettings: (section) => navigateTo('settings', undefined, undefined, section ?? undefined),
+    viewProgress: (section) =>
+      navigateTo('progress', undefined, undefined, undefined, section),
 
     setBodyWeight: (dateKey, weight) =>
       setData((d) => withWorkout(d, dateKey, (w) => ({ ...w, bodyWeight: weight }))),

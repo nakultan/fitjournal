@@ -4,12 +4,18 @@ import {
   Dumbbell,
   History as HistoryIcon,
   LineChart,
+  Sparkles,
   Target,
   Trophy,
 } from 'lucide-react'
-import { Button, Card, EmptyState, PageHeader, Sparkline, StatTile } from '@/components'
+import { Button, Card, EmptyState, PageHeader, Sparkline } from '@/components'
 import { useStore } from '@/data/store-context'
-import { computeExerciseHistory, computeStrengthPRs } from '@/data/logic'
+import {
+  computeExerciseHistory,
+  computeGoalTrajectory,
+  computeStrengthPRs,
+  recommendNextSession,
+} from '@/data/logic'
 import { formatShort } from '@/lib/dates'
 import { GoalModal } from '@/pages/Progress'
 
@@ -43,11 +49,11 @@ export function ExerciseDetailScreen() {
         />
         <EmptyState
           icon={<Dumbbell size={40} />}
-          title="No history yet"
+          title="Log it three times — we'll start projecting."
           description={
             key
-              ? 'No logged sessions for this exercise yet — log one and it shows up here.'
-              : 'Open an exercise from Progress → Exercises to see its progression.'
+              ? `Once ${key} shows up in a few sessions, the trend lines and the next-session recommendation switch on.`
+              : 'Open an exercise from Progress → Records to see its progression.'
           }
         />
       </div>
@@ -60,6 +66,8 @@ export function ExerciseDetailScreen() {
   const topSeries = history.map((h) => h.topSet)
   const oneRmSeries = history.map((h) => Math.round(h.oneRm))
   const latestOneRm = oneRmSeries[oneRmSeries.length - 1] ?? 0
+  const nextRec = recommendNextSession(history)
+  const trajectory = goal != null ? computeGoalTrajectory(history, goal) : null
 
   return (
     <div className="fj-screen">
@@ -73,35 +81,84 @@ export function ExerciseDetailScreen() {
         }
       />
 
-      <div className="fj-stat-grid" style={{ marginBottom: 'var(--space-6)' }}>
-        <StatTile
-          icon={<Trophy size={22} color="var(--color-warning)" />}
-          value={pr ? pr.weight : '—'}
-          label={`Best weight (${weightUnit})`}
-        />
-        <StatTile
-          icon={<LineChart size={22} color="var(--color-accent)" />}
-          value={latestOneRm > 0 ? latestOneRm : '—'}
-          label={`Est. 1RM (${weightUnit})`}
-        />
-        <StatTile
-          icon={<HistoryIcon size={22} color="var(--color-success)" />}
-          value={history.length}
-          label="Sessions"
-        />
+      {/* P1.7 — Three pills, three categories, three palettes. PR is past
+          achievement (green); e1RM is a projection (blue); Goal is a future
+          commitment (amber). Each pill is tappable when relevant. */}
+      <div className="fj-detail-pills" aria-label="Records, projection and goal">
+        <span className="fj-detail-pill fj-detail-pill--pr">
+          <Trophy size={13} aria-hidden="true" />
+          <span className="fj-detail-pill__cap">PR</span>
+          <span className="fj-detail-pill__val">
+            {pr ? `${pr.weight} ${weightUnit}` : '—'}
+          </span>
+        </span>
+        <span className="fj-detail-pill fj-detail-pill--e1rm">
+          <LineChart size={13} aria-hidden="true" />
+          <span className="fj-detail-pill__cap">e1RM</span>
+          <span className="fj-detail-pill__val">
+            {latestOneRm > 0 ? `${latestOneRm} ${weightUnit}` : '—'}
+          </span>
+        </span>
         <button
           type="button"
-          className="fj-goal-tile-btn"
+          className="fj-detail-pill fj-detail-pill--goal fj-detail-pill--btn"
           onClick={() => setGoalOpen(true)}
           aria-label={goal != null ? `Edit goal: ${goal} ${weightUnit}` : 'Set a goal'}
         >
-          <StatTile
-            icon={<Target size={22} color="var(--color-accent)" />}
-            value={goal ?? '—'}
-            label={`Goal (${weightUnit})`}
-          />
+          <Target size={13} aria-hidden="true" />
+          <span className="fj-detail-pill__cap">Goal</span>
+          <span className="fj-detail-pill__val">
+            {goal != null ? `${goal} ${weightUnit}` : 'Set'}
+          </span>
         </button>
+        <span className="fj-detail-pill fj-detail-pill--sessions">
+          <HistoryIcon size={13} aria-hidden="true" />
+          <span className="fj-detail-pill__cap">Sessions</span>
+          <span className="fj-detail-pill__val">{history.length}</span>
+        </span>
       </div>
+
+      {/* P1.3 — Auto-bump suggestion. Quiet blue card, opt-in. */}
+      {nextRec && (
+        <Card className="fj-detail-rec" aria-label="Next session recommendation">
+          <Sparkles size={18} color="var(--color-accent)" aria-hidden="true" />
+          <div>
+            <div className="fj-detail-rec__head">
+              Next session — try {nextRec.sets}×{nextRec.reps} @ {nextRec.weight} {weightUnit}
+            </div>
+            <div className="fj-detail-rec__sub">
+              {nextRec.bumped
+                ? `Up 5 ${weightUnit} on your last top set — you're in rhythm.`
+                : 'Repeats your last top set — bank the reps before pushing weight.'}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* P1.6 — Distance-to-goal as a trajectory, not a static gap. */}
+      {trajectory && (
+        <Card className="fj-detail-trajectory" aria-label="Goal trajectory">
+          <Target size={18} color="var(--color-warning)" aria-hidden="true" />
+          <div>
+            <div className="fj-detail-trajectory__head">
+              {trajectory.remaining} {weightUnit} to go
+              {trajectory.weeks != null && (
+                <>
+                  {' · '}
+                  <span className="fj-detail-trajectory__weeks">
+                    ~{trajectory.weeks} week{trajectory.weeks === 1 ? '' : 's'} at this pace
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="fj-detail-trajectory__sub">
+              {trajectory.weeks != null
+                ? 'Linear fit from the last eight sessions.'
+                : 'Trend is flat — the next bump unlocks the projection.'}
+            </div>
+          </div>
+        </Card>
+      )}
 
       <section className="fj-section">
         <div className="fj-section__head">

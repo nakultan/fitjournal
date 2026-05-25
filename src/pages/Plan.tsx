@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarRange, Check, LayoutGrid, Moon, Pencil, Plus, Trash2 } from 'lucide-react'
+import { CalendarDays, CalendarRange, Check, LayoutGrid, Moon, Pencil, Plus, Trash2 } from 'lucide-react'
 import {
   Button,
   Card,
@@ -13,14 +13,21 @@ import {
 } from '@/components'
 import { useStore } from '@/data/store-context'
 import { MUSCLE_GROUPS } from '@/data/constants'
+import { seedPushPullLegs } from '@/data/storage'
 import { DAY_NAMES } from '@/lib/dates'
 import { uid } from '@/lib/uid'
 import type { DayName, MuscleGroup, TemplateExercise } from '@/data/types'
 
 export function PlanScreen() {
-  const { data, assignPlanDay, removePlanExercise } = useStore()
+  const { data, assignPlanDay, removePlanExercise, saveTemplate } = useStore()
+  const { showToast } = useToast()
   const [templateModal, setTemplateModal] = useState<{ id: string | null } | null>(null)
   const [assigning, setAssigning] = useState<DayName | null>(null)
+
+  const startWithPPL = (): void => {
+    for (const t of seedPushPullLegs()) saveTemplate(t)
+    showToast('Push, Pull, Legs added — assign them to your week.', 'success')
+  }
 
   return (
     <div className="fj-screen">
@@ -34,13 +41,18 @@ export function PlanScreen() {
         </div>
         {data.templates.length === 0 ? (
           <EmptyState
-            icon={<LayoutGrid size={40} />}
-            title="No templates yet"
-            description="Templates are reusable workout blueprints. Create one and load it on any training day."
+            icon={<CalendarDays size={40} />}
+            title="You haven't planned a week yet."
+            description="Templates are reusable workout blueprints — start from Push / Pull / Legs, or build your own."
             action={
-              <Button onClick={() => setTemplateModal({ id: null })}>
-                <Plus size={16} /> Create template
-              </Button>
+              <div className="fj-row" style={{ gap: 'var(--space-2)', justifyContent: 'center' }}>
+                <Button onClick={startWithPPL}>
+                  <Plus size={16} /> Start with PPL
+                </Button>
+                <Button variant="secondary" onClick={() => setTemplateModal({ id: null })}>
+                  Custom
+                </Button>
+              </div>
             }
           />
         ) : (

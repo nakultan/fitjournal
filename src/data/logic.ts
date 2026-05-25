@@ -475,6 +475,86 @@ export function computeExerciseHistory(
   return out
 }
 
+export interface NextSessionRec {
+  /** Suggested top-set number of sets — carried over from the last session. */
+  sets: number
+  /** Suggested top-set reps. */
+  reps: number
+  /** Suggested top-set weight in the user's unit. */
+  weight: number
+  /** True when the recommendation bumped weight over the last session's. */
+  bumped: boolean
+}
+
+/**
+ * Next-session recommendation. Repeats the last logged top set unless the
+ * lifter is "in rhythm" — at least two sessions in the last 14 days and the
+ * last top set hit 5+ reps — in which case the weight gets a calm +5 bump.
+ * Pure; null when there's nothing to base a suggestion on.
+ */
+export function recommendNextSession(
+  history: ExerciseHistoryPoint[],
+  reference: Date = new Date(),
+): NextSessionRec | null {
+  if (history.length === 0) return null
+  const last = history[history.length - 1]
+  if (last.topSet <= 0) return null
+  const cutoff = reference.getTime() - 14 * DAY_MS
+  const recent = history.filter((h) => parseKey(h.date).getTime() >= cutoff).length
+  const bump = recent >= 2 && last.topSetReps >= 5 ? 5 : 0
+  return {
+    sets: last.totalSets > 0 ? last.totalSets : 3,
+    reps: last.topSetReps > 0 ? last.topSetReps : 8,
+    weight: last.topSet + bump,
+    bumped: bump > 0,
+  }
+}
+
+export interface GoalTrajectory {
+  /** Pounds (or kg) still between the current best and the goal. */
+  remaining: number
+  /** Weeks-to-goal at the current pace, or null when the trend is flat / down. */
+  weeks: number | null
+}
+
+/**
+ * Linear-fit projection from the last eight sessions toward a goal weight.
+ * Reads whichever of top set or estimated 1RM sits closer to the goal — the
+ * lifter is honestly closer on the metric they're actually tracking. Returns
+ * null when there is no goal, no history, or the goal is already past.
+ */
+export function computeGoalTrajectory(
+  history: ExerciseHistoryPoint[],
+  goal: number,
+): GoalTrajectory | null {
+  if (history.length === 0 || goal <= 0) return null
+  const latest = history[history.length - 1]
+  const best = Math.max(latest.topSet, latest.oneRm)
+  const remaining = Number((goal - best).toFixed(1))
+  if (remaining <= 0) return null
+  const last8 = history.slice(-8)
+  if (last8.length < 2) return { remaining, weeks: null }
+  const topGap = Math.abs(goal - latest.topSet)
+  const oneRmGap = Math.abs(goal - latest.oneRm)
+  const series = oneRmGap < topGap ? last8.map((h) => h.oneRm) : last8.map((h) => h.topSet)
+  const n = series.length
+  const sumX = ((n - 1) * n) / 2
+  const sumY = series.reduce((a, b) => a + b, 0)
+  const sumXY = series.reduce((acc, y, i) => acc + i * y, 0)
+  const sumX2 = ((n - 1) * n * (2 * n - 1)) / 6
+  const denom = n * sumX2 - sumX * sumX
+  if (denom === 0) return { remaining, weeks: null }
+  const slope = (n * sumXY - sumX * sumY) / denom
+  if (!Number.isFinite(slope) || slope <= 0) return { remaining, weeks: null }
+  const firstAt = parseKey(last8[0].date).getTime()
+  const lastAt = parseKey(last8[last8.length - 1].date).getTime()
+  const daysPerSession = (lastAt - firstAt) / (n - 1) / DAY_MS
+  if (daysPerSession <= 0) return { remaining, weeks: null }
+  const days = (remaining / slope) * daysPerSession
+  const weeks = Math.max(1, Math.round(days / 7))
+  return { remaining, weeks }
+}
+
 // ----------------------------------------------------------- insights -----
 
 export type InsightTone = 'success' | 'warning' | 'info'

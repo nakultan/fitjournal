@@ -17,11 +17,18 @@ import {
   useToast,
 } from '@/components'
 import { useStore } from '@/data/store-context'
-import { findLastTime, formatSets, REPS_MAX, WEIGHT_MAX } from '@/data/logic'
+import {
+  REPS_MAX,
+  WEIGHT_MAX,
+  computeExerciseHistory,
+  findLastTime,
+  formatSets,
+  recommendNextSession,
+} from '@/data/logic'
 import type { ExerciseEntry, SetEntry } from '@/data/types'
 import { cn } from '@/lib/cn'
 import { formatLong, formatShort, parseKey, todayKey } from '@/lib/dates'
-import { celebrate } from '@/lib/feedback'
+import { celebrate, tap } from '@/lib/feedback'
 import { ExerciseModal, WorkoutSummaryModal } from '@/pages/Today'
 
 const DEFAULT_REST_SECONDS = 120
@@ -126,6 +133,9 @@ export function SessionScreen() {
       if (next.has(key)) {
         next.delete(key)
       } else {
+        // P1.8 — soft haptic only on the *first* check of the session.
+        // Subsequent checks rely on the existing rest-timer chime/buzz at zero.
+        if (next.size === 0) tap()
         next.add(key)
         timer.start()
       }
@@ -228,6 +238,13 @@ function SessionExerciseCard({
     () => findLastTime(data.workouts, exercise.name, dateKey),
     [data.workouts, exercise.name, dateKey],
   )
+  // P0.3-Session — auto-bump heuristic for the dominant subtitle's "try X"
+  // segment. Same pure helper that powers ExerciseDetail's recommendation
+  // card, so the suggestions stay in lockstep.
+  const nextRec = useMemo(
+    () => recommendNextSession(computeExerciseHistory(data.workouts, exercise.name)),
+    [data.workouts, exercise.name],
+  )
 
   const updateSet = (i: number, patch: Partial<SetEntry>): void => {
     const sets = exercise.sets.map((s, idx) => (idx === i ? { ...s, ...patch } : s))
@@ -249,11 +266,27 @@ function SessionExerciseCard({
           </span>
         </span>
       </div>
-      {lastTime && (
-        <p className="fj-muted" style={{ marginTop: 'var(--space-1)' }}>
-          Last time ({formatShort(lastTime.date)}): {formatSets(lastTime.entry.sets, weightUnit)}
-        </p>
-      )}
+      <p className="fj-session-ex__subtitle">
+        <span>
+          {exercise.sets.length} set{exercise.sets.length === 1 ? '' : 's'} planned
+        </span>
+        {lastTime && (
+          <>
+            <span aria-hidden="true"> · </span>
+            <span>
+              last time ({formatShort(lastTime.date)}): {formatSets(lastTime.entry.sets, weightUnit)}
+            </span>
+          </>
+        )}
+        {nextRec && nextRec.bumped && (
+          <>
+            <span aria-hidden="true"> · </span>
+            <span className="fj-session-ex__try">
+              try {nextRec.weight} {weightUnit}
+            </span>
+          </>
+        )}
+      </p>
       <div className="fj-session-sets" style={{ marginTop: 'var(--space-3)' }}>
         <div className="fj-session-set fj-session-set--head" aria-hidden="true">
           <span className="fj-session-set__num">#</span>
@@ -306,10 +339,35 @@ function SessionSetRow({
 }) {
   const weightOver = set.weight > WEIGHT_MAX
   const repsOver = set.reps > REPS_MAX
+  // P1.11 — primary CTA is "Complete set": tapping the row toggles done.
+  // The inputs stay always-editable (tapping a number opens the keypad and
+  // the click is swallowed before it can reach the row), so there is no
+  // hidden long-press to learn. The set number on the left is a calm
+  // affordance hinting at the row-level tap.
+  const stopBubble = (e: React.MouseEvent | React.FocusEvent): void => e.stopPropagation()
   return (
-    <div className={cn('fj-session-set', done && 'fj-session-set--done')}>
+    <div
+      className={cn('fj-session-set', done && 'fj-session-set--done')}
+      role="button"
+      tabIndex={0}
+      aria-pressed={done}
+      aria-label={
+        done
+          ? `Set ${index + 1} done — tap to undo`
+          : `Complete set ${index + 1}`
+      }
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onToggle()
+        }
+      }}
+    >
       <div className="fj-session-set__row">
-        <span className="fj-session-set__num">{index + 1}</span>
+        <span className="fj-session-set__num" aria-hidden="true">
+          {index + 1}
+        </span>
         <input
           className="fj-input"
           type="number"
@@ -320,6 +378,8 @@ function SessionSetRow({
           aria-invalid={weightOver || undefined}
           placeholder="0"
           value={set.weight || ''}
+          onClick={stopBubble}
+          onFocus={stopBubble}
           onChange={(e) =>
             onUpdate({ weight: Math.max(0, Number(e.target.value) || 0) })
           }
@@ -334,21 +394,18 @@ function SessionSetRow({
           aria-invalid={repsOver || undefined}
           placeholder="0"
           value={set.reps || ''}
+          onClick={stopBubble}
+          onFocus={stopBubble}
           onChange={(e) =>
             onUpdate({ reps: Math.max(0, Math.round(Number(e.target.value) || 0)) })
           }
         />
-        <button
-          type="button"
+        <span
           className={cn('fj-session-check', done && 'fj-session-check--done')}
-          aria-label={
-            done ? `Set ${index + 1} done — tap to undo` : `Mark set ${index + 1} done`
-          }
-          aria-pressed={done}
-          onClick={onToggle}
+          aria-hidden="true"
         >
           {done && <CheckCircle2 size={20} />}
-        </button>
+        </span>
       </div>
       {(weightOver || repsOver) && (
         <div className="fj-input-warn" role="note">

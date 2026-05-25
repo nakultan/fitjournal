@@ -364,3 +364,88 @@ they backed (`Bell`, `CalendarCheck`, `Lightbulb`, `Moon`, `PlayCircle`,
 `ProgressRing`, `computeInsights`). The mobile `.fj-hub__top` override
 mentioned above was retired in the same pass; `.fj-today-ambient__title`
 drops to `--text-title` on mobile and `.fj-start-fab` clears the bottom nav.
+
+**v2 P1 — shipped 2026-05-24.** A11y polish, motivation loops, three
+Progress routes, the ExerciseDetail recommendation engine, and per-screen
+empty states.
+
+- **P1.1 — Calm chip.** New `.fj-calm-chip` on the Today ambient header
+  flips `Preferences.todayLayout` (`classic ↔ focused`, labelled
+  *Classic / Calm*). Same persistence path as the buried Settings row,
+  just promoted to the thumb zone — and the chip itself is `aria-pressed`
+  with a soft haptic on flip.
+- **P1.2 — Three rooms, three routes.** `lib/router.ts` gains a
+  `ProgressSection` type (`story | records | history`); bare `#/progress`
+  defaults to `story`. The segmented control is replaced by a
+  `.fj-rooms` 3-card row picker with metaphor icons (BookOpen / Trophy /
+  CalendarDays) — `role="tablist"`, `role="tab"`, `aria-selected`,
+  arrow-key focus + selection. `OverviewSection` is renamed
+  `StorySection` and prepends a one-line hero (`+N% tonnage this month` /
+  `N-day streak in motion` / weekly count, picked by a new
+  `computeStoryHero()`); when no data exists at all, Story falls through
+  to a metaphor empty state. `ExercisesSection` is renamed
+  `RecordsSection`. Store exposes `viewingProgressSection` +
+  `viewProgress(section)`. Old `#/records` / `#/history` deep links
+  already redirect to Progress via the existing retired-screen guard.
+- **P1.3 — Next-session recommendation.** New pure
+  `recommendNextSession(history)` in `data/logic.ts` (3 unit tests):
+  bumps the top-set weight +5 when there have been ≥ 2 sessions in the
+  last 14 days AND the last top-set hit 5+ reps; otherwise repeats the
+  last session. ExerciseDetail surfaces it as a blue `.fj-detail-rec`
+  card with a Sparkles glyph and an explanation line. The same helper
+  powers Session's per-exercise subtitle (P0.3-Session).
+- **P1.4 — PR-shot flag.** Already shipped as part of P0.3's
+  `computeRowDelta` in `pages/Today.tsx`; verified no change needed.
+- **P1.5 — Metaphor empty states.** One per affected screen:
+  Today (`BookOpen` — *"Today's a fresh page."*), Story (*"Train once
+  and a story starts."*), Records (`Trophy` — *"Your first PR is one
+  rep away."*), History (`CalendarDays` — *"The heatmap is waiting."*),
+  Plan (`CalendarDays` — *"You haven't planned a week yet."* with a
+  **Start with PPL** CTA that calls the newly exported
+  `seedPushPullLegs()` from `storage.ts` and seeds Push / Pull / Legs
+  templates), Recipes (*"A fresh recipe keeper."* / *"Nothing matches
+  that filter."*).
+- **P1.6 — Goal trajectory.** New pure
+  `computeGoalTrajectory(history, goal)` in `data/logic.ts` (3 unit
+  tests): linear-fit projection from the last 8 sessions, using
+  whichever of top set or e1RM is closer to the goal. Returns weeks-to-
+  goal only when the slope is positive; otherwise hides the weeks half
+  and keeps the lb-to-go half. ExerciseDetail renders it as an amber
+  `.fj-detail-trajectory` card under the rec.
+- **P1.7 — Distinguished pills.** The 4-tile `StatTile` grid on
+  ExerciseDetail is replaced by `.fj-detail-pills` — three category
+  pills with three palettes: `--pr` (green, past achievement),
+  `--e1rm` (blue, projection), `--goal` (amber, future commitment),
+  plus a neutral Sessions pill. Goal pill is the tappable
+  `.fj-detail-pill--btn` that opens `GoalModal`. Vocabulary matches the
+  Today row delta pills (P0.3).
+- **P1.8 — Streak ratchet.** The streak number in the Today ambient
+  header is wrapped in `<CountUp/>` so it ticks on change; a `useRef`
+  gate fires `tap()` only when the value *increases* (skips initial
+  mount so reloading mid-streak stays quiet). Session also fires
+  `tap()` from `toggleSet` when the first set of the session is
+  checked (`doneSets.size === 0`), not on subsequent checks — the
+  in-session counterpart of the same "first rep matters" cue.
+- **P1.9 — Future-day picker guard.** Today's date input declares
+  `max={todayKey()}`, its onChange swallows future values, and the
+  `▶` next-day button carries `disabled={isToday}`. Silent prevention
+  — no toast.
+- **P1.10 — A11y bundle.** Today's date label gains
+  `aria-haspopup="dialog"` (it opens a native date picker). The cardio
+  type buttons in both `CardioForm` and `CardioModal` are extracted
+  into a shared `<CardioTypeTabs/>` with `role="tablist"`,
+  `role="tab"`, `aria-selected`, and arrow-key focus + selection. The
+  Progress room picker uses the same pattern.
+- **P1.11 — One primary CTA on Session.** The set row itself is now
+  the "Complete set" target (`role="button"`, `aria-pressed`,
+  Enter / Space activation). Weight and reps inputs stay always-editable
+  and stop click propagation (`stopBubble` on `onClick` + `onFocus`) so
+  tapping a number opens the keypad without toggling done. The big
+  check on the right is decorative now — `aria-hidden`, no separate
+  click handler.
+
+- **P0.3-Session — Subtitle promotion.** SessionExerciseCard renders a
+  dominant `.fj-session-ex__subtitle` reading `N sets planned · last
+  time (date): … · try X`. The green `try X` segment is sourced from
+  `recommendNextSession` and only appears when the heuristic actually
+  bumped — repeating the same weight stays quiet.

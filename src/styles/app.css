@@ -1487,6 +1487,12 @@
 .fj-today-ambient {
   margin-bottom: var(--space-5);
 }
+.fj-today-ambient__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
 .fj-today-ambient__strip {
   display: flex;
   align-items: center;
@@ -1512,6 +1518,38 @@
   font: var(--text-display);
   letter-spacing: -0.5px;
   margin-top: var(--space-2);
+}
+
+/* ---- Calm chip (P1.1) — promoted from Settings into the Today header. */
+.fj-calm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-inset);
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.fj-calm-chip:hover {
+  border-color: var(--color-border);
+}
+.fj-calm-chip--on {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+.fj-calm-chip:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* ---- Start session FAB (P0.2) ------------------------------ */
@@ -1712,6 +1750,68 @@
   color: var(--color-success);
 }
 
+/* ---- Story hero (P1.2) — one-line "the loudest signal". --- */
+.fj-story-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fj-story-hero__line {
+  font: var(--text-heading);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.fj-story-hero__sub {
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+/* ---- Progress rooms picker (P1.2) ------------------------- */
+.fj-rooms {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+.fj-rooms__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.fj-rooms__btn:hover {
+  border-color: var(--color-text-dim);
+  color: var(--color-text);
+}
+.fj-rooms__btn--active,
+.fj-rooms__btn--active:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.fj-rooms__btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.fj-rooms__label {
+  font-weight: 600;
+}
+
 /* ---- Weekly recap (Progress) ------------------------------- */
 .fj-recap {
   display: flex;
@@ -1796,8 +1896,32 @@
 .fj-session-set .fj-input {
   text-align: center;
 }
+.fj-session-set {
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+.fj-session-set:hover {
+  background: var(--color-inset);
+}
+.fj-session-set:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
 .fj-session-set--done {
   opacity: 0.6;
+}
+/* The dominant subtitle on Session exercise cards (P0.3-Session). */
+.fj-session-ex__subtitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+  line-height: 1.45;
+}
+.fj-session-ex__try {
+  color: var(--color-success);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The big check button — a real 44px touch target */
@@ -1910,6 +2034,91 @@
 /* ---- Exercise detail — session history grid --------------- */
 .fj-ex-history__row {
   grid-template-columns: 1.2fr 1fr 1fr 1fr;
+}
+
+/* ---- Exercise detail pills (P1.7) ------------------------- *
+ * One palette per category — PR (past achievement, green), e1RM (projection,
+ * blue), Goal (future commitment, amber). The vocabulary matches the lift-row
+ * delta pills on Today (P0.3) so the lifter sees one consistent visual
+ * language for "where you've been / where you're going". */
+.fj-detail-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+.fj-detail-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: var(--color-inset);
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+}
+.fj-detail-pill__cap {
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.75;
+}
+.fj-detail-pill__val {
+  font-weight: 700;
+}
+.fj-detail-pill--pr {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+.fj-detail-pill--e1rm {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+.fj-detail-pill--goal {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+.fj-detail-pill--btn {
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  min-height: 44px;
+  touch-action: manipulation;
+  transition: filter var(--dur-fast) var(--ease);
+}
+.fj-detail-pill--btn:hover {
+  filter: brightness(1.1);
+}
+.fj-detail-pill--btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* ---- Next-session recommendation (P1.3) ------------------- */
+.fj-detail-rec,
+.fj-detail-trajectory {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.fj-detail-rec__head,
+.fj-detail-trajectory__head {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.fj-detail-rec__sub,
+.fj-detail-trajectory__sub {
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+.fj-detail-trajectory__weeks {
+  color: var(--color-warning);
 }
 
 /* ============================================================

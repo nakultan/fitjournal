@@ -15,23 +15,30 @@ on top of the full feature set and polish pass.
 
 ## What it does
 
-- **Today** — a calm ambient header (today's date · streak · weekly-goal
-  progress, with the day's plan as a heavier title) sits above the lift list
-  itself; each row carries a delta pill ("+5 lb", "+2 reps", "same as last",
-  or "PR shot ★") sourced from the last time you logged that exercise. Log
-  body weight, cardio, and exercises set by set (tap any entry to edit it, or
-  reorder with the ▲/▼ chevrons); jot a short *day note* — energy, sleep,
+- **Today** — a calm ambient header (date · streak · weekly-goal progress,
+  with the day's plan as a heavier title) sits above the lift list itself; a
+  one-tap **Calm / Classic** chip flips the layout density right from the
+  header. Each lift row carries a delta pill ("+5 lb", "+2 reps", "same as
+  last", or "PR shot ★") sourced from the last time you logged that exercise.
+  Log body weight, cardio, and exercises set by set (tap any entry to edit it,
+  or reorder with the ▲/▼ chevrons); jot a short *day note* — energy, sleep,
   soreness — that follows the workout into History and the summary. A sticky
   green **Start session** FAB in the thumb zone (sub-label: lift count + the
-  heaviest top-set you're aiming for) drops you into the in-workout view —
-  checkable set rows and an automatic rest timer — and finishes with a
-  session recap, and a celebration when you set a record
-- **Progress** — one screen with three tabs: an **Overview** (streak, weekly
-  recap, body-weight trend, 30-day stats, charts, automatic insights, muscle
-  balance), **Exercises** (strength & cardio personal records, per-exercise
-  goals, a PR timeline — tap any strength row to open its progression view with
-  top-set and estimated-1RM trend lines and the full session history), and a
-  **History** heatmap with past workouts
+  heaviest top-set you're aiming for) drops you into the in-workout view: each
+  set row is tap-to-complete, the per-exercise subtitle reads `N sets planned
+  · last time · try X` with the auto-bump suggestion in green, and a rest
+  timer chimes at zero. Finish with a session recap, and a celebration when
+  you set a record
+- **Progress** — three rooms behind their own URLs, with a metaphor-icon
+  picker at the top: **Story** opens with a one-line hero summary ("+12%
+  tonnage this month" / "12-day streak in motion" / a weekly count, depending
+  on what's loudest) above the weekly recap, body-weight trend, 30-day stats
+  and the collapse-by-default charts / insights / muscle balance; **Records**
+  is your strength + cardio PRs, per-exercise goals and the PR timeline (tap
+  any strength row to open its progression view with top-set and
+  estimated-1RM trends, a next-session "try N×R @ W" recommendation, and an
+  amber distance-to-goal trajectory); **History** is the past-workouts list
+  and the activity heatmap
 - **Plan** — build workout templates and assign them to a weekly schedule
 - **Recipes** — a searchable, taggable recipe keeper with a photo per recipe
   (downscaled), optional per-serving macros, a serving scaler, checkable

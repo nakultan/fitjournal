@@ -197,11 +197,11 @@ export function RecipesScreen() {
       ) : (
         <EmptyState
           icon={<UtensilsCrossed size={40} />}
-          title={data.recipes.length > 0 ? 'No recipes match' : 'No recipes yet'}
+          title={data.recipes.length > 0 ? 'Nothing matches that filter.' : 'A fresh recipe keeper.'}
           description={
             data.recipes.length > 0
-              ? 'Try adjusting your search or filters.'
-              : 'Add your first recipe to get started.'
+              ? 'Loosen the search or clear a tag to see your collection.'
+              : 'Add your first recipe — name, ingredients, steps. Cook mode keeps the screen awake.'
           }
           action={
             data.recipes.length === 0 ? (

@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity,
+  BookOpen,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Dumbbell,
   Flame,
   HeartPulse,
+  Moon,
   Play,
   Plus,
   Scale,
   Sparkles,
   StickyNote,
+  Sun,
   Trash2,
   Trophy,
 } from 'lucide-react'
@@ -98,6 +101,7 @@ export function TodayScreen() {
               className="fj-datenav__label"
               onClick={() => dateInputRef.current?.showPicker?.()}
               aria-label="Pick a date"
+              aria-haspopup="dialog"
             >
               {formatLong(date)}
             </button>
@@ -106,11 +110,22 @@ export function TodayScreen() {
               type="date"
               className="fj-datenav__date"
               value={viewingDateKey}
-              onChange={(e) => e.target.value && setViewingDateKey(e.target.value)}
+              max={todayKey()}
+              onChange={(e) => {
+                // Silent guard: never let the picker land on a future day.
+                if (e.target.value && e.target.value <= todayKey()) {
+                  setViewingDateKey(e.target.value)
+                }
+              }}
               tabIndex={-1}
               aria-hidden="true"
             />
-            <button className="fj-datenav__btn" onClick={() => shiftDate(1)} aria-label="Next day">
+            <button
+              className="fj-datenav__btn"
+              onClick={() => shiftDate(1)}
+              aria-label="Next day"
+              disabled={isToday}
+            >
               <ChevronRight size={18} />
             </button>
           </div>
@@ -172,9 +187,9 @@ export function TodayScreen() {
         {!workout || workout.exercises.length === 0 ? (
           isToday && !workout?.note && workout?.bodyWeight == null && !workout?.cardio.length ? (
             <div className="fj-today-hero">
-              <Dumbbell size={48} color="var(--color-text-dim)" />
-              <p className="fj-today-hero__title">Ready to train?</p>
-              <p className="fj-today-hero__sub">Pick a template or add an exercise to start logging today&apos;s workout.</p>
+              <BookOpen size={48} color="var(--color-text-dim)" />
+              <p className="fj-today-hero__title">Today&apos;s a fresh page.</p>
+              <p className="fj-today-hero__sub">Pick a template or add an exercise — the page fills in as you log.</p>
               <div className="fj-row" style={{ gap: 'var(--space-3)', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <Button onClick={() => setExerciseModal('new')}>
                   <Plus size={16} /> Add exercise
@@ -293,9 +308,14 @@ export function TodayScreen() {
  * says what today *is* — the template name, "Rest day", or "No plan". Numbers
  * still live in full on Progress; the hub card was demoted so the lift list
  * becomes the screen.
+ *
+ * P1.8 — the streak number animates via CountUp on change, and a soft haptic
+ * fires the first time the value increases in a session (the ratchet) so
+ * earning the next day feels like something. Refs gate it so a fresh mount
+ * with an already-high streak stays quiet.
  */
 function TodayAmbientHeader({ workout }: { workout: Workout | undefined }) {
-  const { data } = useStore()
+  const { data, savePreferences } = useStore()
   const todayK = todayKey()
   const now = useMemo(() => parseKey(todayK), [todayK])
   const dayName = dayNameOf(now)
@@ -312,6 +332,17 @@ function TodayAmbientHeader({ workout }: { workout: Workout | undefined }) {
     [data.workouts, now, data.preferences.weeklyGoal],
   )
 
+  // Soft haptic the first time the streak *increases* in this session —
+  // the "ratchet" reward. Refs prevent firing on initial mount.
+  const prevStreakRef = useRef<number | null>(null)
+  const streakValue = streak.current
+  useEffect(() => {
+    if (prevStreakRef.current !== null && streakValue > prevStreakRef.current) {
+      tap()
+    }
+    prevStreakRef.current = streakValue
+  }, [streakValue])
+
   const dow = now.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
   const md = now
     .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -325,21 +356,42 @@ function TodayAmbientHeader({ workout }: { workout: Workout | undefined }) {
         ? 'Rest day'
         : 'No plan'
 
+  const isCalm = data.preferences.todayLayout === 'focused'
+  const toggleCalm = (): void => {
+    tap()
+    savePreferences({
+      ...data.preferences,
+      todayLayout: isCalm ? 'classic' : 'focused',
+    })
+  }
+
   return (
     <section className="fj-today-ambient" aria-label="Today at a glance">
-      <div className="fj-today-ambient__strip" aria-hidden="true">
-        <span>{dow}</span>
-        <span aria-hidden="true">·</span>
-        <span>{md}</span>
-        <span aria-hidden="true">·</span>
-        <span className="fj-today-ambient__streak">
-          {streak.current}
-          <Flame size={12} aria-hidden="true" />
-        </span>
-        <span aria-hidden="true">·</span>
-        <span>
-          {week.done}/{week.goal} wk
-        </span>
+      <div className="fj-today-ambient__row">
+        <div className="fj-today-ambient__strip">
+          <span>{dow}</span>
+          <span aria-hidden="true">·</span>
+          <span>{md}</span>
+          <span aria-hidden="true">·</span>
+          <span className="fj-today-ambient__streak" aria-label={`${streak.current}-day streak`}>
+            <CountUp value={streak.current} />
+            <Flame size={12} aria-hidden="true" />
+          </span>
+          <span aria-hidden="true">·</span>
+          <span aria-label={`${week.done} of ${week.goal} workouts this week`}>
+            {week.done}/{week.goal} wk
+          </span>
+        </div>
+        <button
+          type="button"
+          className={`fj-calm-chip${isCalm ? ' fj-calm-chip--on' : ''}`}
+          onClick={toggleCalm}
+          aria-pressed={isCalm}
+          aria-label={isCalm ? 'Switch to classic layout' : 'Switch to calm layout'}
+        >
+          {isCalm ? <Moon size={13} aria-hidden="true" /> : <Sun size={13} aria-hidden="true" />}
+          <span>{isCalm ? 'Calm' : 'Classic'}</span>
+        </button>
       </div>
       <h2 className="fj-today-ambient__title">{title}</h2>
     </section>
@@ -725,17 +777,7 @@ function CardioForm({ dateKey: dk }: { dateKey: string }) {
 
   return (
     <Card>
-      <div className="fj-cardio-tabs">
-        {CARDIO_TYPES.map((t) => (
-          <button
-            key={t}
-            className={'fj-cardio-tab' + (type === t ? ' fj-cardio-tab--active' : '')}
-            onClick={() => setType(t)}
-          >
-            {CARDIO_LABELS[t]}
-          </button>
-        ))}
-      </div>
+      <CardioTypeTabs type={type} onChange={setType} />
       <div className="fj-row" style={{ alignItems: 'flex-end' }}>
         <div style={{ flex: 1 }}>
           <Input label="Time (min)" type="number" min={0} inputMode="decimal" placeholder="0" value={time} onChange={(e) => setTime(e.target.value)} />
@@ -759,6 +801,55 @@ function CardioForm({ dateKey: dk }: { dateKey: string }) {
         </Button>
       </div>
     </Card>
+  )
+}
+
+/* ---------- Cardio type tabs (P1.10 a11y) ----------
+ * Tablist semantics on a single-select toolbar so screen readers announce
+ * the row as a tab group and the active tab. Arrow keys move focus AND
+ * selection, matching the WAI-ARIA tablist pattern.
+ */
+function CardioTypeTabs({
+  type,
+  onChange,
+}: {
+  type: CardioType
+  onChange: (t: CardioType) => void
+}) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([])
+  const onKey = (idx: number) => (ev: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return
+    ev.preventDefault()
+    const next =
+      ev.key === 'ArrowRight'
+        ? (idx + 1) % CARDIO_TYPES.length
+        : (idx - 1 + CARDIO_TYPES.length) % CARDIO_TYPES.length
+    refs.current[next]?.focus()
+    onChange(CARDIO_TYPES[next])
+  }
+  return (
+    <div className="fj-cardio-tabs" role="tablist" aria-label="Cardio type">
+      {CARDIO_TYPES.map((t, i) => {
+        const isActive = type === t
+        return (
+          <button
+            key={t}
+            ref={(el) => {
+              refs.current[i] = el
+            }}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            tabIndex={isActive ? 0 : -1}
+            className={'fj-cardio-tab' + (isActive ? ' fj-cardio-tab--active' : '')}
+            onClick={() => onChange(t)}
+            onKeyDown={onKey(i)}
+          >
+            {CARDIO_LABELS[t]}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -1217,16 +1308,8 @@ function CardioModal({
         </>
       }
     >
-      <div className="fj-cardio-tabs" style={{ marginBottom: 'var(--space-4)' }}>
-        {CARDIO_TYPES.map((t) => (
-          <button
-            key={t}
-            className={'fj-cardio-tab' + (type === t ? ' fj-cardio-tab--active' : '')}
-            onClick={() => setType(t)}
-          >
-            {CARDIO_LABELS[t]}
-          </button>
-        ))}
+      <div style={{ marginBottom: 'var(--space-4)' }}>
+        <CardioTypeTabs type={type} onChange={setType} />
       </div>
       <div className="fj-row" style={{ alignItems: 'flex-end' }}>
         <div style={{ flex: 1 }}>
