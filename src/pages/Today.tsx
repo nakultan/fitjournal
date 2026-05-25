@@ -14,7 +14,6 @@ import {
   Scale,
   Sparkles,
   StickyNote,
-  Sun,
   Trash2,
   Trophy,
 } from 'lucide-react'
@@ -47,10 +46,10 @@ import {
   findLastTime,
   formatSets,
   isLoggedWorkout,
+  topSetExcluding,
   topSetWeight,
   totalWorkoutsLogged,
 } from '@/data/logic'
-import type { StrengthPR } from '@/data/logic'
 import type {
   CardioEntry,
   CardioType,
@@ -165,8 +164,14 @@ export function TodayScreen() {
 
       <section className="fj-section">
         <div className="fj-section__head">
-          <h2 className="fj-section__title">
-            <Dumbbell size={18} /> Weight Lifting
+          <h2 className="fj-section__title fj-section__title--label">
+            Today&apos;s Lifts
+            {workout && workout.exercises.length > 0 && (
+              <span className="fj-section__title-meta">
+                {' · '}
+                {workout.exercises.length} ex
+              </span>
+            )}
           </h2>
           <div className="fj-row" style={{ gap: 'var(--space-2)' }}>
             <Button size="sm" onClick={() => setExerciseModal('new')}>
@@ -214,7 +219,13 @@ export function TodayScreen() {
               const top = topSetWeight(e)
               const pr = strengthPRs[exerciseKey(e.name)]
               const isPR = !!pr && top > 0 && pr.weight === top && pr.date === viewingDateKey
-              const delta = computeRowDelta(e, data.workouts, viewingDateKey, weightUnit, pr)
+              const delta = computeRowDelta(e, data.workouts, viewingDateKey, weightUnit)
+              // P1.4 PR-shot — its own amber pill, alongside the delta. The
+              // wireframe shows both signals together when both apply.
+              // Compares against history MINUS the viewing date so today's
+              // own entry doesn't inflate the PR calc and silence the label.
+              const priorPR = top > 0 ? topSetExcluding(data.workouts, e.name, viewingDateKey) : 0
+              const isPRShot = top > 0 && priorPR > 0 && top > priorPR
               return (
                 <div
                   key={e.id}
@@ -249,6 +260,14 @@ export function TodayScreen() {
                       aria-label={delta.aria}
                     >
                       {delta.label}
+                    </span>
+                  )}
+                  {isPRShot && (
+                    <span
+                      className="fj-ex-delta fj-ex-delta--pr"
+                      aria-label={`PR shot — ${top} ${weightUnit} would beat your ${priorPR} ${weightUnit} record`}
+                    >
+                      PR shot ★
                     </span>
                   )}
                   <ReorderButtons
@@ -356,6 +375,9 @@ function TodayAmbientHeader({ workout }: { workout: Workout | undefined }) {
         ? 'Rest day'
         : 'No plan'
 
+  // P1.1 — single "Calm" pill in monospace, on/off via aria-pressed. The
+  // wireframe deliberately keeps one label so the chip reads as a mode
+  // indicator (Calm: on/off) rather than a label-flipping toggle.
   const isCalm = data.preferences.todayLayout === 'focused'
   const toggleCalm = (): void => {
     tap()
@@ -387,10 +409,10 @@ function TodayAmbientHeader({ workout }: { workout: Workout | undefined }) {
           className={`fj-calm-chip${isCalm ? ' fj-calm-chip--on' : ''}`}
           onClick={toggleCalm}
           aria-pressed={isCalm}
-          aria-label={isCalm ? 'Switch to classic layout' : 'Switch to calm layout'}
+          aria-label={isCalm ? 'Calm layout on — tap to turn off' : 'Calm layout off — tap to turn on'}
         >
-          {isCalm ? <Moon size={13} aria-hidden="true" /> : <Sun size={13} aria-hidden="true" />}
-          <span>{isCalm ? 'Calm' : 'Classic'}</span>
+          <Moon size={12} aria-hidden="true" />
+          <span>Calm</span>
         </button>
       </div>
       <h2 className="fj-today-ambient__title">{title}</h2>
@@ -427,11 +449,13 @@ function TodayStartFab({
       const last = findLastTime(data.workouts, e.name, todayK)
       if (last) best = Math.max(best, topSetWeight(last.entry))
     }
-    return best
+    // Trim floating-point cruft (e.g. 182.49999) while preserving the half-
+    // pound increments lifters actually use.
+    return best > 0 ? Number(best.toFixed(1)) : 0
   }, [exercises, data.workouts, todayK])
   const sub =
     suggestedTop > 0
-      ? `${count} ${liftWord} · TRY ${Math.round(suggestedTop)}`
+      ? `${count} ${liftWord} · TRY ${suggestedTop}`
       : `${count} ${liftWord}`
 
   return (
@@ -440,7 +464,7 @@ function TodayStartFab({
       className="fj-start-fab"
       onClick={() => startSession()}
       aria-label={`Start session — ${count} exercise${count === 1 ? '' : 's'}${
-        suggestedTop > 0 ? `, try ${Math.round(suggestedTop)} ${weightUnit}` : ''
+        suggestedTop > 0 ? `, try ${suggestedTop} ${weightUnit}` : ''
       }`}
     >
       <span className="fj-start-fab__row">
@@ -453,28 +477,26 @@ function TodayStartFab({
 }
 
 /* ---------- Lift-row delta pill (P0.3) ----------
- * A "where am I vs last time" pill at the trailing edge of each row. PR shot
- * takes precedence (planning to exceed the standing PR), then weight gain,
- * then rep gain, then same-as-last. Returns null when there's no last time
- * to compare against, or when this entry hasn't been entered yet (top == 0).
+ * "Where am I vs last time" at the trailing edge of each row. Weight gain,
+ * rep gain, or same-as-last; returns null when there's no comparison to make
+ * or the entry hasn't been entered yet (top == 0). Weight deltas keep one
+ * decimal so 2.5 lb plates and 1.25 / 2.5 kg increments read truthfully.
+ *
+ * PR-shot is intentionally NOT handled here — it's a separate pill that
+ * renders alongside this one (the wireframe shows both together when both
+ * apply), and it must compare against history-minus-today via
+ * `topSetExcluding` since today's own entry would otherwise inflate the PR
+ * calc and the label could never fire.
  */
 function computeRowDelta(
   entry: ExerciseEntry,
   workouts: Record<string, Workout>,
-  todayK: string,
+  viewingDateKey: string,
   weightUnit: string,
-  pr: StrengthPR | undefined,
-): { label: string; tone: 'success' | 'neutral' | 'pr'; aria: string } | null {
+): { label: string; tone: 'success' | 'neutral'; aria: string } | null {
   const top = topSetWeight(entry)
   if (top <= 0) return null
-  if (pr && pr.date !== todayK && top > pr.weight) {
-    return {
-      label: 'PR shot ★',
-      tone: 'pr',
-      aria: `Planned top set ${top} ${weightUnit} — would beat your ${pr.weight} ${weightUnit} record`,
-    }
-  }
-  const last = findLastTime(workouts, entry.name, todayK)
+  const last = findLastTime(workouts, entry.name, viewingDateKey)
   if (!last) return null
   const lastTop = topSetWeight(last.entry)
   if (lastTop <= 0) return null
@@ -487,7 +509,7 @@ function computeRowDelta(
     0,
   )
   if (top > lastTop) {
-    const diff = Math.round(top - lastTop)
+    const diff = Number((top - lastTop).toFixed(1))
     return {
       label: `+${diff} ${weightUnit}`,
       tone: 'success',

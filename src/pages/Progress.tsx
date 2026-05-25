@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   Dumbbell,
   Flame,
   Footprints,
@@ -82,9 +83,9 @@ const ROOMS: {
   metaphor: string
   Icon: LucideIcon
 }[] = [
-  { id: 'story', label: 'Story', metaphor: 'Your trend at a glance', Icon: BookOpen },
-  { id: 'records', label: 'Records', metaphor: 'PRs, goals & timeline', Icon: Trophy },
-  { id: 'history', label: 'History', metaphor: 'Every logged day', Icon: CalendarDays },
+  { id: 'story', label: 'Story', metaphor: 'Weekly recap, insights, body weight', Icon: BookOpen },
+  { id: 'records', label: 'Records', metaphor: 'PRs, per-exercise progression, goals', Icon: Trophy },
+  { id: 'history', label: 'History', metaphor: 'Past workouts & heatmap', Icon: CalendarDays },
 ]
 
 /**
@@ -192,10 +193,11 @@ export function ProgressScreen() {
 }
 
 /**
- * The room picker — a three-card row with metaphor icons. Behaves like a
- * routed segmented control: arrow keys move focus and select the next room,
- * matching the WAI-ARIA tablist pattern so screen readers announce the
- * transition. Render order matches `ROOMS`.
+ * The room picker — a vertical stack of three Card-style rows under a
+ * "CHANGE ROOM" label. Each row carries an icon + title + one-line metaphor
+ * sub on the left and an indicator on the right: a "here" pill for the
+ * active room, a chevron for the others. Behaves as a tablist (arrow keys
+ * move focus + selection) so screen readers announce the transition.
  */
 function ProgressRoomPicker({
   active,
@@ -207,37 +209,57 @@ function ProgressRoomPicker({
   const refs = useRef<(HTMLButtonElement | null)[]>([])
 
   const onKey = (idx: number) => (ev: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return
+    const isVertical = ev.key === 'ArrowDown' || ev.key === 'ArrowUp'
+    const isHorizontal = ev.key === 'ArrowRight' || ev.key === 'ArrowLeft'
+    if (!isVertical && !isHorizontal) return
     ev.preventDefault()
-    const next = ev.key === 'ArrowRight' ? (idx + 1) % ROOMS.length : (idx - 1 + ROOMS.length) % ROOMS.length
+    const forward = ev.key === 'ArrowDown' || ev.key === 'ArrowRight'
+    const next = forward
+      ? (idx + 1) % ROOMS.length
+      : (idx - 1 + ROOMS.length) % ROOMS.length
     refs.current[next]?.focus()
     onPick(ROOMS[next].id)
   }
 
   return (
-    <div className="fj-rooms" role="tablist" aria-label="Progress rooms">
-      {ROOMS.map((r, i) => {
-        const isActive = r.id === active
-        return (
-          <button
-            key={r.id}
-            ref={(el) => {
-              refs.current[i] = el
-            }}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            tabIndex={isActive ? 0 : -1}
-            className={cn('fj-rooms__btn', isActive && 'fj-rooms__btn--active')}
-            onClick={() => onPick(r.id)}
-            onKeyDown={onKey(i)}
-          >
-            <r.Icon size={18} aria-hidden="true" />
-            <span className="fj-rooms__label">{r.label}</span>
-          </button>
-        )
-      })}
-    </div>
+    <>
+      <div className="fj-rooms__label-small" aria-hidden="true">
+        Change room
+      </div>
+      <div className="fj-rooms" role="tablist" aria-label="Progress rooms">
+        {ROOMS.map((r, i) => {
+          const isActive = r.id === active
+          return (
+            <button
+              key={r.id}
+              ref={(el) => {
+                refs.current[i] = el
+              }}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
+              className={cn('fj-rooms__row', isActive && 'fj-rooms__row--active')}
+              onClick={() => onPick(r.id)}
+              onKeyDown={onKey(i)}
+            >
+              <span className="fj-rooms__icon" aria-hidden="true">
+                <r.Icon size={18} />
+              </span>
+              <span className="fj-rooms__body">
+                <span className="fj-rooms__title">{r.label}</span>
+                <span className="fj-rooms__sub">{r.metaphor}</span>
+              </span>
+              {isActive ? (
+                <span className="fj-rooms__here">here</span>
+              ) : (
+                <ChevronRight size={16} aria-hidden="true" />
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </>
   )
 }
 
@@ -246,9 +268,13 @@ function ProgressRoomPicker({
  * recent data. Returns null when nothing rises above noise, so the room
  * falls through to a calm "Train once and a story starts" empty state
  * rather than forcing a thin number.
+ *
+ * Takes the weekly plan so `computeStreak` can bridge planned rest days —
+ * without it, a Mon/Wed/Fri lifter's real streak looks like a one-day blip.
  */
 function computeStoryHero(
   workouts: Record<string, import('@/data/types').Workout>,
+  weeklyPlan: import('@/data/types').AppData['weeklyPlan'],
   reference: Date,
   weeklyGoal: number,
 ): { text: string; sub: string } | null {
@@ -277,7 +303,7 @@ function computeStoryHero(
       }
     }
   }
-  const streak = computeStreak(workouts, {}, reference)
+  const streak = computeStreak(workouts, weeklyPlan, reference)
   if (streak.current >= 3) {
     return {
       text: `${streak.current}-day streak in motion.`,
@@ -321,7 +347,12 @@ function StorySection() {
       weekly: computeWeeklyStats(data.workouts, now, 8),
       insights: computeInsights(data, now),
       balance: computeMuscleBalance(data.workouts, now),
-      hero: computeStoryHero(data.workouts, now, data.preferences.weeklyGoal),
+      hero: computeStoryHero(
+        data.workouts,
+        data.weeklyPlan,
+        now,
+        data.preferences.weeklyGoal,
+      ),
     }
   }, [data])
 
@@ -1009,8 +1040,8 @@ function HistorySection() {
         ) : (
           <EmptyState
             icon={<CalendarDays size={40} />}
-            title="The heatmap is waiting."
-            description="Every day you train fills another square. Log one to start the grid."
+            title="A grid of empty days, waiting to fill."
+            description="Every day you train fills another square. Log one and the heatmap starts."
           />
         )}
         {loggedDates.length > visibleCount && (

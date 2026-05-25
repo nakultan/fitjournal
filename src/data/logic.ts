@@ -43,6 +43,31 @@ export function formatSets(sets: SetEntry[], unit: string): string {
 }
 
 /**
+ * Heaviest top set ever logged for `name`, across every workout EXCEPT
+ * the entry on `excludingDate`. This is the number to compare a planned
+ * top set against when deciding whether it would be a personal record —
+ * without it, today's own entry inflates the PR calc and "PR shot" can
+ * never fire. Returns 0 when there is no prior history to beat.
+ */
+export function topSetExcluding(
+  workouts: Workouts,
+  name: string,
+  excludingDate: string,
+): number {
+  const key = exerciseKey(name)
+  if (key.length < 2) return 0
+  let best = 0
+  for (const dk of Object.keys(workouts)) {
+    if (dk === excludingDate) continue
+    for (const e of workouts[dk].exercises) {
+      if (exerciseKey(e.name) !== key) continue
+      best = Math.max(best, topSetWeight(e))
+    }
+  }
+  return best
+}
+
+/**
  * The most recent logged instance of `name`, on a day strictly before
  * `beforeDateKey`. Used to show a "last time" hint when planning the next set.
  */
@@ -488,7 +513,7 @@ export interface NextSessionRec {
 
 /**
  * Next-session recommendation. Repeats the last logged top set unless the
- * lifter is "in rhythm" — at least two sessions in the last 14 days and the
+ * lifter is "in rhythm" — at least two sessions in the last 7 days and the
  * last top set hit 5+ reps — in which case the weight gets a calm +5 bump.
  * Pure; null when there's nothing to base a suggestion on.
  */
@@ -499,7 +524,7 @@ export function recommendNextSession(
   if (history.length === 0) return null
   const last = history[history.length - 1]
   if (last.topSet <= 0) return null
-  const cutoff = reference.getTime() - 14 * DAY_MS
+  const cutoff = reference.getTime() - 7 * DAY_MS
   const recent = history.filter((h) => parseKey(h.date).getTime() >= cutoff).length
   const bump = recent >= 2 && last.topSetReps >= 5 ? 5 : 0
   return {
@@ -519,9 +544,12 @@ export interface GoalTrajectory {
 
 /**
  * Linear-fit projection from the last eight sessions toward a goal weight.
- * Reads whichever of top set or estimated 1RM sits closer to the goal — the
- * lifter is honestly closer on the metric they're actually tracking. Returns
- * null when there is no goal, no history, or the goal is already past.
+ * "Remaining" is measured against the lifter's actual top set — a goal is a
+ * weight you have to *put on the bar*, not a 1RM projection — so a high
+ * Epley estimate never makes the trajectory disappear. The slope itself
+ * tracks whichever series (top set or e1RM) sits closer to the goal, since
+ * that's the more responsive growth signal. Returns null when there is no
+ * goal, no history, or the actual top set has already cleared the goal.
  */
 export function computeGoalTrajectory(
   history: ExerciseHistoryPoint[],
@@ -529,8 +557,7 @@ export function computeGoalTrajectory(
 ): GoalTrajectory | null {
   if (history.length === 0 || goal <= 0) return null
   const latest = history[history.length - 1]
-  const best = Math.max(latest.topSet, latest.oneRm)
-  const remaining = Number((goal - best).toFixed(1))
+  const remaining = Number((goal - latest.topSet).toFixed(1))
   if (remaining <= 0) return null
   const last8 = history.slice(-8)
   if (last8.length < 2) return { remaining, weeks: null }

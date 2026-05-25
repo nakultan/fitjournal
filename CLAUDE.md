@@ -449,3 +449,103 @@ empty states.
   time (date): … · try X`. The green `try X` segment is sourced from
   `recommendNextSession` and only appears when the heuristic actually
   bumped — repeating the same weight stays quiet.
+
+**v2 P0 + P1 audit-and-fix pass — shipped 2026-05-24.** A line-by-line
+re-read against the wireframe HTML caught a clutch of real bugs and a few
+structural deviations that slipped through the initial P0 / P1 ships. All
+fixed in one pass; existing 70-test suite grew to 77.
+
+P1 logic bugs:
+
+- **`computeGoalTrajectory` over-counted "best".** Used
+  `Math.max(latest.topSet, latest.oneRm)` for the remaining-to-goal calc, so
+  a high Epley projection silently retired the trajectory card while the
+  lifter still hadn't put the weight on the bar (e.g. 180 × 5 → e1RM 210
+  cleared a 200-lb goal). Now uses `latest.topSet` only; slope still picks
+  whichever of top set / e1RM sits closer to the goal. Regression test
+  asserts a 200-lb goal stays open at top set 180.
+- **`recommendNextSession` used a 14-day window.** Spec called for 7-day;
+  doubled to 14 in the original ship. Now 7 days, with a new test pinning
+  the boundary (an 8-day-old session is excluded so `bumped: false`).
+- **`computeStoryHero` ignored the weekly plan.** Called `computeStreak`
+  with `{}` for the plan, so a Mon/Wed/Fri lifter on a real 4-day streak
+  read as a 1- or 2-day blip and the hero's streak narrative never fired.
+  Now takes `weeklyPlan` as a parameter; threaded `data.weeklyPlan` at the
+  StorySection call site.
+- **Session row `onKeyDown` swallowed input Space.** The row-tap-to-complete
+  handler fired on Enter/Space without checking `e.target !== e.currentTarget`,
+  so pressing Space while editing weight in the keypad silently marked the
+  set done. Guard added so typed Space stays in the input.
+
+P1 spec deviations:
+
+- **P1.1 Calm chip.** Was a stateful label flip ("Calm" / "Classic" with
+  Moon / Sun icons); the wireframe shows a single monospace `🌙 Calm` pill
+  that's pressed-on / pressed-off. Refactored — one Moon icon, fixed
+  "Calm" label, `aria-pressed` drives the on/off treatment with
+  accent-soft + accent border when on.
+- **P1.2 Room picker.** Was a horizontal 3-column compact button row; the
+  wireframe shows a vertical stack of 3 Card-style rows under a
+  `CHANGE ROOM` label, each with an icon + title + metaphor sub on the
+  left and a `here` pill (active) or chevron (inactive) on the right.
+  Rewritten to match — `.fj-rooms` is now a vertical stack of
+  `.fj-rooms__row` Cards with `.fj-rooms__icon` / `.fj-rooms__body`
+  (title + sub) / `.fj-rooms__here` indicator. Tablist a11y preserved;
+  arrow keys move focus + selection both vertically and horizontally now.
+  Metaphor copy updated to the wireframe's exact strings
+  ("Weekly recap, insights, body weight" / etc).
+- **P1.7 Extra pill.** Shipped 4 pills (PR / e1RM / Goal + Sessions); the
+  wireframe specifies 3 only. Sessions pill removed — the session count
+  still surfaces in the PageHeader subtitle.
+- **P1.11 Edit affordance.** Was always-editable inputs (third
+  interpretation, neither long-press nor pencil); the brief asked for
+  "long-press OR explicit pencil icon." Refactored: each set row is now
+  read-only `185 × 8 lb` text by default with a `.fj-session-set__edit`
+  pencil button that toggles inputs (Check icon while editing). Row tap =
+  complete; inputs stop click + focus + keydown propagation. A derived
+  `showInputs = editing && !done` collapses the inputs back to display
+  when the set is marked done — no `setState` in effect.
+
+Copy nits (now matching the wireframe verbatim where possible):
+
+- P1.6 trajectory: `**N lb to go** · ~M weeks at current rate` /
+  `Trajectory based on last 8 sessions.`
+- P1.3 rec sub (when bumped): `+5 lb on top set · within recovery range`.
+- P0.3-Session subtitle: `set X of N` (computed from `doneSets` count) —
+  was `N sets planned`. Falls back to `all N sets done` when complete.
+- P1.5 History empty state: `A grid of empty days, waiting to fill.`
+
+P0 logic bugs:
+
+- **PR-shot label was dead code.** The check `pr.date !== todayK` was
+  meant to guard against today's own entry inflating the PR calc, but
+  `computeStrengthPRs` already walks today's data, so the moment a planned
+  weight saved it became `pr.date === today` and the label silenced
+  itself. Effect: the wireframe's signature `PR shot ★` pill literally
+  never rendered. Fixed with a new pure helper
+  `topSetExcluding(workouts, name, excludingDate)` in `data/logic.ts` (1
+  new unit test) that walks history minus the given date; Today computes
+  `priorPR = topSetExcluding(...)` and fires `isPRShot = top > priorPR`,
+  which actually triggers.
+- **PR-shot was conflated with the delta pill.** Shipped as a tone variant
+  of the single delta pill (PR-shot mutually exclusive with `+N lb`); the
+  wireframe shows BOTH pills together on the same row when both apply.
+  Split into its own `.fj-ex-delta--pr` pill rendered alongside the delta.
+  `computeRowDelta` simplified to return only `success` / `neutral` tones.
+- **Half-pound deltas were `Math.round`ed.** A 2.5 lb plate increment read
+  as `+3 lb`; 1.25 / 2.5 kg increments rounded similarly. Fixed in both
+  the row delta (`Number((top - lastTop).toFixed(1))`) and the FAB
+  `suggestedTop` (`Number(best.toFixed(1))`), preserving real plate math
+  while trimming floating-point cruft.
+
+P0 spec deviation:
+
+- **Lifts section header.** Was `<h2><Dumbbell/> Weight Lifting</h2>`; the
+  wireframe shows a small uppercase `TODAY'S LIFTS · 6 EX · ~50 MIN` strip.
+  New `.fj-section__title--label` modifier renders the `<h2>` as
+  `--text-micro`, uppercase, `--color-text-dim`. The header now reads
+  `Today's Lifts · N ex`; the time estimate is deliberately skipped (no
+  honest per-exercise duration data). Trophy icon on PR rows kept for
+  now — overlaps with the new PR-shot pill on a logged-PR day (two
+  signals for one event), happy to retire if you want full v2 visual
+  compliance.

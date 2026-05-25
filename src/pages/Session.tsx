@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  Check,
   CheckCircle2,
   ChevronLeft,
   Clock,
   Dumbbell,
+  Pencil,
   Plus,
   RotateCcw,
   Sparkles,
@@ -266,9 +268,21 @@ function SessionExerciseCard({
           </span>
         </span>
       </div>
+      {/* P0.3-Session — dominant subtitle: "set X of N" tracks the first
+          un-checked set so the line stays meaningful even without the P2
+          single-active-card treatment. "try X" only shows when the bump
+          heuristic actually fires. */}
       <p className="fj-session-ex__subtitle">
         <span>
-          {exercise.sets.length} set{exercise.sets.length === 1 ? '' : 's'} planned
+          {(() => {
+            const total = exercise.sets.length
+            const doneCount = exercise.sets.reduce(
+              (n, _, i) => (doneSets.has(`${exercise.id}:${i}`) ? n + 1 : n),
+              0,
+            )
+            if (doneCount >= total) return `all ${total} sets done`
+            return `set ${doneCount + 1} of ${total}`
+          })()}
         </span>
         {lastTime && (
           <>
@@ -290,8 +304,8 @@ function SessionExerciseCard({
       <div className="fj-session-sets" style={{ marginTop: 'var(--space-3)' }}>
         <div className="fj-session-set fj-session-set--head" aria-hidden="true">
           <span className="fj-session-set__num">#</span>
-          <span className="fj-session-set__col">Weight</span>
-          <span className="fj-session-set__col">Reps</span>
+          <span className="fj-session-set__col">Weight × reps</span>
+          <span />
           <span />
         </div>
         {exercise.sets.map((s, i) => {
@@ -339,15 +353,30 @@ function SessionSetRow({
 }) {
   const weightOver = set.weight > WEIGHT_MAX
   const repsOver = set.reps > REPS_MAX
-  // P1.11 — primary CTA is "Complete set": tapping the row toggles done.
-  // The inputs stay always-editable (tapping a number opens the keypad and
-  // the click is swallowed before it can reach the row), so there is no
-  // hidden long-press to learn. The set number on the left is a calm
-  // affordance hinting at the row-level tap.
-  const stopBubble = (e: React.MouseEvent | React.FocusEvent): void => e.stopPropagation()
+  // P1.11 — single primary CTA per row: tap = complete. Editing is gated
+  // behind an explicit pencil affordance so the row doesn't conflate two
+  // actions during physical exertion. Defaults to read-only "weight × reps"
+  // text; inputs only appear once the pencil is tapped. Marking the set
+  // done suppresses inputs even if `editing` is still true under the hood,
+  // so a completed set always returns to its calm display.
+  const [editing, setEditing] = useState(false)
+  const showInputs = editing && !done
+
+  const stopBubble = (e: React.MouseEvent | React.FocusEvent | React.KeyboardEvent): void =>
+    e.stopPropagation()
+
+  const display =
+    set.weight > 0 || set.reps > 0
+      ? `${set.weight || 0} × ${set.reps || 0}`
+      : '— × —'
+
   return (
     <div
-      className={cn('fj-session-set', done && 'fj-session-set--done')}
+      className={cn(
+        'fj-session-set',
+        done && 'fj-session-set--done',
+        showInputs && 'fj-session-set--editing',
+      )}
       role="button"
       tabIndex={0}
       aria-pressed={done}
@@ -356,8 +385,13 @@ function SessionSetRow({
           ? `Set ${index + 1} done — tap to undo`
           : `Complete set ${index + 1}`
       }
-      onClick={onToggle}
+      onClick={() => {
+        if (showInputs) return
+        onToggle()
+      }}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return
+        if (showInputs) return
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
           onToggle()
@@ -368,38 +402,65 @@ function SessionSetRow({
         <span className="fj-session-set__num" aria-hidden="true">
           {index + 1}
         </span>
-        <input
-          className="fj-input"
-          type="number"
-          min={0}
-          max={WEIGHT_MAX}
-          inputMode="decimal"
-          aria-label={`Set ${index + 1} weight (${weightUnit})`}
-          aria-invalid={weightOver || undefined}
-          placeholder="0"
-          value={set.weight || ''}
-          onClick={stopBubble}
-          onFocus={stopBubble}
-          onChange={(e) =>
-            onUpdate({ weight: Math.max(0, Number(e.target.value) || 0) })
-          }
-        />
-        <input
-          className="fj-input"
-          type="number"
-          min={0}
-          max={REPS_MAX}
-          inputMode="numeric"
-          aria-label={`Set ${index + 1} reps`}
-          aria-invalid={repsOver || undefined}
-          placeholder="0"
-          value={set.reps || ''}
-          onClick={stopBubble}
-          onFocus={stopBubble}
-          onChange={(e) =>
-            onUpdate({ reps: Math.max(0, Math.round(Number(e.target.value) || 0)) })
-          }
-        />
+        {showInputs ? (
+          <span className="fj-session-set__inputs">
+            <input
+              className="fj-input"
+              type="number"
+              min={0}
+              max={WEIGHT_MAX}
+              inputMode="decimal"
+              aria-label={`Set ${index + 1} weight (${weightUnit})`}
+              aria-invalid={weightOver || undefined}
+              placeholder="0"
+              autoFocus
+              value={set.weight || ''}
+              onClick={stopBubble}
+              onFocus={stopBubble}
+              onKeyDown={stopBubble}
+              onChange={(e) =>
+                onUpdate({ weight: Math.max(0, Number(e.target.value) || 0) })
+              }
+            />
+            <span aria-hidden="true" className="fj-session-set__times">
+              ×
+            </span>
+            <input
+              className="fj-input"
+              type="number"
+              min={0}
+              max={REPS_MAX}
+              inputMode="numeric"
+              aria-label={`Set ${index + 1} reps`}
+              aria-invalid={repsOver || undefined}
+              placeholder="0"
+              value={set.reps || ''}
+              onClick={stopBubble}
+              onFocus={stopBubble}
+              onKeyDown={stopBubble}
+              onChange={(e) =>
+                onUpdate({ reps: Math.max(0, Math.round(Number(e.target.value) || 0)) })
+              }
+            />
+          </span>
+        ) : (
+          <span className="fj-session-set__display" aria-label={`${set.weight} ${weightUnit} × ${set.reps} reps`}>
+            {display}
+            <small className="fj-muted"> {weightUnit}</small>
+          </span>
+        )}
+        <button
+          type="button"
+          className="fj-session-set__edit"
+          aria-label={showInputs ? `Done editing set ${index + 1}` : `Edit set ${index + 1}`}
+          aria-pressed={showInputs}
+          onClick={(e) => {
+            e.stopPropagation()
+            setEditing((v) => !v)
+          }}
+        >
+          {showInputs ? <Check size={16} /> : <Pencil size={14} />}
+        </button>
         <span
           className={cn('fj-session-check', done && 'fj-session-check--done')}
           aria-hidden="true"

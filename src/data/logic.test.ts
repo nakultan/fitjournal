@@ -3,6 +3,7 @@ import type { AppData, CardioEntry, DayName, ExerciseEntry, MuscleGroup, Workout
 import { parseKey } from '@/lib/dates'
 import {
   WORKOUT_MILESTONES,
+  topSetExcluding,
   computeBestDay,
   computeCardioPRs,
   computeExerciseHistory,
@@ -639,6 +640,30 @@ describe('computeInsights', () => {
     expect(rec).toEqual({ sets: 3, reps: 8, weight: 180, bumped: false })
   })
 
+  it('topSetExcluding returns prior best without the named date', () => {
+    // The classic PR-shot scenario: today's session is the new high, but the
+    // PR-shot check must compare against history-minus-today.
+    const w = workouts({
+      '2026-05-13': { ex: [exAt('Bench', 180)] },
+      '2026-05-19': { ex: [exAt('Bench', 175)] },
+      '2026-05-20': { ex: [exAt('Bench', 200)] },
+    })
+    expect(topSetExcluding(w, 'Bench', '2026-05-20')).toBe(180)
+    // No prior history → 0 (so PR-shot label stays quiet on a brand-new exercise).
+    expect(topSetExcluding(w, 'Squat', '2026-05-20')).toBe(0)
+  })
+
+  it('only counts sessions within the 7-day window', () => {
+    // 8 days ago is outside the window — even with a recent session today,
+    // recent count stays at 1 so the bump never fires.
+    const w = workouts({
+      '2026-05-12': { ex: [exAt('Bench', 180, { sets: 3, reps: 8 })] },
+      '2026-05-20': { ex: [exAt('Bench', 180, { sets: 3, reps: 8 })] },
+    })
+    const rec = recommendNextSession(computeExerciseHistory(w, 'bench'), REF)
+    expect(rec?.bumped).toBe(false)
+  })
+
   it('computes a goal trajectory from a rising trend', () => {
     const w = workouts({
       '2026-05-01': { ex: [exAt('Bench', 170, { sets: 3, reps: 5 })] },
@@ -668,6 +693,21 @@ describe('computeInsights', () => {
     })
     const trajectory = computeGoalTrajectory(computeExerciseHistory(w, 'bench'), 250)
     expect(trajectory).toBeNull()
+  })
+
+  it('still surfaces a trajectory when e1RM exceeds the goal but top set has not', () => {
+    // Regression for an earlier bug where `best = max(topSet, oneRm)` made
+    // the trajectory disappear as soon as the Epley projection cleared the
+    // goal — even though the lifter hadn't actually put the weight on the bar.
+    // Top set 180 × 5 → e1RM ≈ 210; goal 200 should still show "20 lb to go".
+    const w = workouts({
+      '2026-05-01': { ex: [exAt('Bench', 170, { sets: 3, reps: 5 })] },
+      '2026-05-08': { ex: [exAt('Bench', 175, { sets: 3, reps: 5 })] },
+      '2026-05-15': { ex: [exAt('Bench', 180, { sets: 3, reps: 5 })] },
+    })
+    const trajectory = computeGoalTrajectory(computeExerciseHistory(w, 'bench'), 200)
+    expect(trajectory).not.toBeNull()
+    expect(trajectory?.remaining).toBeCloseTo(20, 0)
   })
 
   it('does not flag a weekly trend swing on a near-empty week', () => {

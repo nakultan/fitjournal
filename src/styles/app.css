@@ -130,6 +130,19 @@
   gap: var(--space-2);
   font: var(--text-heading);
 }
+/* P0.1 small-label section header — used on "Today's Lifts" to match the
+ * wireframe's calm uppercase strip above the lift list. The dim metadata
+ * after the dot ("· 6 ex") rides along in a smaller weight. */
+.fj-section__title--label {
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-text-dim);
+}
+.fj-section__title-meta {
+  font-weight: 500;
+  color: var(--color-text-dim);
+}
 .fj-row {
   display: flex;
   align-items: center;
@@ -1520,32 +1533,39 @@
   margin-top: var(--space-2);
 }
 
-/* ---- Calm chip (P1.1) — promoted from Settings into the Today header. */
+/* ---- Calm chip (P1.1) — single "🌙 Calm" pill, monospace, pressed = on. */
 .fj-calm-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 6px 12px;
+  gap: 5px;
+  min-height: 28px;
+  padding: 5px 11px;
   border-radius: var(--radius-pill);
   background: var(--color-inset);
   color: var(--color-text-muted);
-  border: 1px solid transparent;
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  border: 1px solid var(--color-border);
+  font:
+    600 0.6875rem/1 ui-monospace,
+    SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   cursor: pointer;
   flex-shrink: 0;
   touch-action: manipulation;
-  transition: border-color var(--dur-fast) var(--ease);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 .fj-calm-chip:hover {
-  border-color: var(--color-border);
+  color: var(--color-text);
+  border-color: var(--color-text-dim);
 }
-.fj-calm-chip--on {
+.fj-calm-chip--on,
+.fj-calm-chip--on:hover {
   background: var(--color-accent-soft);
   color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 .fj-calm-chip:focus-visible {
   outline: 2px solid var(--color-accent);
@@ -1766,50 +1786,102 @@
   color: var(--color-text-muted);
 }
 
-/* ---- Progress rooms picker (P1.2) ------------------------- */
+/* ---- Progress rooms picker (P1.2) — vertical Card stack ----
+ * Mirrors the Settings cards index pattern: each room is a tappable Card row
+ * with an icon, a title, a metaphor sub-line, and a right-aligned indicator
+ * (a "here" pill for the active room, a chevron for the others). Behaves
+ * as a tablist (arrow keys move focus + selection, aria-selected on each
+ * tab) so the routed picker stays keyboard-accessible.
+ */
+.fj-rooms__label-small {
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-text-dim);
+  margin-bottom: var(--space-2);
+}
 .fj-rooms {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
   margin-bottom: var(--space-5);
 }
-.fj-rooms__btn {
-  display: inline-flex;
+.fj-rooms__row {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 8px var(--space-2);
+  gap: var(--space-3);
+  min-height: 60px;
+  padding: 12px var(--space-4);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  text-align: left;
   cursor: pointer;
   touch-action: manipulation;
   transition:
     background var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
+    border-color var(--dur-fast) var(--ease);
 }
-.fj-rooms__btn:hover {
+.fj-rooms__row:hover {
   border-color: var(--color-text-dim);
-  color: var(--color-text);
 }
-.fj-rooms__btn--active,
-.fj-rooms__btn--active:hover {
+.fj-rooms__row--active,
+.fj-rooms__row--active:hover {
   background: var(--color-accent-soft);
   border-color: var(--color-accent);
-  color: var(--color-accent);
 }
-.fj-rooms__btn:focus-visible {
+.fj-rooms__row:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
-.fj-rooms__label {
-  font-weight: 600;
+.fj-rooms__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--color-inset);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+.fj-rooms__row--active .fj-rooms__icon {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  color: var(--color-accent);
+}
+.fj-rooms__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fj-rooms__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.fj-rooms__row--active .fj-rooms__title {
+  color: var(--color-accent);
+}
+.fj-rooms__sub {
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+.fj-rooms__here {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.fj-rooms__row > svg {
+  flex-shrink: 0;
+  color: var(--color-text-dim);
 }
 
 /* ---- Weekly recap (Progress) ------------------------------- */
@@ -1864,9 +1936,59 @@
 .fj-session-set__row,
 .fj-session-set--head {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr) 44px;
+  grid-template-columns: 28px minmax(0, 1fr) 36px 44px;
   align-items: center;
   gap: var(--space-2);
+}
+.fj-session-set__display {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.fj-session-set__display small {
+  font-weight: 400;
+  font-size: 0.75rem;
+  margin-left: 2px;
+}
+.fj-session-set__inputs {
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+.fj-session-set__times {
+  font-weight: 500;
+  color: var(--color-text-dim);
+}
+.fj-session-set__edit {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-dim);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.fj-session-set__edit:hover {
+  background: var(--color-inset);
+  color: var(--color-text);
+}
+.fj-session-set--editing .fj-session-set__edit {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.fj-session-set__edit:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .fj-session-set:first-child,
 .fj-session-set--head {

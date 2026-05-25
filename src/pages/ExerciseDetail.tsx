@@ -83,7 +83,8 @@ export function ExerciseDetailScreen() {
 
       {/* P1.7 — Three pills, three categories, three palettes. PR is past
           achievement (green); e1RM is a projection (blue); Goal is a future
-          commitment (amber). Each pill is tappable when relevant. */}
+          commitment (amber, tappable). Session count is in the PageHeader
+          subtitle, so it doesn't earn a pill of its own. */}
       <div className="fj-detail-pills" aria-label="Records, projection and goal">
         <span className="fj-detail-pill fj-detail-pill--pr">
           <Trophy size={13} aria-hidden="true" />
@@ -111,11 +112,6 @@ export function ExerciseDetailScreen() {
             {goal != null ? `${goal} ${weightUnit}` : 'Set'}
           </span>
         </button>
-        <span className="fj-detail-pill fj-detail-pill--sessions">
-          <HistoryIcon size={13} aria-hidden="true" />
-          <span className="fj-detail-pill__cap">Sessions</span>
-          <span className="fj-detail-pill__val">{history.length}</span>
-        </span>
       </div>
 
       {/* P1.3 — Auto-bump suggestion. Quiet blue card, opt-in. */}
@@ -128,7 +124,7 @@ export function ExerciseDetailScreen() {
             </div>
             <div className="fj-detail-rec__sub">
               {nextRec.bumped
-                ? `Up 5 ${weightUnit} on your last top set — you're in rhythm.`
+                ? `+5 ${weightUnit} on top set · within recovery range`
                 : 'Repeats your last top set — bank the reps before pushing weight.'}
             </div>
           </div>
@@ -141,19 +137,21 @@ export function ExerciseDetailScreen() {
           <Target size={18} color="var(--color-warning)" aria-hidden="true" />
           <div>
             <div className="fj-detail-trajectory__head">
-              {trajectory.remaining} {weightUnit} to go
+              <strong>
+                {trajectory.remaining} {weightUnit} to go
+              </strong>
               {trajectory.weeks != null && (
                 <>
                   {' · '}
                   <span className="fj-detail-trajectory__weeks">
-                    ~{trajectory.weeks} week{trajectory.weeks === 1 ? '' : 's'} at this pace
+                    ~{trajectory.weeks} week{trajectory.weeks === 1 ? '' : 's'} at current rate
                   </span>
                 </>
               )}
             </div>
             <div className="fj-detail-trajectory__sub">
               {trajectory.weeks != null
-                ? 'Linear fit from the last eight sessions.'
+                ? 'Trajectory based on last 8 sessions.'
                 : 'Trend is flat — the next bump unlocks the projection.'}
             </div>
           </div>
