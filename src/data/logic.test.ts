@@ -25,11 +25,15 @@ import {
   findLastTime,
   formatSets,
   isLoggedWorkout,
+  postWorkoutRecipe,
+  proteinForDay,
   recommendNextSession,
   totalWorkoutsLogged,
   wouldBeCardioPR,
   wouldBeStrengthPR,
 } from '@/data/logic'
+import { isoWeek } from '@/lib/dates'
+import type { LoggedMeal, Recipe } from '@/data/types'
 
 /* ------------------------------------------------------------- helpers ---- */
 
@@ -720,5 +724,118 @@ describe('computeInsights', () => {
     })
     const insights = computeInsights(appData(w), REF)
     expect(insights.some((i) => i.id === 'trend-down' || i.id === 'trend-up')).toBe(false)
+  })
+})
+
+/* ----------------------------------------- protein bridge (P2.10 / P2.2) -- */
+
+function mkRecipe(id: string, name: string, extra: Partial<Recipe> = {}): Recipe {
+  return {
+    id,
+    name,
+    tags: [],
+    prepTime: 0,
+    cookTime: 0,
+    servings: 1,
+    ingredients: [],
+    steps: [],
+    notes: '',
+    favorite: false,
+    createdAt: '2026-05-01',
+    ...extra,
+  }
+}
+
+describe('proteinForDay', () => {
+  const recipes = [
+    mkRecipe('r1', 'Salmon', { nutrition: { protein: 40 } }),
+    mkRecipe('r2', 'Oats', { nutrition: { protein: 30 } }),
+    mkRecipe('r3', 'Cookies' /* no nutrition */),
+  ]
+  const meals = (entries: { recipeId: string; date: string; servings?: number }[]): LoggedMeal[] =>
+    entries.map((x) => ({
+      id: `${x.recipeId}-${x.date}`,
+      recipeId: x.recipeId,
+      date: x.date,
+      servings: x.servings ?? 1,
+    }))
+
+  it('sums protein across the day, scaled by servings', () => {
+    const totals = proteinForDay(
+      meals([
+        { recipeId: 'r1', date: '2026-05-20', servings: 1 },
+        { recipeId: 'r2', date: '2026-05-20', servings: 2 },
+      ]),
+      recipes,
+      '2026-05-20',
+    )
+    expect(totals).toBe(100)
+  })
+  it('ignores meals on other dates', () => {
+    const totals = proteinForDay(
+      meals([
+        { recipeId: 'r1', date: '2026-05-19', servings: 1 },
+        { recipeId: 'r2', date: '2026-05-20', servings: 1 },
+      ]),
+      recipes,
+      '2026-05-20',
+    )
+    expect(totals).toBe(30)
+  })
+  it('treats missing nutrition as zero rather than guessing', () => {
+    const totals = proteinForDay(
+      meals([{ recipeId: 'r3', date: '2026-05-20', servings: 1 }]),
+      recipes,
+      '2026-05-20',
+    )
+    expect(totals).toBe(0)
+  })
+  it('returns 0 when there are no logged meals', () => {
+    expect(proteinForDay([], recipes, '2026-05-20')).toBe(0)
+    expect(proteinForDay(undefined, recipes, '2026-05-20')).toBe(0)
+  })
+})
+
+describe('postWorkoutRecipe', () => {
+  const seedRecipe = mkRecipe('seed1', 'Salmon', {
+    tags: ['post-workout'],
+    nutrition: { protein: 30 },
+  })
+  const fav = mkRecipe('fav1', 'Fav', { favorite: true, nutrition: { protein: 20 } })
+  const plain = mkRecipe('plain', 'Plain')
+
+  it('returns null when nothing matches', () => {
+    expect(postWorkoutRecipe([plain])).toBeNull()
+    expect(postWorkoutRecipe([])).toBeNull()
+  })
+  it('prefers a favorite over a post-workout tag', () => {
+    expect(postWorkoutRecipe([seedRecipe, fav])?.id).toBe('fav1')
+  })
+  it('falls back to the highest-protein post-workout pick when no favorite', () => {
+    const low = mkRecipe('low', 'Low', {
+      tags: ['post-workout'],
+      nutrition: { protein: 10 },
+    })
+    expect(postWorkoutRecipe([low, seedRecipe])?.id).toBe('seed1')
+  })
+})
+
+/* ----------------------------------------- isoWeek helper (P2.12) --------- */
+
+describe('isoWeek', () => {
+  it('reads the correct ISO week for a known Wednesday', () => {
+    // 2026-05-20 is ISO week 21 of 2026.
+    expect(isoWeek(parseKey('2026-05-20'))).toBe('2026-W21')
+  })
+  it('rolls forward on Monday but not Sunday', () => {
+    // 2026-05-17 is Sunday — still ISO week 20.
+    expect(isoWeek(parseKey('2026-05-17'))).toBe('2026-W20')
+    // 2026-05-18 is Monday — week 21.
+    expect(isoWeek(parseKey('2026-05-18'))).toBe('2026-W21')
+  })
+  it('pads single-digit week numbers', () => {
+    // Early January often gets week 01 (or, depending on leap, week 52/53
+    // of the previous ISO year). 2026-01-05 is a Monday of ISO week 02.
+    expect(isoWeek(parseKey('2026-01-05'))).toBe('2026-W02')
   })
 })

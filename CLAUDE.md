@@ -549,3 +549,153 @@ P0 spec deviation:
   now — overlaps with the new PR-shot pill on a logged-PR day (two
   signals for one event), happy to retire if you want full v2 visual
   compliance.
+
+**v2 P2 — shipped 2026-05-25** (build + 90 tests + lint + typecheck clean —
+77 → 90 tests: 3 storage tests for the v2→v3 migration, 10 logic tests for
+the new pure helpers). The "design round" — Train-Mode takeover, adaptive
+nav, protein bridge, fresh-start moments, visual rest ring. All 12 items
+land in one tier; schema bumps 2 → 3 additively.
+
+Data-model + storage:
+
+- **`SCHEMA_VERSION` 2 → 3** with a v2→v3 migration step in `storage.ts`
+  that assigns cyclic default `TemplateColor`s
+  (`['red','blue','green','amber','neutral']`) to any pre-existing
+  templates that lack the new field, and initialises `loggedMeals: []`.
+  `normalize()` now also fills `loggedMeals` on partial backups. Old
+  saves keep working unchanged — additive only.
+- **New types:** `TemplateColor`, `LoggedMeal`, `StreakNudge`,
+  `BackupReminderWeeks`. **New fields:** `Template.color?`,
+  `Recipe.seed?`, `Preferences.dailyProteinGoal?` (default 140),
+  `Preferences.freshStartDismissedWeek?`, `Preferences.streakNudge?`,
+  `Preferences.backupReminderWeeks?` (default 3), `AppData.loggedMeals?`.
+  `RecipeTag` gains `'post-workout'`.
+- **`seedStarterRecipes()`** in `storage.ts` returns three starters
+  (Salmon rice, Tuna pasta, Oats & whey) all flagged `seed: true`. The
+  PPL seed in `seedTemplates()` lands with `color: 'red' | 'blue' |
+  'green'` so Plan's chip strip has stable swatches from the first run.
+  `defaultData()` returns both seeds on a fresh install; `normalize()`
+  trusts imported backups and never re-seeds into someone else's data.
+- **Two store actions** for the protein bridge: `addLoggedMeal(recipeId,
+  date, servings?)` returns the new entry id (so Undo can target it),
+  and `removeLoggedMeal(id)`.
+
+P2.1 — Train Mode takeover. `AppShell` skips both the desktop sidebar
+and the mobile bottom nav when `page === 'session'`, applying
+`.fj-app--trainmode`. The skip-link still focuses `<main>` so a
+keyboard user can leave. `ResumeSessionPill` already self-hid on session,
+so the two never collide.
+
+P2.6 — Adaptive bottom bar. New sticky `.fj-session-bottom` 2-action
+strip — outline Pause (collapses back to Today without ending the
+session) on the left, solid Finish workout (opens `WorkoutSummaryModal`)
+on the right. Replaces the standard 5-tab nav for the duration of the
+workout. `.fj-app--trainmode .fj-screen--session` pads bottom by 72px +
+safe-area so the bar never covers content.
+
+P2.7 — Visual rest ring. The floating `RestTimerBar` is retired.
+SessionScreen tracks `lastCompleted: {exId, setIndex}` from
+`toggleSet`; while the timer is `active && !isDone`, the first un-done
+set within the just-completed exercise is the "resting target" and
+adopts `.fj-session-set--resting` (blue treatment, larger numbers,
+"RESTING" caption replacing the set number). A `ProgressRing` on the
+right shows the rest fraction with the `mm:ss` remaining in the centre,
+and `.fj-session-set__rest-actions` renders `+15s` / `skip rest` pills
+in context — no more chasing a floating control. Computed inline (not
+via `useMemo`) so the React Compiler can memoize it itself; the manual
+useMemo could not be preserved across the `timer` object's property
+access.
+
+P2.3 — Plan rotation. The weekly schedule is now anchored on today —
+row 1 is today (`TODAY · SAT` tag + accent-soft tinted card head + a
+small `▶ Start` button that deep-links to Today), rows 2–7 walk
+forward. Each row reads its template from `data.weeklyPlan[dayName]`
+and renders a coloured `.fj-plan-chip-dot` per the template's
+`TemplateColor`. The `AssignDaySheet` is unchanged in behaviour; its
+title now reads `Assign Today (Sat)` when the assigned day is today.
+
+P2.8 — Template chip strip + colour picker. The old `fj-card-grid`
+of big template cards is gone. Plan opens with a `.fj-template-strip`
+header row of `.fj-template-chip--{red,blue,green,amber,neutral}`
+pills (one per template, with a coloured dot), then a dashed `+ new`
+chip at the end — tap any chip to open `TemplateModal`. The modal
+itself gained a 5-swatch `.fj-color-swatch` radio-group picker. Plan
+day-rows show the matching colour dot. (P3.4 — "edit" link → separate
+full-screen template editor — deliberately deferred to P3.)
+
+P2.9 — Seeded starter recipes. `defaultData()` now seeds three
+recipes (Salmon rice, Tuna pasta, Oats & whey), each with realistic
+nutrition + tags. `RecipeCard` shows a small `.fj-recipe-card__seed`
+tag next to the title on any recipe with `seed: true`. The flag is
+preserved through edits so the "this came from the install seed"
+context survives the lifter customising the recipe; deleting a seed
+clears it (and we don't re-add it).
+
+P2.10 — Protein bridge. `proteinForDay(loggedMeals, recipes, date)` in
+`logic.ts` sums `servings × recipe.nutrition.protein` for entries on
+the given date (treats missing nutrition as zero rather than guessing,
+ignores meals on other dates). Recipes renders a `.fj-protein-bar`
+above the grid showing `<sum> / <goal> g` with a filled track; turns
+green once the goal hits. `RecipeDetail` gains a *Log as eaten*
+button that pushes a 1-serving `LoggedMeal` for today via
+`addLoggedMeal`, with an Undo toast wired to `removeLoggedMeal(id)`.
+
+P2.2 — Recipes ↔ Today bridge. New pure
+`postWorkoutRecipe(recipes)` in `logic.ts` picks the recipe to surface
+(favourites first; among ties, highest per-serving protein; falls
+through to `post-workout`-tagged). Today renders a
+`.fj-post-meal` card below the lift list when today has exercises
+**and** `postWorkoutRecipe` returns one. Tap routes the recipe id
+through `sessionStorage['fj-open-recipe']` and `navigate('recipes')`;
+`RecipesScreen` pops it via the lazy `useState` initializer so the
+detail opens without a flash. Bidirectional: any recipe matching the
+selection criterion carries a blue `.fj-recipe-card__today` pill in
+the top-right of its photo tile when today has lifts.
+
+P2.11 — Filter pill. `RecipesScreen` watches
+`data.recipes.length > 20`; above the threshold the inline `Chip` row
+collapses into a `Filter ▾` `.fj-recipes-filter-btn` with an active-
+count badge. Tap opens `<FilterMenu>` (a small `Modal` with the
+same Favorites + tag chips), with a Clear-all button. Below the
+threshold the inline chips stay (the original behaviour) so first-
+time users see what's available at a glance.
+
+P2.12 — Fresh-start Monday strip. New `<FreshStartStrip>` on Today
+fires only on Mondays and only when
+`Preferences.freshStartDismissedWeek !== isoWeek(today)`. Reads "New
+week. Last week you trained N×. Match it?" when last week had
+workouts, or a calmer "A fresh page — log one workout and the week
+starts." when it didn't. Dismissal writes the current ISO week back
+to the preference so the strip stays gone for the rest of the week.
+New pure `isoWeek(date)` helper in `lib/dates.ts` returns
+`YYYY-Www` (ISO 8601 — Monday-first, Thursday-anchored year). 3
+unit tests pin the week boundary across Sunday/Monday + pad single-
+digit weeks.
+
+P2.4 — Sparkline tooltips + per-day breakdown. `Sparkline.tsx` gains
+`tooltip` / `pointLabels[]` / `valueFormat` props. When enabled, the
+component renders a small dot per datapoint, tracks the nearest point
+under the pointer on `pointermove` / `pointerdown`, and renders a
+`.fj-sparkline-tip` anchored to that point's x-position with the
+formatted `{label}: {value}`. A dashed vertical guide on the active
+point keeps the connection visual. Used on Progress (body-weight
+trend with date labels) + ExerciseDetail (top-set + e1RM trends with
+date labels). A six-reading `.fj-sparkline-readout` under the
+body-weight chart mirrors the visual for screen readers and lets
+users page through specific values without hovering.
+
+P2.5 — Settings → Nudges + backup pill. New `NudgesGroup` sub-section
+under Preferences: streak-save reminder (Toggle + time picker; on
+enable, requests `Notification.requestPermission()` — degrades
+calmly when denied or unsupported, and shows a warning line when
+notifications were blocked after enable) + a backup-reminder cadence
+select (1 / 2 / 3 / 4 weeks). `BackupReminder` now reads
+`Preferences.backupReminderWeeks` instead of the old hard-coded
+`REMIND_AFTER_DAYS = 21`. Settings index "Your data" card carries a
+`.fj-settings-card__pill` "N wks since backup" / "never backed up"
+amber chip when overdue.
+
+Open: the streak-save reminder *stores* the user's intent and asks
+for permission, but PWAs can't reliably schedule a wall-clock
+notification without a server. Treat the toggle as opt-in + a future
+hook for when a service-worker-side trigger lands.

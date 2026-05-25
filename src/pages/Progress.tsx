@@ -644,7 +644,20 @@ function WeightTrendSection() {
         <Sparkline
           values={series.map((p) => p.avg)}
           label={`Body-weight trend — ${first.weight} to ${latest.weight} ${unit} over ${series.length} readings`}
+          tooltip
+          pointLabels={series.map((p) => formatShort(p.date))}
+          valueFormat={(v) => `${v} ${unit}`}
         />
+        {/* P2.4 — textual per-point readout below the chart mirrors the
+            visual for screen readers and lets users page back through
+            data they can't easily hover. Limited to the most recent six
+            so it stays calm. */}
+        <div className="fj-sparkline-readout" aria-label="Recent readings">
+          {series
+            .slice(-6)
+            .map((p) => `${formatShort(p.date)} ${p.weight}`)
+            .join(' · ')}
+        </div>
       </Card>
     </section>
   )

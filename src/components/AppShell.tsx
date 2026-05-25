@@ -40,9 +40,16 @@ const SCREENS: Record<PageId, ComponentType> = {
 export function AppShell() {
   const { page, navigate } = useStore()
   const Screen = SCREENS[page]
+  // P2.1 — Train Mode takeover. The 5-tab sidebar/bottom nav steps aside
+  // mid-workout so the lift list, rest ring and 2-action Pause/Finish bar
+  // own the entire screen. Session renders its own bottom bar via
+  // `fj-session-bottom` (see Session.tsx); the resume pill is already
+  // suppressed there. The skip link still works — it focuses the main
+  // landmark — so a keyboard user can still leave.
+  const trainMode = page === 'session'
 
   return (
-    <div className="fj-app">
+    <div className={cn('fj-app', trainMode && 'fj-app--trainmode')}>
       <button
         type="button"
         className="fj-skip-link"
@@ -50,26 +57,28 @@ export function AppShell() {
       >
         Skip to content
       </button>
-      <aside className="fj-sidebar">
-        <div className="fj-sidebar__logo">
-          <div className="fj-logo-mark">
-            <Dumbbell size={20} />
+      {!trainMode && (
+        <aside className="fj-sidebar">
+          <div className="fj-sidebar__logo">
+            <div className="fj-logo-mark">
+              <Dumbbell size={20} />
+            </div>
+            <span className="fj-logo-text">FitJournal</span>
           </div>
-          <span className="fj-logo-text">FitJournal</span>
-        </div>
-        <nav>
-          {NAV.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              className={cn('fj-nav__item', page === id && 'fj-nav__item--active')}
-              onClick={() => navigate(id)}
-            >
-              <Icon size={18} />
-              {label}
-            </button>
-          ))}
-        </nav>
-      </aside>
+          <nav>
+            {NAV.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                className={cn('fj-nav__item', page === id && 'fj-nav__item--active')}
+                onClick={() => navigate(id)}
+              >
+                <Icon size={18} />
+                {label}
+              </button>
+            ))}
+          </nav>
+        </aside>
+      )}
       <main className="fj-main" id="fj-main" tabIndex={-1}>
         <Screen />
       </main>

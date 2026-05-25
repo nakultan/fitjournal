@@ -28,6 +28,7 @@ export const RECIPE_TAGS: RecipeTag[] = [
   'meal-prep',
   'quick',
   'vegetarian',
+  'post-workout',
 ]
 
 export const RECIPE_TAG_LABELS: Record<RecipeTag, string> = {
@@ -39,4 +40,5 @@ export const RECIPE_TAG_LABELS: Record<RecipeTag, string> = {
   'meal-prep': 'Meal Prep',
   quick: 'Quick',
   vegetarian: 'Vegetarian',
+  'post-workout': 'Post-Workout',
 }

@@ -198,8 +198,38 @@
 }
 
 /* ---- Sparkline --------------------------------------------- */
+.fj-sparkline-wrap {
+  position: relative;
+}
 .fj-sparkline {
   display: block;
+  touch-action: none;
+}
+/* P2.4 — value tooltip surfaced on hover / focus / tap. Anchored under the
+ * chart and horizontally repositioned to the active point. Calm typography
+ * so it reads as data, not a notification. */
+.fj-sparkline-tip {
+  position: absolute;
+  bottom: -22px;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  background: var(--color-surface-3);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  font: var(--text-caption);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* The per-point textual readout below the chart mirrors the visual for
+ * screen readers and lets users pick out specific values without hovering. */
+.fj-sparkline-readout {
+  margin-top: var(--space-3);
+  font: var(--text-caption);
+  color: var(--color-text-dim);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- Date navigation --------------------------------------- */
@@ -919,7 +949,273 @@
   color: var(--color-text-dim);
 }
 
+/* ---- Plan template chip strip (P2.8) ---------------------- *
+ * Collapses templates from the old big-card grid to a header-row chip
+ * strip with one colour swatch per template. The schedule below is the
+ * repeat-use surface; templates compress so they don't dominate. Plays
+ * nicely with FlexWrap when there are many templates. */
+.fj-template-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+.fj-template-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-radius: var(--radius-pill);
+  font: var(--text-caption);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 36px;
+  touch-action: manipulation;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.fj-template-chip:hover {
+  border-color: var(--color-accent);
+}
+.fj-template-chip:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.fj-template-chip__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-dim);
+  flex-shrink: 0;
+}
+.fj-template-chip--red {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+.fj-template-chip--red .fj-template-chip__dot {
+  background: var(--color-danger);
+}
+.fj-template-chip--blue {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.fj-template-chip--blue .fj-template-chip__dot {
+  background: var(--color-accent);
+}
+.fj-template-chip--green {
+  background: var(--color-success-soft);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+.fj-template-chip--green .fj-template-chip__dot {
+  background: var(--color-success);
+}
+.fj-template-chip--amber {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+.fj-template-chip--amber .fj-template-chip__dot {
+  background: var(--color-warning);
+}
+.fj-template-chip--neutral {
+  /* No tint — the dot still distinguishes the chip. */
+}
+.fj-template-chip--new {
+  border-style: dashed;
+  color: var(--color-text-dim);
+  background: transparent;
+}
+.fj-template-chip--new:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* Small coloured dot reused in plan day rows + the assign-day sheet. */
+.fj-plan-chip-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-dim);
+  flex-shrink: 0;
+}
+.fj-plan-chip-dot--red {
+  background: var(--color-danger);
+}
+.fj-plan-chip-dot--blue {
+  background: var(--color-accent);
+}
+.fj-plan-chip-dot--green {
+  background: var(--color-success);
+}
+.fj-plan-chip-dot--amber {
+  background: var(--color-warning);
+}
+.fj-plan-chip-dot--neutral {
+  background: var(--color-text-dim);
+}
+
+/* Today-row hint in the rotated 7-day schedule (P2.3). */
+.fj-plan-day--today .fj-plan-day__head {
+  background: var(--color-accent-soft);
+}
+.fj-plan-day__today-tag {
+  display: inline-block;
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-accent);
+}
+.fj-plan-day__date {
+  color: var(--color-text-dim);
+  font-weight: 400;
+}
+.fj-plan-day__start {
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--color-border-soft);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* TemplateModal colour-swatch picker (P2.8). */
+.fj-color-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: var(--color-surface-2);
+  cursor: pointer;
+  padding: 0;
+  touch-action: manipulation;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.fj-color-swatch:hover {
+  border-color: var(--color-accent);
+}
+.fj-color-swatch--on {
+  border-color: var(--color-text);
+  transform: scale(1.06);
+}
+.fj-color-swatch--red {
+  background: var(--color-danger);
+}
+.fj-color-swatch--blue {
+  background: var(--color-accent);
+}
+.fj-color-swatch--green {
+  background: var(--color-success);
+}
+.fj-color-swatch--amber {
+  background: var(--color-warning);
+}
+.fj-color-swatch--neutral {
+  background: var(--color-text-dim);
+}
+
 /* ---- Recipes ----------------------------------------------- */
+/* P2.10 — protein bridge bar. Calm card at the top of Recipes — the bridge
+ * between the workout and nutrition sides. Fill turns green once the day's
+ * goal is hit so the lifter knows without reading the numbers. */
+.fj-protein-bar {
+  padding: var(--space-3) var(--space-4);
+}
+.fj-protein-bar__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.fj-protein-bar__label {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.fj-protein-bar__value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+.fj-protein-bar--hit .fj-protein-bar__value {
+  color: var(--color-success);
+}
+.fj-protein-bar__track {
+  margin-top: 6px;
+  height: 8px;
+  background: var(--color-inset);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.fj-protein-bar__fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 4px;
+  transition: width var(--dur) var(--ease);
+}
+.fj-protein-bar--hit .fj-protein-bar__fill {
+  background: var(--color-success);
+}
+
+/* P2.11 — Filter dropdown pill (replaces the tag-chip row when many
+ * recipes exist). */
+.fj-recipes-filters {
+  align-items: center;
+}
+.fj-recipes-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  min-height: 36px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-radius: var(--radius-pill);
+  font: var(--text-caption);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.fj-recipes-filter-btn:hover {
+  border-color: var(--color-accent);
+}
+.fj-recipes-filter-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.fj-recipes-filter-btn--on {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.fj-recipes-filter-btn__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
 .fj-recipe-card {
   display: flex;
   flex-direction: column;
@@ -947,6 +1243,36 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+/* P2.2 — bidirectional bridge marker. Sits in the corner of the photo
+ * tile of any recipe Today is surfacing as its post-workout card. */
+.fj-recipe-card__today {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: var(--text-micro);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  letter-spacing: 0.2px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card);
+}
+/* P2.9 — small "seed" tag next to the title, only on starter recipes. */
+.fj-recipe-card__seed {
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: var(--color-inset);
+  color: var(--color-text-dim);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  letter-spacing: 0.4px;
+  border-radius: 4px;
+  vertical-align: middle;
 }
 .fj-recipe-card__body {
   padding: var(--space-4);
@@ -1445,6 +1771,17 @@
   flex-shrink: 0;
 }
 
+/* Sub-heading within a settings group (e.g. "Nudges" under Preferences, P2.5). */
+.fj-settings-subhead {
+  margin: var(--space-5) var(--space-4) 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border-soft);
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-text-dim);
+}
+
 /* ---- Settings index — grouped cards w/ deep-link routes --- */
 .fj-settings-index {
   display: flex;
@@ -1464,6 +1801,20 @@
 .fj-settings-card:hover {
   border-color: var(--color-accent);
   background: var(--color-hover);
+}
+/* P2.5 — backup-age pill on the Your data index card. Calm pressure
+ * rather than a modal; mirrors the in-section "N wks since backup" copy. */
+.fj-settings-card__pill {
+  padding: 4px 10px;
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  border-radius: var(--radius-pill);
+  font: var(--text-caption);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
 }
 .fj-settings-card__icon {
   flex-shrink: 0;
@@ -1668,6 +2019,107 @@
 .fj-finish__hint {
   font: var(--text-caption);
   color: var(--color-text-dim);
+}
+
+/* ---- Fresh-start Monday strip (P2.12) -------------------- *
+ * Amber pill above the lift list, shown only on Monday and only until the
+ * lifter dismisses it for the week. Encourages re-engagement at the start
+ * of the loop, not the end (the recap already lives on Progress). */
+.fj-fresh-start {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px var(--space-4);
+  margin: 0 0 var(--space-4);
+  background: var(--color-warning-soft);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+.fj-fresh-start__body {
+  flex: 1;
+  line-height: 1.45;
+}
+.fj-fresh-start__body strong {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+.fj-fresh-start__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-dim);
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.fj-fresh-start__close:hover {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+.fj-fresh-start__close:focus-visible {
+  outline: 2px solid var(--color-warning);
+  outline-offset: 2px;
+}
+
+/* ---- Post-workout meal card (P2.2 / P2.10) ---------------- *
+ * Bridges the lift list to the Recipes side without becoming a nutrition
+ * page. Accent-tinted, click-through opens the recipe detail in Recipes
+ * (the recipe id rides through sessionStorage for the deep-link). */
+.fj-post-meal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-accent);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+.fj-post-meal:hover {
+  background: color-mix(in oklab, var(--color-accent-soft) 80%, var(--color-accent));
+}
+.fj-post-meal:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.fj-post-meal__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.fj-post-meal__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-accent);
+}
+.fj-post-meal__name {
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+.fj-post-meal__macros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font: var(--text-caption);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- Today first-time empty hero -------------------------- */
@@ -2073,9 +2525,149 @@
   color: var(--color-on-accent);
 }
 
-.fj-session-actions {
+.fj-session-actions,
+.fj-session-secondary {
   justify-content: space-between;
   gap: var(--space-3);
+}
+
+/* ---- Session — Train Mode header (P2.1) ------------------- *
+ * Replaces the standard PageHeader with a compact ambient strip + display
+ * title pair, matching the Today screen's hub-style header (P3.7). The
+ * standard 5-tab nav has stepped aside, so the session "owns" the screen.
+ */
+.fj-session-head {
+  margin-bottom: var(--space-5);
+}
+.fj-session-head__strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family:
+    ui-monospace, 'SF Mono', 'Menlo', 'Cascadia Mono', 'Roboto Mono', monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.6px;
+  color: var(--color-text-dim);
+  text-transform: uppercase;
+}
+.fj-session-head__title {
+  margin: 4px 0 0;
+  font: var(--text-display);
+  font-size: 1.625rem;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Session — adaptive bottom bar (P2.6) ----------------- *
+ * Sticky two-action bar — outline Pause on the left, solid Finish on the
+ * right. Replaces the 5-tab nav while the user is mid-workout, so the only
+ * system-level affordances are the two actions that matter. Renders flush
+ * to the bottom and respects safe-area inset. */
+.fj-session-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+.fj-session-bottom .fj-btn {
+  width: 100%;
+  justify-content: center;
+}
+.fj-session-bottom__pause {
+  border-color: var(--color-border);
+}
+/* The session screen pads bottom so the sticky bar doesn't cover content. */
+.fj-app--trainmode .fj-screen--session {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom) + var(--space-5));
+}
+
+/* ---- Session — resting set card (P2.7) -------------------- *
+ * When the rest timer is running, the next un-done set within the just-
+ * completed exercise adopts a blue treatment with a circular countdown
+ * ring on the right. The +15s / skip-rest controls tuck in on the line
+ * below — in context, not in a floating pill. */
+.fj-session-set--resting {
+  background: var(--color-accent-soft);
+  border-top-color: var(--color-accent);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-3);
+  margin: 4px 0;
+}
+.fj-session-set--resting .fj-session-set__display {
+  color: var(--color-accent);
+  font-size: 1.25rem;
+}
+.fj-session-set--resting:hover {
+  background: var(--color-accent-soft);
+}
+.fj-session-set__resting-label {
+  display: inline-block;
+  font: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-accent);
+  white-space: nowrap;
+  /* Sits where the set number normally would; spans both right-side cells
+     since the ring replaces them. */
+  width: 56px;
+  text-align: left;
+}
+.fj-session-set__ring {
+  /* Span the two right-hand columns the pencil + check normally occupy
+     (36px + 44px + 8px gap) so the ring sits flush with the row's edge. */
+  grid-column: 3 / span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.fj-session-set__ring-label {
+  font: var(--text-caption);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+.fj-session-set__rest-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: 6px;
+  padding-left: 36px;
+}
+.fj-session-set__rest-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font: var(--text-caption);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  min-height: 32px;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.fj-session-set__rest-btn:hover {
+  background: var(--color-inset);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+.fj-session-set__rest-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* ---- Rest timer (floating bottom pill) -------------------- */

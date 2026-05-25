@@ -3,14 +3,23 @@ import { defaultData, exportData, importData } from '@/data/storage'
 import { SCHEMA_VERSION } from '@/data/types'
 
 describe('defaultData', () => {
-  it('is a clean slate with seeded templates and default preferences', () => {
+  it('is a clean slate with seeded templates, starter recipes and default preferences', () => {
     const d = defaultData()
     expect(d.schemaVersion).toBe(SCHEMA_VERSION)
     expect(d.workouts).toEqual({})
-    expect(d.recipes).toEqual([])
+    // P2.9 — three seeded starter recipes, all flagged with `seed: true` so
+    // the empty-state copy can read "we seeded 3 starters".
+    expect(d.recipes).toHaveLength(3)
+    expect(d.recipes.every((r) => r.seed === true)).toBe(true)
     expect(d.health).toBeNull()
     expect(d.templates).toHaveLength(3)
+    // P2.8 — PPL seed lands with red / blue / green swatches so Plan's
+    // collapsed template strip has stable colours from the first run.
+    expect(d.templates.map((t) => t.color)).toEqual(['red', 'blue', 'green'])
     expect(d.preferences.weeklyGoal).toBe(4)
+    expect(d.preferences.dailyProteinGoal).toBe(140)
+    expect(d.preferences.backupReminderWeeks).toBe(3)
+    expect(d.loggedMeals).toEqual([])
   })
 })
 
@@ -43,7 +52,11 @@ describe('importData normalisation', () => {
     const partial = JSON.stringify({ workouts: {}, templates: [] })
     const d = importData(partial)
     expect(d.preferences.weeklyGoal).toBe(4)
+    expect(d.preferences.dailyProteinGoal).toBe(140)
+    // An imported backup that omits `recipes` is taken at its word — we
+    // don't re-seed starter recipes into someone else's data.
     expect(d.recipes).toEqual([])
+    expect(d.loggedMeals).toEqual([])
     expect(d.health).toBeNull()
   })
   it('forces the current schema version', () => {
@@ -61,7 +74,7 @@ describe('importData normalisation', () => {
   })
 })
 
-describe('schema migration v1 → v2', () => {
+describe('schema migration v1 → v3', () => {
   it('expands flat exercises into per-set arrays', () => {
     const v1 = JSON.stringify({
       schemaVersion: 1,
@@ -76,7 +89,7 @@ describe('schema migration v1 → v2', () => {
       templates: [],
     })
     const d = importData(v1)
-    expect(d.schemaVersion).toBe(2)
+    expect(d.schemaVersion).toBe(SCHEMA_VERSION)
     const ex = d.workouts['2026-05-20'].exercises[0]
     expect(ex.sets).toEqual([
       { reps: 10, weight: 135 },
@@ -85,5 +98,34 @@ describe('schema migration v1 → v2', () => {
     ])
     expect(ex.name).toBe('Bench')
     expect(ex.muscle).toBe('chest')
+  })
+})
+
+describe('schema migration v2 → v3 (P2)', () => {
+  it('cycles default template colours when the field is missing', () => {
+    const v2 = JSON.stringify({
+      schemaVersion: 2,
+      workouts: {},
+      templates: [
+        { id: 'a', name: 'Push', subtitle: '', exercises: [] },
+        { id: 'b', name: 'Pull', subtitle: '', exercises: [] },
+        { id: 'c', name: 'Legs', subtitle: '', exercises: [] },
+      ],
+    })
+    const d = importData(v2)
+    expect(d.schemaVersion).toBe(SCHEMA_VERSION)
+    expect(d.templates.map((t) => t.color)).toEqual(['red', 'blue', 'green'])
+  })
+  it("doesn't overwrite a colour the user already chose", () => {
+    const v2 = JSON.stringify({
+      schemaVersion: 2,
+      workouts: {},
+      templates: [{ id: 'a', name: 'Push', subtitle: '', exercises: [], color: 'amber' }],
+    })
+    expect(importData(v2).templates[0].color).toBe('amber')
+  })
+  it('initialises loggedMeals to an empty array', () => {
+    const v2 = JSON.stringify({ schemaVersion: 2, workouts: {}, templates: [] })
+    expect(importData(v2).loggedMeals).toEqual([])
   })
 })

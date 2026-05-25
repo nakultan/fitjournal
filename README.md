@@ -18,39 +18,64 @@ on top of the full feature set and polish pass.
 - **Today** — a calm ambient header (date · streak · weekly-goal progress,
   with the day's plan as a heavier title) sits above the lift list itself; a
   one-tap monospace **🌙 Calm** chip flips the layout density right from the
-  header. The lift list sits under a small `Today's Lifts · N ex` strip;
-  each row carries a green delta pill (`+5 lb`, `+2.5 lb`, `+2 reps`, `same
-  as last` — accurate to the plate) and, when the planned top would beat
-  the standing record, an amber `PR shot ★` pill alongside it. Log body
-  weight, cardio, and exercises set by set (tap any entry to edit it, or
-  reorder with the ▲/▼ chevrons); jot a short *day note* — energy, sleep,
-  soreness — that follows the workout into History and the summary. A
+  header. On Monday mornings, a dismissible *fresh-start* strip echoes last
+  week's workout count ("Last week you trained 3×. Match it?") — gentle
+  reinforcement at the start of the loop, not the end. The lift list sits
+  under a small `Today's Lifts · N ex` strip; each row carries a green
+  delta pill (`+5 lb`, `+2.5 lb`, `+2 reps`, `same as last` — accurate to
+  the plate) and, when the planned top would beat the standing record, an
+  amber `PR shot ★` pill alongside it. Log body weight, cardio, and
+  exercises set by set (tap any entry to edit it, or reorder with the ▲/▼
+  chevrons); jot a short *day note* — energy, sleep, soreness — that
+  follows the workout into History and the summary. Once today has any
+  lifts, a calm *post-workout meal* card appears below the list (pulled
+  from your favourites or any recipe tagged `post-workout`) — one tap
+  deep-links to the recipe with calories + protein already on screen. A
   sticky green **Start session** FAB in the thumb zone (sub-label: lift
   count + the heaviest top-set you're aiming for) drops you into the
-  in-workout view: each set is read-only `weight × reps` by default with a
-  pencil button to edit, the row itself is the "Complete set" target, the
-  per-exercise subtitle tracks `set X of N · last time · try X` (the green
-  "try X" is the auto-bump suggestion), and a rest timer chimes at zero.
-  Finish with a session recap, and a celebration when you set a record
+  in-workout **Train Mode** view: the standard 5-tab nav steps aside, the
+  resting set adopts a blue treatment with a circular countdown ring and
+  inline `+15s` / `skip rest` pills (no floating timer to chase), each set
+  is read-only `weight × reps` by default with a pencil button to edit,
+  the row itself is the "Complete set" target, the per-exercise subtitle
+  tracks `set X of N · last time · try X` (the green "try X" is the
+  auto-bump suggestion), and a sticky 2-action bar (`⏸ Pause` /
+  `✓ Finish workout`) lives at the bottom. Finish with a session recap,
+  and a celebration when you set a record
 - **Progress** — three rooms behind their own URLs, picked from a vertical
   **CHANGE ROOM** stack of Card rows (icon + title + metaphor sub; the
   active room shows a `here` pill, the others a chevron): **Story** opens
   with a one-line hero summary ("+12% tonnage this month" / "12-day streak
   in motion" / a weekly count, depending on what's loudest) above the
-  weekly recap, body-weight trend, 30-day stats and the collapse-by-default
-  charts / insights / muscle balance; **Records** is your strength +
-  cardio PRs, per-exercise goals and the PR timeline (tap any strength row
-  to open its progression view with three category-coloured pills — green
-  PR, blue e1RM, amber Goal — a next-session "try N×R @ W" recommendation,
-  and an amber distance-to-goal trajectory); **History** is the
-  past-workouts list and the activity heatmap
-- **Plan** — build workout templates and assign them to a weekly schedule
-- **Recipes** — a searchable, taggable recipe keeper with a photo per recipe
-  (downscaled), optional per-serving macros, a serving scaler, checkable
-  ingredients and a focused cook mode that keeps the screen awake
-- **Settings** — preferences (units, goals, a light/dark theme), backup export
-  (JSON or CSV) & restore, and Apple Health sync via a Shortcut (with a JSON
-  file as a fallback)
+  weekly recap, body-weight trend (hover/tap any sparkline point to read
+  the exact value, with a six-reading textual readout below for screen
+  readers), 30-day stats and the collapse-by-default charts / insights /
+  muscle balance; **Records** is your strength + cardio PRs, per-exercise
+  goals and the PR timeline (tap any strength row to open its progression
+  view with three category-coloured pills — green PR, blue e1RM, amber
+  Goal — a next-session "try N×R @ W" recommendation, an amber distance-
+  to-goal trajectory, and both sparklines now carry value-on-hover
+  tooltips); **History** is the past-workouts list and the activity heatmap
+- **Plan** — templates collapse to a colour-swatched chip strip (red /
+  blue / green / amber per template), and the weekly schedule rotates
+  "next 7 days from today" so today is row 1 with a quick Start affordance;
+  tap any day to reassign it via a bottom-sheet picker
+- **Recipes** — a searchable, taggable recipe keeper with a photo per
+  recipe (downscaled), optional per-serving macros, a serving scaler,
+  checkable ingredients and a focused cook mode that keeps the screen
+  awake. A *Protein today* bar at the top sums servings × per-recipe
+  protein against your daily goal; *Log as eaten* on any recipe pushes a
+  serving into the day's total. Recipes the Today card is currently
+  surfacing carry a blue `today` pill. Past 20 recipes the inline tag
+  chips collapse behind a `Filter ▾` dropdown; new installs are seeded
+  with three starter recipes (Salmon rice, Tuna pasta, Oats & whey),
+  each marked `seed` so you can clearly see which are yours
+- **Settings** — preferences (units, goals, a light/dark theme), opt-in
+  nudges (a daily streak-save reminder via the device Notification API
+  and a backup-reminder cadence of 1–4 weeks), backup export (JSON or
+  CSV) & restore, and Apple Health sync via a Shortcut (with a JSON file
+  as a fallback). An overdue-backup pill on the Your data card surfaces
+  the cadence at a glance
 
 ## Running it
 

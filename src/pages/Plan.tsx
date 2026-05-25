@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarDays, CalendarRange, Check, LayoutGrid, Moon, Pencil, Plus, Trash2 } from 'lucide-react'
+import { CalendarDays, Check, Moon, Pencil, Play, Plus, Trash2 } from 'lucide-react'
 import {
   Button,
   Card,
@@ -14,12 +14,26 @@ import {
 import { useStore } from '@/data/store-context'
 import { MUSCLE_GROUPS } from '@/data/constants'
 import { seedPushPullLegs } from '@/data/storage'
-import { DAY_NAMES } from '@/lib/dates'
+import { addDays, dateKey, dayNameOf, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
-import type { DayName, MuscleGroup, TemplateExercise } from '@/data/types'
+import type {
+  DayName,
+  MuscleGroup,
+  TemplateColor,
+  TemplateExercise,
+} from '@/data/types'
+
+const TEMPLATE_COLORS: TemplateColor[] = ['red', 'blue', 'green', 'amber', 'neutral']
+const COLOR_LABELS: Record<TemplateColor, string> = {
+  red: 'Red',
+  blue: 'Blue',
+  green: 'Green',
+  amber: 'Amber',
+  neutral: 'Neutral',
+}
 
 export function PlanScreen() {
-  const { data, assignPlanDay, removePlanExercise, saveTemplate } = useStore()
+  const { data, assignPlanDay, saveTemplate, viewWorkoutDate } = useStore()
   const { showToast } = useToast()
   const [templateModal, setTemplateModal] = useState<{ id: string | null } | null>(null)
   const [assigning, setAssigning] = useState<DayName | null>(null)
@@ -29,107 +43,151 @@ export function PlanScreen() {
     showToast('Push, Pull, Legs added — assign them to your week.', 'success')
   }
 
+  // P2.3 — "Next 7 days from today" rotation. Same weeklyPlan model, just
+  // re-anchored: today is row 1, tomorrow row 2, … The underlying plan is
+  // still keyed by weekday name, so a Mon/Wed/Fri schedule stays Mon/Wed/Fri
+  // regardless of which day "row 1" lands on.
+  const todayK = todayKey()
+  const today = new Date()
+  const next7 = Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(today, i)
+    return { date: d, key: dateKey(d), day: dayNameOf(d), isToday: i === 0 }
+  })
+
   return (
     <div className="fj-screen">
-      <PageHeader title="Plan" subtitle="Your workout templates and weekly schedule" />
+      <PageHeader title="Plan" subtitle="Your templates and the next 7 days" />
 
-      <section className="fj-section">
-        <div className="fj-section__head">
-          <h2 className="fj-section__title">
-            <LayoutGrid size={18} /> Templates
-          </h2>
-        </div>
-        {data.templates.length === 0 ? (
-          <EmptyState
-            icon={<CalendarDays size={40} />}
-            title="You haven't planned a week yet."
-            description="Templates are reusable workout blueprints — start from Push / Pull / Legs, or build your own."
-            action={
-              <div className="fj-row" style={{ gap: 'var(--space-2)', justifyContent: 'center' }}>
-                <Button onClick={startWithPPL}>
-                  <Plus size={16} /> Start with PPL
-                </Button>
-                <Button variant="secondary" onClick={() => setTemplateModal({ id: null })}>
-                  Custom
-                </Button>
-              </div>
-            }
-          />
-        ) : (
-          <div className="fj-card-grid">
-            {data.templates.map((t) => (
-              <Card
-                key={t.id}
-                className="fj-template-card"
-                onClick={() => setTemplateModal({ id: t.id })}
-              >
-                <div className="fj-template-card__title">{t.name}</div>
-                <div className="fj-template-card__sub">{t.subtitle || '—'}</div>
-                <div className="fj-template-card__ex">
-                  {t.exercises.slice(0, 6).map((e, i) => (
-                    <div key={i}>
-                      {e.name} — {e.sets}×{e.reps}
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            ))}
-            <button className="fj-add-card" onClick={() => setTemplateModal({ id: null })}>
-              <Plus size={28} />
-              Create template
+      {data.templates.length === 0 ? (
+        <EmptyState
+          icon={<CalendarDays size={40} />}
+          title="You haven't planned a week yet."
+          description="Templates are reusable workout blueprints — start from Push / Pull / Legs, or build your own."
+          action={
+            <div className="fj-row" style={{ gap: 'var(--space-2)', justifyContent: 'center' }}>
+              <Button onClick={startWithPPL}>
+                <Plus size={16} /> Start with PPL
+              </Button>
+              <Button variant="secondary" onClick={() => setTemplateModal({ id: null })}>
+                Custom
+              </Button>
+            </div>
+          }
+        />
+      ) : (
+        <>
+          {/* P2.8 — collapsed template chip strip, one swatch per template.
+              The repeat-use surface is the schedule below; templates compress
+              to a header row so they don't dominate. Tap a chip to edit it
+              (the modal carries delete + the colour picker); "+ new" opens
+              a blank template modal. */}
+          <div className="fj-template-strip" role="toolbar" aria-label="Templates">
+            {data.templates.map((t) => {
+              const color: TemplateColor = t.color ?? 'neutral'
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`fj-template-chip fj-template-chip--${color}`}
+                  onClick={() => setTemplateModal({ id: t.id })}
+                  aria-label={`Edit template ${t.name}`}
+                >
+                  <span className="fj-template-chip__dot" aria-hidden="true" />
+                  <span>{t.name}</span>
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              className="fj-template-chip fj-template-chip--new"
+              onClick={() => setTemplateModal({ id: null })}
+              aria-label="Create a new template"
+            >
+              <Plus size={13} /> new
             </button>
           </div>
-        )}
-      </section>
 
-      <section className="fj-section">
-        <div className="fj-section__head">
-          <h2 className="fj-section__title">
-            <CalendarRange size={18} /> Weekly schedule
-          </h2>
-        </div>
-        {DAY_NAMES.map((day) => {
-          const plan = data.weeklyPlan[day]
-          const label = plan?.templateName ?? 'Rest day'
-          const isRest = !plan
-          return (
-            <Card key={day} padded={false} className="fj-plan-day">
-              <button
-                type="button"
-                className="fj-plan-day__head"
-                onClick={() => setAssigning(day)}
-                aria-label={`${day} — currently ${label}. Tap to change.`}
-              >
-                <span className="fj-plan-day__name">{day}</span>
-                <span className={'fj-plan-day__assign' + (isRest ? ' fj-plan-day__assign--rest' : '')}>
-                  {isRest ? <Moon size={14} aria-hidden="true" /> : null}
-                  <span className="fj-plan-day__assign-text">{label}</span>
-                  <Pencil size={14} aria-hidden="true" className="fj-plan-day__pencil" />
-                </span>
-              </button>
-              {plan && plan.exercises.length > 0 && (
-                <div className="fj-plan-day__body">
-                  {plan.exercises.map((e, i) => (
-                    <div key={i} className="fj-plan-ex">
-                      <span className="fj-plan-ex__name">{e.name}</span>
-                      <span className="fj-muted">
-                        {e.sets}×{e.reps} · {e.muscle}
-                      </span>
-                      <button
-                        className="fj-icon-btn fj-icon-btn--danger"
-                        aria-label="Remove exercise"
-                        onClick={() => removePlanExercise(day, i)}
+          <section className="fj-section">
+            <div className="fj-section__head">
+              <h2 className="fj-section__title fj-section__title--label">
+                Week from today
+              </h2>
+            </div>
+            {next7.map(({ date, key, day, isToday }) => {
+              const plan = data.weeklyPlan[day]
+              const template = plan?.templateId
+                ? data.templates.find((t) => t.id === plan.templateId)
+                : null
+              const color: TemplateColor = template?.color ?? 'neutral'
+              const label = plan?.templateName ?? 'Rest day'
+              const isRest = !plan
+              const dow = date
+                .toLocaleDateString('en-US', { weekday: 'short' })
+                .toUpperCase()
+              return (
+                <Card
+                  key={key}
+                  padded={false}
+                  className={`fj-plan-day${isToday ? ' fj-plan-day--today' : ''}`}
+                >
+                  <button
+                    type="button"
+                    className="fj-plan-day__head"
+                    onClick={() => setAssigning(day)}
+                    aria-label={`${isToday ? 'Today' : day} — currently ${label}. Tap to change.`}
+                  >
+                    <span className="fj-plan-day__name">
+                      {isToday ? (
+                        <>
+                          <span className="fj-plan-day__today-tag">TODAY</span>
+                          <span aria-hidden="true"> · </span>
+                          {dow}
+                        </>
+                      ) : (
+                        <>
+                          {dow}
+                          <span className="fj-plan-day__date">
+                            {' '}
+                            {date.getDate()}
+                          </span>
+                        </>
+                      )}
+                    </span>
+                    <span
+                      className={
+                        'fj-plan-day__assign' +
+                        (isRest ? ' fj-plan-day__assign--rest' : '')
+                      }
+                    >
+                      {isRest ? (
+                        <Moon size={14} aria-hidden="true" />
+                      ) : (
+                        <span
+                          className={`fj-plan-chip-dot fj-plan-chip-dot--${color}`}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span className="fj-plan-day__assign-text">{label}</span>
+                      <Pencil size={14} aria-hidden="true" className="fj-plan-day__pencil" />
+                    </span>
+                  </button>
+                  {isToday && plan && (
+                    <div className="fj-plan-day__start">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => viewWorkoutDate(todayK)}
                       >
-                        <Trash2 size={14} />
-                      </button>
+                        <Play size={14} /> Start
+                      </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )
-        })}
-      </section>
+                  )}
+                </Card>
+              )
+            })}
+          </section>
+        </>
+      )}
 
       {templateModal && (
         <TemplateModal
@@ -170,16 +228,22 @@ function AssignDaySheet({
   onClose: () => void
 }) {
   const { data } = useStore()
-  const choices: { id: string | null; label: string; sub: string }[] = [
+  // Render the day's label as "Today" when this assign sheet belongs to the
+  // current calendar day, so the rotation framing is consistent.
+  const today = new Date()
+  const isToday = dayNameOf(today) === day
+  const heading = isToday ? `Assign Today (${day})` : `Assign ${day}`
+  const choices: { id: string | null; label: string; sub: string; color?: TemplateColor }[] = [
     { id: null, label: 'Rest day', sub: 'No workout planned' },
     ...data.templates.map((t) => ({
       id: t.id,
       label: t.name,
       sub: t.subtitle || `${t.exercises.length} exercise${t.exercises.length === 1 ? '' : 's'}`,
+      color: t.color ?? 'neutral',
     })),
   ]
   return (
-    <Modal open onClose={onClose} title={`Assign ${day}`}>
+    <Modal open onClose={onClose} title={heading}>
       <div className="fj-col" style={{ gap: 'var(--space-2)' }}>
         {choices.map((c) => {
           const selected = c.id === currentTemplateId
@@ -191,7 +255,16 @@ function AssignDaySheet({
               onClick={() => onPick(c.id)}
             >
               <span className="fj-assign-choice__main">
-                <span className="fj-assign-choice__label">{c.label}</span>
+                <span className="fj-assign-choice__label">
+                  {c.color && (
+                    <span
+                      className={`fj-plan-chip-dot fj-plan-chip-dot--${c.color}`}
+                      aria-hidden="true"
+                      style={{ marginRight: 6 }}
+                    />
+                  )}
+                  {c.label}
+                </span>
                 <span className="fj-assign-choice__sub">{c.sub}</span>
               </span>
               {selected && <Check size={18} color="var(--color-accent)" />}
@@ -220,6 +293,7 @@ function TemplateModal({
 
   const [name, setName] = useState(existing?.name ?? '')
   const [subtitle, setSubtitle] = useState(existing?.subtitle ?? '')
+  const [color, setColor] = useState<TemplateColor>(existing?.color ?? 'neutral')
   const [rows, setRows] = useState<TemplateExercise[]>(
     existing ? existing.exercises.map((e) => ({ ...e })) : [emptyRow()],
   )
@@ -247,6 +321,7 @@ function TemplateModal({
       id: existing?.id ?? uid(),
       name: trimmed,
       subtitle: subtitle.trim(),
+      color,
       exercises: rows
         .filter((r) => r.name.trim())
         .map((r) => ({ name: r.name.trim(), muscle: r.muscle, sets: r.sets, reps: r.reps })),
@@ -302,6 +377,27 @@ function TemplateModal({
           value={subtitle}
           onChange={(e) => setSubtitle(e.target.value)}
         />
+        {/* P2.8 — colour swatch picker. Same five-colour palette the chip
+            strip and Plan day-row dots render from. */}
+        <div className="fj-field">
+          <label className="fj-field__label">Colour</label>
+          <div className="fj-row" role="radiogroup" aria-label="Template colour">
+            {TEMPLATE_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="radio"
+                aria-checked={color === c}
+                aria-label={COLOR_LABELS[c]}
+                className={
+                  `fj-color-swatch fj-color-swatch--${c}` +
+                  (color === c ? ' fj-color-swatch--on' : '')
+                }
+                onClick={() => setColor(c)}
+              />
+            ))}
+          </div>
+        </div>
         <div className="fj-field">
           <label className="fj-field__label">Exercises</label>
           <div className="fj-col" style={{ gap: 'var(--space-2)' }}>

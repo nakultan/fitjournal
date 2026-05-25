@@ -4,7 +4,7 @@
  */
 
 /** Bumped whenever the saved-data shape changes, so migrations stay safe. */
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export type MuscleGroup = 'chest' | 'back' | 'legs' | 'shoulders' | 'arms' | 'abs'
 export type CardioType = 'treadmill' | 'bike' | 'stairmaster'
@@ -29,6 +29,7 @@ export type RecipeTag =
   | 'meal-prep'
   | 'quick'
   | 'vegetarian'
+  | 'post-workout'
 
 export type PageId =
   | 'today'
@@ -81,11 +82,17 @@ export interface TemplateExercise {
   reps: number
 }
 
+/** Colour swatch for a template — drives the dot in Plan's chip strip
+ *  (P2.8). Optional with `neutral` as the cycling fallback during migration. */
+export type TemplateColor = 'red' | 'blue' | 'green' | 'amber' | 'neutral'
+
 export interface Template {
   id: string
   name: string
   subtitle: string
   exercises: TemplateExercise[]
+  /** Swatch shown in Plan's collapsed template strip. */
+  color?: TemplateColor
 }
 
 export interface PlanDay {
@@ -118,6 +125,21 @@ export interface Recipe {
   photo?: string
   /** Per-serving nutrition; every field optional. */
   nutrition?: RecipeNutrition
+  /** True when this row was inserted by the install seed (P2.9). The flag
+   *  lets the Recipes empty state read "we seeded 3 starters" and disappears
+   *  if the user edits or deletes the row. */
+  seed?: boolean
+}
+
+/** A single serving of a recipe consumed on a given day — the Recipes →
+ *  protein-today bridge (P2.10). Stored separately from workouts so it can
+ *  be cleared without affecting training history. */
+export interface LoggedMeal {
+  id: string
+  recipeId: string
+  /** YYYY-MM-DD. */
+  date: string
+  servings: number
 }
 
 /**
@@ -127,6 +149,18 @@ export interface Recipe {
  * straight to logging without the density tax.
  */
 export type TodayLayout = 'classic' | 'focused'
+
+/** Streak-save nudge (P2.5) — opt-in PWA reminder fired by the device.
+ *  Degrades silently when notification permission is denied. */
+export interface StreakNudge {
+  enabled: boolean
+  /** 24-hour `HH:mm` local time. */
+  time: string
+}
+
+/** How often the backup reminder asks the user to export (P2.5). Drives the
+ *  threshold the existing `BackupReminder` already uses. */
+export type BackupReminderWeeks = 1 | 2 | 3 | 4
 
 export interface Preferences {
   weightUnit: WeightUnit
@@ -144,6 +178,16 @@ export interface Preferences {
   firstRunDismissed?: boolean
   /** Today screen density — see TodayLayout. Defaults to `classic`. */
   todayLayout?: TodayLayout
+  /** Daily protein target (g) — drives the Recipes "Protein today" bar
+   *  (P2.10). Defaults to 140 on migration. */
+  dailyProteinGoal?: number
+  /** ISO week (e.g. "2026-W21") the user dismissed the Fresh-start strip
+   *  on (P2.12). Stored so the strip stays gone for the rest of that week. */
+  freshStartDismissedWeek?: string
+  /** Opt-in streak-save reminder (P2.5). */
+  streakNudge?: StreakNudge
+  /** Weeks between backup-reminder nudges (P2.5). Defaults to 3. */
+  backupReminderWeeks?: BackupReminderWeeks
 }
 
 /**
@@ -177,4 +221,7 @@ export interface AppData {
   health: HealthData | null
   /** ISO timestamp of the last backup export, or null if never backed up. */
   lastBackupAt: string | null
+  /** Recipe meals logged on a given day (P2.10). Optional — old saves keep
+   *  working unchanged. */
+  loggedMeals?: LoggedMeal[]
 }

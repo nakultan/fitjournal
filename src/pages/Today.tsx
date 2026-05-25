@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity,
   BookOpen,
+  ChefHat,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -16,6 +17,7 @@ import {
   StickyNote,
   Trash2,
   Trophy,
+  X,
 } from 'lucide-react'
 import {
   Button,
@@ -46,6 +48,7 @@ import {
   findLastTime,
   formatSets,
   isLoggedWorkout,
+  postWorkoutRecipe,
   topSetExcluding,
   topSetWeight,
   totalWorkoutsLogged,
@@ -55,10 +58,11 @@ import type {
   CardioType,
   ExerciseEntry,
   MuscleGroup,
+  Recipe,
   SetEntry,
   Workout,
 } from '@/data/types'
-import { addDays, dateKey, dayNameOf, formatLong, formatShort, parseKey, todayKey } from '@/lib/dates'
+import { addDays, dateKey, dayNameOf, formatLong, formatShort, isoWeek, parseKey, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
 import { celebrate, tap } from '@/lib/feedback'
 
@@ -132,6 +136,8 @@ export function TodayScreen() {
       />
 
       {isToday && <TodayAmbientHeader workout={workout} />}
+
+      {isToday && <FreshStartStrip />}
 
       <WeightBanner dateKey={viewingDateKey} focused={isFocused} />
 
@@ -284,6 +290,10 @@ export function TodayScreen() {
         )}
       </section>
 
+      {isToday && workout && workout.exercises.length > 0 && (
+        <PostWorkoutMealCard dateKey={viewingDateKey} />
+      )}
+
       <DayNoteSection key={viewingDateKey} dateKey={viewingDateKey} focused={isFocused} />
 
       {isToday && dayLogged && (
@@ -318,6 +328,136 @@ export function TodayScreen() {
         <TodayStartFab exercises={workout.exercises} weightUnit={weightUnit} />
       )}
     </div>
+  )
+}
+
+/* ---------- Fresh-start Monday strip (P2.12) ----------
+ * Behavioural reinforcement at the *start* of the loop, not the end. Once
+ * per ISO week, on the user's first visit to Today after Monday rolls over,
+ * an amber strip echoes last week's workout count and invites a match.
+ * Tap-to-dismiss persists per ISO week via Preferences.freshStartDismissedWeek
+ * so it does not nag.
+ */
+function FreshStartStrip() {
+  const { data, savePreferences } = useStore()
+  // Mount-stable today reference so the lastWeekCount memo doesn't churn
+  // on every render. Settings open across a midnight boundary is a price
+  // worth paying for compiler-friendly memoization.
+  const today = useMemo(() => new Date(), [])
+  const week = isoWeek(today)
+  const dismissed = data.preferences.freshStartDismissedWeek === week
+  // Only fires on Monday — the brief explicitly anchors this on a new week
+  // beginning, and shipping it every weekday would compete with the lift
+  // list for attention.
+  const isMonday = today.getDay() === 1
+  // Count workouts in the previous ISO week (Mon–Sun before this Monday).
+  const lastWeekCount = useMemo(() => {
+    let n = 0
+    for (let i = 1; i <= 7; i++) {
+      const d = addDays(today, -i)
+      const w = data.workouts[dateKey(d)]
+      if (isLoggedWorkout(w)) n += 1
+    }
+    return n
+  }, [data.workouts, today])
+
+  if (!isMonday || dismissed) return null
+
+  const dismiss = (): void =>
+    savePreferences({ ...data.preferences, freshStartDismissedWeek: week })
+
+  // The "Last week you trained N×. Match it?" framing only lands when the
+  // lifter actually trained last week. If they didn't, drop to a calm
+  // "fresh week, fresh page" line that doesn't shame a quiet stretch.
+  return (
+    <div className="fj-fresh-start" role="note">
+      <div className="fj-fresh-start__body">
+        <strong>New week.</strong>{' '}
+        {lastWeekCount > 0
+          ? `Last week you trained ${lastWeekCount}×. Match it?`
+          : 'A fresh page — log one workout and the week starts.'}
+      </div>
+      <button
+        type="button"
+        className="fj-fresh-start__close"
+        aria-label="Dismiss"
+        onClick={dismiss}
+      >
+        <X size={14} aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
+
+/* ---------- Post-workout meal card (P2.2 / P2.10) ----------
+ * The bridge to the nutrition side: when today has exercises AND at least
+ * one recipe is starred or tagged `post-workout`, surface the top pick as
+ * a calm card below the lift list. Cook deep-links to Recipes and opens
+ * that recipe's detail (Cook mode is one more tap from there).
+ */
+function PostWorkoutMealCard({ dateKey: dk }: { dateKey: string }) {
+  const { data, navigate } = useStore()
+  const recipe: Recipe | null = useMemo(
+    () => postWorkoutRecipe(data.recipes),
+    [data.recipes],
+  )
+  if (!recipe) return null
+  const calories = recipe.nutrition?.calories
+  const protein = recipe.nutrition?.protein
+  // Stash the recipe id so RecipesScreen can open its detail on arrival.
+  const openInRecipes = (): void => {
+    try {
+      sessionStorage.setItem('fj-open-recipe', recipe.id)
+    } catch {
+      /* sessionStorage may be disabled in private mode — degrade silently */
+    }
+    navigate('recipes')
+  }
+  return (
+    <section className="fj-section" aria-label="Post-workout meal">
+      <Card
+        className="fj-post-meal"
+        role="button"
+        tabIndex={0}
+        onClick={openInRecipes}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            openInRecipes()
+          }
+        }}
+        aria-label={`Post-workout: ${recipe.name}`}
+      >
+        <div className="fj-post-meal__main">
+          <span className="fj-post-meal__label">
+            <ChefHat size={14} aria-hidden="true" /> Post-workout
+          </span>
+          <span className="fj-post-meal__name">{recipe.name}</span>
+          <span className="fj-post-meal__macros">
+            {calories != null && <span>{Math.round(calories)} kcal</span>}
+            {protein != null && (
+              <>
+                {calories != null && <span aria-hidden="true">·</span>}
+                <span>{Math.round(protein)}g protein</span>
+              </>
+            )}
+          </span>
+        </div>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={(e) => {
+            e.stopPropagation()
+            openInRecipes()
+          }}
+        >
+          Cook
+        </Button>
+      </Card>
+      {/* dateKey is retained so the future "log as eaten right here" affordance
+          can scope to today; for now the card is informational + deep-link. */}
+      <span hidden>{dk}</span>
+    </section>
   )
 }
 

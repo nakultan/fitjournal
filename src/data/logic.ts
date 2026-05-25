@@ -9,6 +9,8 @@ import type {
   DayName,
   DistanceUnit,
   ExerciseEntry,
+  LoggedMeal,
+  Recipe,
   SetEntry,
   WeightUnit,
   Workout,
@@ -861,4 +863,47 @@ export function computeHeatmap(workouts: Workouts, reference: Date): HeatCell[] 
     }
   }
   return cells
+}
+
+// --------------------------------------------------- protein bridge (P2.10) --
+
+/**
+ * Sum the per-serving protein across every recipe meal logged on `date`,
+ * scaled by each meal's serving count. Returns 0 when no protein data is
+ * available — the bar treats missing nutrition as zero rather than guessing.
+ */
+export function proteinForDay(
+  loggedMeals: LoggedMeal[] | undefined,
+  recipes: Recipe[],
+  date: string,
+): number {
+  if (!loggedMeals || loggedMeals.length === 0) return 0
+  let total = 0
+  for (const meal of loggedMeals) {
+    if (meal.date !== date) continue
+    const recipe = recipes.find((r) => r.id === meal.recipeId)
+    const protein = recipe?.nutrition?.protein
+    if (typeof protein !== 'number') continue
+    total += protein * (meal.servings || 1)
+  }
+  return Number(total.toFixed(1))
+}
+
+/**
+ * Pick the recipe to surface as today's post-workout meal (P2.2). Prefers a
+ * favorite over a `post-workout`-tagged recipe; among ties, picks the one
+ * with the highest per-serving protein. Returns null when neither set exists.
+ */
+export function postWorkoutRecipe(recipes: Recipe[]): Recipe | null {
+  const candidates = recipes.filter(
+    (r) => r.favorite || r.tags.includes('post-workout'),
+  )
+  if (candidates.length === 0) return null
+  const protein = (r: Recipe): number => r.nutrition?.protein ?? 0
+  // Favourites first — the lifter explicitly chose them.
+  candidates.sort((a, b) => {
+    if (a.favorite !== b.favorite) return a.favorite ? -1 : 1
+    return protein(b) - protein(a)
+  })
+  return candidates[0]
 }

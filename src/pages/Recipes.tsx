@@ -5,8 +5,10 @@ import {
   ChefHat,
   ChevronLeft,
   ChevronRight,
+  Filter,
   Minus,
   Plus,
+  Sparkles,
   Star,
   UtensilsCrossed,
   X,
@@ -24,11 +26,18 @@ import {
 } from '@/components'
 import { useStore } from '@/data/store-context'
 import { RECIPE_TAGS, RECIPE_TAG_LABELS } from '@/data/constants'
+import { postWorkoutRecipe, proteinForDay } from '@/data/logic'
 import type { Recipe, RecipeNutrition, RecipeTag } from '@/data/types'
 import { cn } from '@/lib/cn'
 import { todayKey } from '@/lib/dates'
 import { downscaleImage } from '@/lib/image'
 import { uid } from '@/lib/uid'
+
+/** P2.11 — once the grid grows past this many recipes (or the tag count
+ *  exceeds 6), the inline tag chips collapse into a Filter ▾ dropdown so
+ *  the header stops dominating the screen. Below the threshold the
+ *  inline chips stay for fast access. */
+const FILTER_COLLAPSE_RECIPES = 20
 
 const SORTS = [
   { id: 'recent', label: 'Recently added' },
@@ -98,10 +107,44 @@ export function RecipesScreen() {
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState<Set<string>>(new Set())
   const [sort, setSort] = useState<SortId>('recent')
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false)
   const [editing, setEditing] = useState<{ id: string | null } | null>(null)
-  const [detailId, setDetailId] = useState<string | null>(null)
+  // P2.2 — pop the deep-link recipe id at mount via the lazy initial value
+  // (sessionStorage is read once, immediately cleared). If the id no longer
+  // points at a valid recipe, RecipeDetail returns null and nothing renders.
+  const [detailId, setDetailId] = useState<string | null>(() => {
+    try {
+      const pending = sessionStorage.getItem('fj-open-recipe')
+      if (pending) {
+        sessionStorage.removeItem('fj-open-recipe')
+        return pending
+      }
+    } catch {
+      /* sessionStorage may be disabled in private mode — degrade silently */
+    }
+    return null
+  })
   const [cookingId, setCookingId] = useState<string | null>(null)
   const cookingRecipe = cookingId ? data.recipes.find((r) => r.id === cookingId) : null
+
+  // P2.10 — daily protein total + goal feeds the bridge bar at the top.
+  const todayK = todayKey()
+  const proteinToday = useMemo(
+    () => proteinForDay(data.loggedMeals, data.recipes, todayK),
+    [data.loggedMeals, data.recipes, todayK],
+  )
+  const proteinGoal = data.preferences.dailyProteinGoal ?? 140
+  // P2.2 — bidirectional bridge. Highlight the recipe Today is showing in
+  // its post-workout card with a blue "today" badge.
+  const todaysHasExercises = (data.workouts[todayK]?.exercises.length ?? 0) > 0
+  const todaysMeal = todaysHasExercises ? postWorkoutRecipe(data.recipes) : null
+  const todaysMealId = todaysMeal?.id ?? null
+
+  // P2.11 — Filter pill threshold. Above the threshold we collapse the
+  // inline chip row into a single dropdown; below it the chips stay inline
+  // so first-time users see what's available at a glance.
+  const useFilterDropdown = data.recipes.length > FILTER_COLLAPSE_RECIPES
+
 
   const toggleFilter = (tag: string): void =>
     setFilters((prev) => {
@@ -110,6 +153,9 @@ export function RecipesScreen() {
       else next.add(tag)
       return next
     })
+
+  const clearFilters = (): void => setFilters(new Set())
+  const activeFilterCount = filters.size
 
   const q = search.trim().toLowerCase()
   const visible = useMemo(() => {
@@ -151,7 +197,12 @@ export function RecipesScreen() {
         }
       />
 
-      <div className="fj-row" style={{ marginBottom: 'var(--space-4)' }}>
+      {/* P2.10 — protein-today bridge. Always visible at the top of Recipes
+          (and the Today optional-row "+ Protein" affordance mirrors it).
+          When no goal is set, the count alone reads like a passive tally. */}
+      <ProteinTodayBar value={proteinToday} goal={proteinGoal} />
+
+      <div className="fj-row fj-recipes-filters" style={{ marginBottom: 'var(--space-4)' }}>
         <input
           className="fj-input"
           style={{ flex: 1, minWidth: 200 }}
@@ -173,14 +224,35 @@ export function RecipesScreen() {
             </option>
           ))}
         </select>
-        <Chip active={filters.has('_fav')} onClick={() => toggleFilter('_fav')}>
-          ★ Favorites
-        </Chip>
-        {RECIPE_TAGS.map((t) => (
-          <Chip key={t} active={filters.has(t)} onClick={() => toggleFilter(t)}>
-            {RECIPE_TAG_LABELS[t]}
-          </Chip>
-        ))}
+        {useFilterDropdown ? (
+          <button
+            type="button"
+            className={
+              'fj-recipes-filter-btn' +
+              (activeFilterCount > 0 ? ' fj-recipes-filter-btn--on' : '')
+            }
+            onClick={() => setFilterMenuOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={filterMenuOpen}
+          >
+            <Filter size={14} aria-hidden="true" />
+            <span>Filter</span>
+            {activeFilterCount > 0 && (
+              <span className="fj-recipes-filter-btn__count">{activeFilterCount}</span>
+            )}
+          </button>
+        ) : (
+          <>
+            <Chip active={filters.has('_fav')} onClick={() => toggleFilter('_fav')}>
+              ★ Favorites
+            </Chip>
+            {RECIPE_TAGS.map((t) => (
+              <Chip key={t} active={filters.has(t)} onClick={() => toggleFilter(t)}>
+                {RECIPE_TAG_LABELS[t]}
+              </Chip>
+            ))}
+          </>
+        )}
       </div>
 
       {visible.length > 0 ? (
@@ -189,6 +261,7 @@ export function RecipesScreen() {
             <RecipeCard
               key={r.id}
               recipe={r}
+              isToday={r.id === todaysMealId}
               onOpen={() => setDetailId(r.id)}
               onCook={() => setCookingId(r.id)}
             />
@@ -239,16 +312,28 @@ export function RecipesScreen() {
           onClose={() => setCookingId(null)}
         />
       )}
+      {filterMenuOpen && (
+        <FilterMenu
+          filters={filters}
+          onToggle={toggleFilter}
+          onClear={clearFilters}
+          onClose={() => setFilterMenuOpen(false)}
+        />
+      )}
     </div>
   )
 }
 
 function RecipeCard({
   recipe,
+  isToday,
   onOpen,
   onCook,
 }: {
   recipe: Recipe
+  /** P2.2 — true when this recipe is the one Today is surfacing as its
+   *  post-workout meal; adds a small blue "today" pill in the top-right. */
+  isToday: boolean
   onOpen: () => void
   onCook: () => void
 }) {
@@ -265,10 +350,22 @@ function RecipeCard({
         ) : (
           <UtensilsCrossed size={30} aria-hidden="true" />
         )}
+        {isToday && (
+          <span className="fj-recipe-card__today" aria-label="Surfaced on Today">
+            today
+          </span>
+        )}
       </div>
       <div className="fj-recipe-card__body">
         <div className="fj-recipe-card__head">
-          <span className="fj-recipe-card__title">{recipe.name}</span>
+          <span className="fj-recipe-card__title">
+            {recipe.name}
+            {recipe.seed && (
+              <span className="fj-recipe-card__seed" aria-label="Seeded starter recipe">
+                seed
+              </span>
+            )}
+          </span>
           <div className="fj-recipe-card__actions">
             {hasSteps && (
               <button
@@ -317,6 +414,74 @@ function RecipeCard({
         )}
       </div>
     </Card>
+  )
+}
+
+/* ---------- Protein bridge bar (P2.10) ---------- */
+function ProteinTodayBar({ value, goal }: { value: number; goal: number }) {
+  const safeGoal = Math.max(1, goal)
+  const pct = Math.max(0, Math.min(100, (value / safeGoal) * 100))
+  const hit = value >= goal
+  return (
+    <Card
+      className={cn('fj-protein-bar', hit && 'fj-protein-bar--hit')}
+      style={{ marginBottom: 'var(--space-4)' }}
+    >
+      <div className="fj-protein-bar__head">
+        <span className="fj-protein-bar__label">Protein today</span>
+        <span className="fj-protein-bar__value">
+          {Math.round(value)} / {goal} g
+        </span>
+      </div>
+      <div className="fj-protein-bar__track" aria-hidden="true">
+        <div className="fj-protein-bar__fill" style={{ width: `${pct}%` }} />
+      </div>
+    </Card>
+  )
+}
+
+/* ---------- Filter dropdown (P2.11) ---------- *
+ * Shown when the recipe count grows past the inline-chip threshold. Same
+ * Favorites + tag set as the inline row, just behind a dialog so the
+ * header stays calm. */
+function FilterMenu({
+  filters,
+  onToggle,
+  onClear,
+  onClose,
+}: {
+  filters: Set<string>
+  onToggle: (key: string) => void
+  onClear: () => void
+  onClose: () => void
+}) {
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Filter recipes"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClear}>
+            Clear all
+          </Button>
+          <Button onClick={onClose}>Done</Button>
+        </>
+      }
+    >
+      <div className="fj-col" style={{ gap: 'var(--space-3)' }}>
+        <Chip active={filters.has('_fav')} onClick={() => onToggle('_fav')}>
+          ★ Favorites
+        </Chip>
+        <div className="fj-row">
+          {RECIPE_TAGS.map((t) => (
+            <Chip key={t} active={filters.has(t)} onClick={() => onToggle(t)}>
+              {RECIPE_TAG_LABELS[t]}
+            </Chip>
+          ))}
+        </div>
+      </div>
+    </Modal>
   )
 }
 
@@ -382,6 +547,9 @@ function RecipeModal({
     if (photo) recipe.photo = photo
     const nutrition = buildNutrition(calories, protein, carbs, fat)
     if (nutrition) recipe.nutrition = nutrition
+    // Preserve the seed marker through edits — the wireframe shows seeds
+    // keep their "seed" indicator after the lifter tweaks them.
+    if (existing?.seed) recipe.seed = true
     saveRecipe(recipe)
     showToast(existing ? 'Recipe updated' : 'Recipe added', 'success')
     onClose()
@@ -567,7 +735,7 @@ function RecipeDetail({
   onClose: () => void
   onEdit: (id: string) => void
 }) {
-  const { data, deleteRecipe, restoreRecipe } = useStore()
+  const { data, addLoggedMeal, removeLoggedMeal, deleteRecipe, restoreRecipe } = useStore()
   const { showToast } = useToast()
   const recipe = data.recipes.find((x) => x.id === recipeId)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -578,6 +746,18 @@ function RecipeDetail({
   )
   if (!recipe) return null
   const r = recipe
+
+  const logAsEaten = (): void => {
+    const id = addLoggedMeal(r.id, todayKey(), 1)
+    const proteinNote =
+      r.nutrition?.protein != null
+        ? ` (+${Math.round(r.nutrition.protein)}g protein)`
+        : ''
+    showToast(`Logged "${r.name}"${proteinNote}`, 'success', {
+      label: 'Undo',
+      onAction: () => removeLoggedMeal(id),
+    })
+  }
   const totalTime = r.prepTime + r.cookTime
   const factor = r.servings > 0 ? servings / r.servings : 1
   const nutrition = r.nutrition
@@ -609,6 +789,11 @@ function RecipeDetail({
             </Button>
             <Button variant="ghost" onClick={onClose}>
               Close
+            </Button>
+            {/* P2.10 — log a serving against today's protein total. The Undo
+                toast lets a stray tap be reversed. */}
+            <Button variant="secondary" onClick={logAsEaten}>
+              <Sparkles size={15} /> Log as eaten
             </Button>
             <Button onClick={() => onEdit(r.id)}>Edit</Button>
           </>

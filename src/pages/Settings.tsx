@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,6 +18,7 @@ import { LOG_WORKOUT_SHORTCUT_NAME, parseHealthPayload } from '@/lib/healthBridg
 import type { SettingsSection } from '@/lib/router'
 import type {
   AppData,
+  BackupReminderWeeks,
   DistanceUnit,
   Preferences,
   ThemePreference,
@@ -98,10 +99,24 @@ export function SettingsScreen() {
 
 /* ---------- Index ---------- */
 function SettingsIndex({ onPick }: { onPick: (s: SettingsSection) => void }) {
+  const { data } = useStore()
+  // P2.5 / P3.5 — surface the "N wks since backup" pressure on the Your
+  // data card itself, so the lifter sees it before they have to dig. The
+  // current time is captured once per mount via the lazy `useState` init so
+  // `Date.now()` does not get called during render.
+  const [renderTime] = useState(() => Date.now())
+  const backupPill = useMemo<string | null>(() => {
+    if (!data.lastBackupAt) return 'never backed up'
+    const ageMs = renderTime - new Date(data.lastBackupAt).getTime()
+    const weeks = Math.floor(ageMs / (7 * 86_400_000))
+    if (weeks >= 1) return `${weeks} wk${weeks === 1 ? '' : 's'} since backup`
+    return null
+  }, [data.lastBackupAt, renderTime])
   return (
     <div className="fj-settings-index">
       {SECTION_ORDER.map((id) => {
         const m = SECTION_META[id]
+        const isData = id === 'data'
         return (
           <Card
             key={id}
@@ -116,7 +131,13 @@ function SettingsIndex({ onPick }: { onPick: (s: SettingsSection) => void }) {
               <span className="fj-settings-card__title">{m.title}</span>
               <span className="fj-settings-card__sub">{m.subtitle}</span>
             </span>
-            <ChevronRight size={18} color="var(--color-text-dim)" aria-hidden="true" />
+            {isData && backupPill ? (
+              <span className="fj-settings-card__pill" aria-hidden="true">
+                {backupPill}
+              </span>
+            ) : (
+              <ChevronRight size={18} color="var(--color-text-dim)" aria-hidden="true" />
+            )}
           </Card>
         )
       })}
@@ -265,7 +286,132 @@ function PreferencesSection() {
           onChange={(v) => patch({ weeklySummary: v })}
         />
       </div>
+
+      <NudgesGroup />
     </div>
+  )
+}
+
+/* ---------- Nudges (P2.5) ----------
+ * Two opt-in pre-engagement controls: a streak-save reminder fires once a
+ * day via the PWA Notification API (when the user grants permission; no-op
+ * otherwise), and a backup-reminder cadence picker tunes how often the
+ * existing `BackupReminder` banner asks the lifter to export. Both ship
+ * additively — defaults preserve the prior behaviour. */
+function NudgesGroup() {
+  const { data, savePreferences } = useStore()
+  const { showToast } = useToast()
+  const prefs = data.preferences
+  const streak = prefs.streakNudge ?? { enabled: false, time: '19:00' }
+  const cadence = prefs.backupReminderWeeks ?? 3
+  // The Notification API is unavailable on non-secure contexts and on iOS
+  // Safari outside an installed PWA. Detect at render so the toggle stays
+  // honest instead of silently failing.
+  const canNotify = typeof Notification !== 'undefined'
+  const permission = canNotify ? Notification.permission : 'denied'
+
+  const setStreak = (next: { enabled: boolean; time: string }): void => {
+    savePreferences({ ...prefs, streakNudge: next })
+  }
+
+  const requestPermission = async (): Promise<void> => {
+    if (!canNotify) return
+    try {
+      const result = await Notification.requestPermission()
+      if (result === 'granted') {
+        setStreak({ enabled: true, time: streak.time })
+        showToast('Reminder set — your device will nudge at the chosen time.', 'success')
+      } else {
+        setStreak({ enabled: false, time: streak.time })
+        showToast('Reminder needs notification permission — try again later.', 'warning')
+      }
+    } catch {
+      showToast('Could not enable reminders on this device.', 'warning')
+    }
+  }
+
+  const toggleStreak = (enabled: boolean): void => {
+    if (enabled && permission !== 'granted') {
+      void requestPermission()
+      return
+    }
+    setStreak({ enabled, time: streak.time })
+  }
+
+  return (
+    <>
+      <h3 className="fj-settings-subhead">Nudges</h3>
+      <div className="fj-settings-row">
+        <div>
+          <div className="fj-settings-row__label">Streak-save reminder</div>
+          <div className="fj-settings-row__desc">
+            A daily reminder to log a workout — only fires if you granted
+            notification permission. Off by default.
+          </div>
+          {canNotify && permission === 'denied' && streak.enabled && (
+            <div
+              className="fj-settings-row__desc"
+              style={{ color: 'var(--color-warning)', marginTop: 4 }}
+            >
+              Notifications are blocked — the reminder won&apos;t fire until
+              you re-enable them in your browser.
+            </div>
+          )}
+          {!canNotify && (
+            <div
+              className="fj-settings-row__desc"
+              style={{ color: 'var(--color-text-dim)', marginTop: 4 }}
+            >
+              Notifications aren&apos;t available on this device.
+            </div>
+          )}
+        </div>
+        <div className="fj-row" style={{ gap: 'var(--space-2)' }}>
+          <input
+            className="fj-input"
+            type="time"
+            aria-label="Reminder time"
+            style={{ width: 120, textAlign: 'center' }}
+            value={streak.time}
+            onChange={(e) =>
+              setStreak({ enabled: streak.enabled, time: e.target.value || '19:00' })
+            }
+            disabled={!canNotify}
+          />
+          <Toggle
+            ariaLabel="Streak-save reminder"
+            checked={streak.enabled && permission === 'granted'}
+            onChange={toggleStreak}
+          />
+        </div>
+      </div>
+      <div className="fj-settings-row">
+        <div>
+          <div className="fj-settings-row__label">Backup reminder cadence</div>
+          <div className="fj-settings-row__desc">
+            How often the calm "Export a backup" banner reappears. Defaults to 3 weeks.
+          </div>
+        </div>
+        <select
+          className="fj-select"
+          style={{ width: 120 }}
+          aria-label="Backup reminder cadence"
+          value={cadence}
+          onChange={(e) =>
+            savePreferences({
+              ...prefs,
+              backupReminderWeeks: Number(e.target.value) as BackupReminderWeeks,
+            })
+          }
+        >
+          {[1, 2, 3, 4].map((w) => (
+            <option key={w} value={w}>
+              {w} wk{w === 1 ? '' : 's'}
+            </option>
+          ))}
+        </select>
+      </div>
+    </>
   )
 }
 

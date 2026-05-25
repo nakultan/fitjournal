@@ -1,6 +1,7 @@
-import type { AppData, Preferences, Template } from './types'
+import type { AppData, Preferences, Recipe, Template, TemplateColor } from './types'
 import { SCHEMA_VERSION } from './types'
 import { uid } from '@/lib/uid'
+import { todayKey } from '@/lib/dates'
 
 /**
  * Legacy localStorage key. The journal now lives in IndexedDB (below); this
@@ -24,7 +25,14 @@ const DEFAULT_PREFERENCES: Preferences = {
   weeklySummary: true,
   theme: 'system',
   restTimerSeconds: 120,
+  dailyProteinGoal: 140,
+  backupReminderWeeks: 3,
 }
+
+/** Cyclic palette assignment for templates that pre-date the colour field
+ *  (P2.8). Used both during the v2→v3 migration and when freshly seeding
+ *  PPL — the three starter templates always land red / blue / green. */
+const TEMPLATE_COLOR_CYCLE: TemplateColor[] = ['red', 'blue', 'green', 'amber', 'neutral']
 
 /** Push / Pull / Legs — the seeded starter templates. Exported so the Plan
  *  empty state can re-seed if the user nukes everything and wants the
@@ -40,6 +48,7 @@ function seedTemplates(): Template[] {
       id: uid(),
       name: 'Push Day',
       subtitle: 'Chest, Shoulders, Triceps',
+      color: 'red',
       exercises: [
         { name: 'Bench Press', muscle: 'chest', sets: 4, reps: 10 },
         { name: 'Incline DB Press', muscle: 'chest', sets: 3, reps: 10 },
@@ -52,6 +61,7 @@ function seedTemplates(): Template[] {
       id: uid(),
       name: 'Pull Day',
       subtitle: 'Back, Biceps',
+      color: 'blue',
       exercises: [
         { name: 'Barbell Row', muscle: 'back', sets: 4, reps: 8 },
         { name: 'Lat Pulldown', muscle: 'back', sets: 3, reps: 10 },
@@ -64,6 +74,7 @@ function seedTemplates(): Template[] {
       id: uid(),
       name: 'Leg Day',
       subtitle: 'Quads, Hamstrings, Glutes',
+      color: 'green',
       exercises: [
         { name: 'Squat', muscle: 'legs', sets: 4, reps: 8 },
         { name: 'Romanian Deadlift', muscle: 'legs', sets: 3, reps: 10 },
@@ -75,6 +86,92 @@ function seedTemplates(): Template[] {
   ]
 }
 
+/** Three starter recipes seeded on install (P2.9) — gives the empty Recipes
+ *  grid something to chew on. `seed: true` lets the empty-state copy read
+ *  "We seeded 3 starters" and unsets itself if the user edits one. */
+export function seedStarterRecipes(): Recipe[] {
+  const today = todayKey()
+  return [
+    {
+      id: uid(),
+      name: 'Salmon rice',
+      tags: ['dinner', 'high-protein', 'post-workout'],
+      prepTime: 5,
+      cookTime: 25,
+      servings: 2,
+      ingredients: [
+        '2 salmon fillets',
+        '1 cup white rice',
+        '1 tbsp soy sauce',
+        '1 tsp sesame oil',
+        '1 sheet nori, torn',
+        'Sliced cucumber, to serve',
+      ],
+      steps: [
+        'Rinse rice, then simmer in 2 cups water for 18 minutes.',
+        'Season salmon with soy sauce and sesame oil; bake at 400°F for 12 minutes.',
+        'Flake salmon over rice; top with nori and cucumber.',
+      ],
+      notes: 'Easy post-workout plate. Swap rice for quinoa for more protein.',
+      favorite: false,
+      createdAt: today,
+      nutrition: { calories: 620, protein: 42, carbs: 58, fat: 22 },
+      seed: true,
+    },
+    {
+      id: uid(),
+      name: 'Tuna pasta',
+      tags: ['lunch', 'quick', 'high-protein'],
+      prepTime: 5,
+      cookTime: 10,
+      servings: 2,
+      ingredients: [
+        '180 g whole-wheat pasta',
+        '2 tins tuna in olive oil',
+        '2 tbsp Greek yogurt',
+        '1 tbsp lemon juice',
+        'Fresh parsley',
+        'Salt and pepper',
+      ],
+      steps: [
+        'Boil pasta until al dente, drain, save 2 tbsp pasta water.',
+        'Flake tuna into a bowl; stir in yogurt, lemon juice and pasta water.',
+        'Toss pasta through, finish with parsley and pepper.',
+      ],
+      notes: 'Five-minute lunch on a heavy training day.',
+      favorite: false,
+      createdAt: today,
+      nutrition: { calories: 580, protein: 36, carbs: 64, fat: 14 },
+      seed: true,
+    },
+    {
+      id: uid(),
+      name: 'Oats & whey',
+      tags: ['breakfast', 'quick', 'high-protein', 'post-workout'],
+      prepTime: 2,
+      cookTime: 3,
+      servings: 1,
+      ingredients: [
+        '50 g rolled oats',
+        '250 ml milk (or water)',
+        '1 scoop whey protein',
+        '1 tbsp peanut butter',
+        '1/2 banana, sliced',
+      ],
+      steps: [
+        'Cook oats in milk on the stove or microwave (3 minutes).',
+        'Stir in whey once the oats have cooled slightly.',
+        'Top with peanut butter and banana slices.',
+      ],
+      notes: 'The morning default — 30 g protein in five minutes.',
+      favorite: false,
+      createdAt: today,
+      nutrition: { calories: 420, protein: 30, carbs: 50, fat: 11 },
+      seed: true,
+    },
+  ]
+}
+
 /** A clean starting state. */
 export function defaultData(): AppData {
   return {
@@ -82,11 +179,12 @@ export function defaultData(): AppData {
     workouts: {},
     templates: seedTemplates(),
     weeklyPlan: {},
-    recipes: [],
+    recipes: seedStarterRecipes(),
     goals: {},
     preferences: { ...DEFAULT_PREFERENCES },
     health: null,
     lastBackupAt: null,
+    loggedMeals: [],
   }
 }
 
@@ -140,6 +238,24 @@ const MIGRATIONS: Array<(d: Record<string, unknown>) => Record<string, unknown>>
     }
     return { ...d, workouts: migrated, schemaVersion: 2 }
   },
+  // v2 → v3 (P2): additive. Existing templates that pre-date the colour field
+  // get a cyclic default so Plan's chip strip (P2.8) always has a swatch to
+  // render. `loggedMeals` initialises to an empty array. Preference defaults
+  // are filled lazily in `normalize()`, so a hand-edited backup that omits
+  // them still works.
+  (d) => {
+    const templates = Array.isArray(d.templates) ? d.templates : []
+    return {
+      ...d,
+      templates: templates.map((t, i) => {
+        if (!isObject(t)) return t
+        if (typeof t.color === 'string') return t
+        return { ...t, color: TEMPLATE_COLOR_CYCLE[i % TEMPLATE_COLOR_CYCLE.length] }
+      }),
+      loggedMeals: Array.isArray(d.loggedMeals) ? d.loggedMeals : [],
+      schemaVersion: 3,
+    }
+  },
 ]
 
 /**
@@ -165,16 +281,20 @@ function migrate(input: unknown): Partial<AppData> {
 function normalize(input: unknown): AppData {
   const parsed = migrate(input)
   const base = defaultData()
+  // Old saves predate `recipes` being seeded — leave their (possibly empty)
+  // recipes array alone rather than re-seeding starters on every load.
+  const recipes = parsed.recipes ?? []
   return {
     schemaVersion: SCHEMA_VERSION,
     workouts: parsed.workouts ?? base.workouts,
     templates: parsed.templates ?? base.templates,
     weeklyPlan: parsed.weeklyPlan ?? base.weeklyPlan,
-    recipes: parsed.recipes ?? base.recipes,
+    recipes,
     goals: parsed.goals ?? base.goals,
     preferences: { ...base.preferences, ...(parsed.preferences ?? {}) },
     health: parsed.health ?? base.health,
     lastBackupAt: parsed.lastBackupAt ?? base.lastBackupAt,
+    loggedMeals: parsed.loggedMeals ?? [],
   }
 }
 

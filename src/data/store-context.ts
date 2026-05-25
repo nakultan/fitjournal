@@ -79,6 +79,12 @@ export interface StoreValue {
   restoreRecipe: (recipe: Recipe, index: number) => void
   toggleRecipeFavorite: (id: string) => void
 
+  // logged meals (P2.10 protein bridge)
+  /** Log one serving of a recipe consumed on `date`. Returns the new entry's id. */
+  addLoggedMeal: (recipeId: string, date: string, servings?: number) => string
+  /** Remove a logged meal by id. */
+  removeLoggedMeal: (id: string) => void
+
   // goals
   setGoal: (exerciseKey: string, target: number) => void
   removeGoal: (exerciseKey: string) => void

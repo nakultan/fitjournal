@@ -331,6 +331,24 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
         recipes: d.recipes.map((r) => (r.id === id ? { ...r, favorite: !r.favorite } : r)),
       })),
 
+    // P2.10 — the protein-today bridge logs servings of a recipe consumed on a
+    // given day. The list is intentionally append-only (the bar can show
+    // multiple servings of the same recipe), and the id is returned so the
+    // caller can wire it up to an Undo affordance.
+    addLoggedMeal: (recipeId, date, servings = 1) => {
+      const id = uid()
+      setData((d) => ({
+        ...d,
+        loggedMeals: [...(d.loggedMeals ?? []), { id, recipeId, date, servings }],
+      }))
+      return id
+    },
+    removeLoggedMeal: (id) =>
+      setData((d) => ({
+        ...d,
+        loggedMeals: (d.loggedMeals ?? []).filter((m) => m.id !== id),
+      })),
+
     setGoal: (exerciseKey, target) =>
       setData((d) => ({ ...d, goals: { ...d.goals, [exerciseKey]: target } })),
     removeGoal: (exerciseKey) =>

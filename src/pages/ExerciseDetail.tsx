@@ -169,6 +169,9 @@ export function ExerciseDetailScreen() {
             <Sparkline
               values={topSeries}
               label={`Top-set weight over ${topSeries.length} sessions — ${topSeries[0]} to ${topSeries[topSeries.length - 1]} ${weightUnit}`}
+              tooltip
+              pointLabels={history.map((h) => formatShort(h.date))}
+              valueFormat={(v) => `${v} ${weightUnit}`}
             />
           ) : (
             <p className="fj-muted">Log a second session to see the trend.</p>
@@ -189,6 +192,9 @@ export function ExerciseDetailScreen() {
                 values={oneRmSeries}
                 stroke="var(--color-success)"
                 label={`Estimated 1RM over ${oneRmSeries.length} sessions — ${oneRmSeries[0]} to ${oneRmSeries[oneRmSeries.length - 1]} ${weightUnit}`}
+                tooltip
+                pointLabels={history.map((h) => formatShort(h.date))}
+                valueFormat={(v) => `${v} ${weightUnit}`}
               />
               <p className="fj-muted" style={{ marginTop: 'var(--space-2)' }}>
                 Epley estimate from the top set of each session.
