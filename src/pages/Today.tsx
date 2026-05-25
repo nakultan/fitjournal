@@ -1,17 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity,
-  Bell,
-  CalendarCheck,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Dumbbell,
   Flame,
   HeartPulse,
-  Lightbulb,
-  Moon,
-  PlayCircle,
+  Play,
   Plus,
   Scale,
   Sparkles,
@@ -30,7 +26,6 @@ import {
   Input,
   Modal,
   PageHeader,
-  ProgressRing,
   ReorderButtons,
   useToast,
 } from '@/components'
@@ -41,7 +36,6 @@ import {
   REPS_MAX,
   WEIGHT_MAX,
   WORKOUT_MILESTONES,
-  computeInsights,
   computeSessionSummary,
   computeStreak,
   computeStrengthPRs,
@@ -53,20 +47,21 @@ import {
   topSetWeight,
   totalWorkoutsLogged,
 } from '@/data/logic'
+import type { StrengthPR } from '@/data/logic'
 import type {
   CardioEntry,
   CardioType,
   ExerciseEntry,
   MuscleGroup,
   SetEntry,
+  Workout,
 } from '@/data/types'
 import { addDays, dateKey, dayNameOf, formatLong, formatShort, parseKey, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
 import { celebrate, tap } from '@/lib/feedback'
 
 export function TodayScreen() {
-  const { data, viewingDateKey, setViewingDateKey, startSession, reorderExercise } =
-    useStore()
+  const { data, viewingDateKey, setViewingDateKey, reorderExercise } = useStore()
   const [exerciseModal, setExerciseModal] = useState<ExerciseEntry | 'new' | null>(null)
   const [cardioEdit, setCardioEdit] = useState<CardioEntry | null>(null)
   const [summaryOpen, setSummaryOpen] = useState(false)
@@ -122,7 +117,7 @@ export function TodayScreen() {
         }
       />
 
-      {isToday && <TodayHub />}
+      {isToday && <TodayAmbientHeader workout={workout} />}
 
       <WeightBanner dateKey={viewingDateKey} focused={isFocused} />
 
@@ -159,11 +154,6 @@ export function TodayScreen() {
             <Dumbbell size={18} /> Weight Lifting
           </h2>
           <div className="fj-row" style={{ gap: 'var(--space-2)' }}>
-            {isToday && workout && workout.exercises.length > 0 && (
-              <Button size="sm" variant="secondary" onClick={() => startSession()}>
-                <PlayCircle size={15} /> Session
-              </Button>
-            )}
             <Button size="sm" onClick={() => setExerciseModal('new')}>
               Add exercise
             </Button>
@@ -209,6 +199,7 @@ export function TodayScreen() {
               const top = topSetWeight(e)
               const pr = strengthPRs[exerciseKey(e.name)]
               const isPR = !!pr && top > 0 && pr.weight === top && pr.date === viewingDateKey
+              const delta = computeRowDelta(e, data.workouts, viewingDateKey, weightUnit, pr)
               return (
                 <div
                   key={e.id}
@@ -237,6 +228,14 @@ export function TodayScreen() {
                     </span>
                     <div className="fj-ex-row__sets">{formatSets(e.sets, weightUnit)}</div>
                   </div>
+                  {delta && (
+                    <span
+                      className={`fj-ex-delta fj-ex-delta--${delta.tone}`}
+                      aria-label={delta.aria}
+                    >
+                      {delta.label}
+                    </span>
+                  )}
                   <ReorderButtons
                     canUp={idx > 0}
                     canDown={idx < workout.exercises.length - 1}
@@ -281,154 +280,180 @@ export function TodayScreen() {
       {summaryOpen && (
         <WorkoutSummaryModal dateKey={viewingDateKey} onClose={() => setSummaryOpen(false)} />
       )}
+      {isToday && workout && workout.exercises.length > 0 && (
+        <TodayStartFab exercises={workout.exercises} weightUnit={weightUnit} />
+      )}
     </div>
   )
 }
 
-/* ---------- Today hub ---------- */
-function TodayHub() {
-  const { data, navigate, loadPlanIntoDay, startSession } = useStore()
-  const { showToast } = useToast()
+/* ---------- Ambient header (P0.1) ----------
+ * A calm, two-line replacement for the old hub dashboard. The strip carries
+ * date · streak · weekly progress in monospace; the heavier title underneath
+ * says what today *is* — the template name, "Rest day", or "No plan". Numbers
+ * still live in full on Progress; the hub card was demoted so the lift list
+ * becomes the screen.
+ */
+function TodayAmbientHeader({ workout }: { workout: Workout | undefined }) {
+  const { data } = useStore()
   const todayK = todayKey()
-
-  const { streak, week, insights, dayName } = useMemo(() => {
-    const now = parseKey(todayK)
-    return {
-      streak: computeStreak(data.workouts, data.weeklyPlan, now),
-      week: computeWeekProgress(data.workouts, now, data.preferences.weeklyGoal),
-      insights: computeInsights(data, now),
-      dayName: dayNameOf(now),
-    }
-  }, [data, todayK])
-
-  const logged = isLoggedWorkout(data.workouts[todayK])
+  const now = useMemo(() => parseKey(todayK), [todayK])
+  const dayName = dayNameOf(now)
   const plan = data.weeklyPlan[dayName]
-  const isTrainingDay = !!plan && plan.exercises.length > 0
   const hasAnyPlan = Object.keys(data.weeklyPlan).length > 0
-  const showReminder = data.preferences.dailyReminder && !logged && isTrainingDay
+  const hasLoggedToday = isLoggedWorkout(workout)
 
-  const dayNum = Math.floor(parseKey(todayK).getTime() / 86_400_000)
-  const nudge = insights.length > 0 ? insights[dayNum % insights.length] : null
+  const streak = useMemo(
+    () => computeStreak(data.workouts, data.weeklyPlan, now),
+    [data.workouts, data.weeklyPlan, now],
+  )
+  const week = useMemo(
+    () => computeWeekProgress(data.workouts, now, data.preferences.weeklyGoal),
+    [data.workouts, now, data.preferences.weeklyGoal],
+  )
 
-  const goalReached = week.done >= week.goal
-  const weekMsg = goalReached
-    ? 'Weekly goal reached'
-    : `${week.remaining} workout${week.remaining === 1 ? '' : 's'} to your goal`
+  const dow = now.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
+  const md = now
+    .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    .toUpperCase()
 
-  const startPlan = () => {
-    loadPlanIntoDay(todayK, dayName)
-    showToast(plan?.templateName ? `Loaded ${plan.templateName}` : "Loaded today's plan", 'success')
-    startSession()
-  }
+  const title = plan?.templateName
+    ? plan.templateName
+    : hasLoggedToday
+      ? "Today's workout"
+      : hasAnyPlan
+        ? 'Rest day'
+        : 'No plan'
 
   return (
-    <Card className="fj-hub">
-      {showReminder && (
-        <div className="fj-hub__reminder">
-          <Bell size={15} />
-          Time to train — you haven&apos;t logged today&apos;s workout yet.
-        </div>
-      )}
-
-      <div className="fj-hub__top">
-        <div className="fj-hub__stat">
-          <div className="fj-hub__flame">
-            <Flame size={24} />
-          </div>
-          <div>
-            <div className="fj-hub__big">{streak.current}</div>
-            <div className="fj-hub__cap">
-              day streak
-              {streak.longest > streak.current
-                ? ` · best ${streak.longest}`
-                : streak.current > 0
-                  ? ' · best yet'
-                  : ''}
-            </div>
-          </div>
-        </div>
-
-        <div className="fj-hub__divider" />
-
-        <div className="fj-hub__stat">
-          <ProgressRing
-            pct={week.pct}
-            size={62}
-            stroke={6}
-            color={goalReached ? 'var(--color-success)' : 'var(--color-accent)'}
-          >
-            <span className="fj-hub__ringnum">
-              {week.done}
-              <small>/{week.goal}</small>
-            </span>
-          </ProgressRing>
-          <div>
-            <div className="fj-hub__cap">this week</div>
-            <div className="fj-hub__sub">{weekMsg}</div>
-          </div>
-        </div>
+    <section className="fj-today-ambient" aria-label="Today at a glance">
+      <div className="fj-today-ambient__strip" aria-hidden="true">
+        <span>{dow}</span>
+        <span aria-hidden="true">·</span>
+        <span>{md}</span>
+        <span aria-hidden="true">·</span>
+        <span className="fj-today-ambient__streak">
+          {streak.current}
+          <Flame size={12} aria-hidden="true" />
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          {week.done}/{week.goal} wk
+        </span>
       </div>
-
-      {logged ? (
-        <div className="fj-hub__plan">
-          <div className="fj-hub__plan-icon">
-            <CheckCircle2 size={20} />
-          </div>
-          <div className="fj-hub__plan-text">
-            <div className="fj-hub__plan-title">Today&apos;s workout is logged</div>
-            <div className="fj-hub__plan-sub">
-              Nice work — review it below, or finish up when you&apos;re done.
-            </div>
-          </div>
-        </div>
-      ) : isTrainingDay ? (
-        <div className="fj-hub__plan">
-          <div className="fj-hub__plan-icon">
-            <CalendarCheck size={20} />
-          </div>
-          <div className="fj-hub__plan-text">
-            <div className="fj-hub__plan-title">
-              Today&apos;s plan · {plan?.templateName ?? 'Custom workout'}
-            </div>
-            <div className="fj-hub__plan-sub">
-              {plan?.exercises.length} exercise{plan?.exercises.length === 1 ? '' : 's'} ready to go
-            </div>
-          </div>
-          <Button size="sm" onClick={startPlan}>
-            <PlayCircle size={15} /> Start
-          </Button>
-        </div>
-      ) : (
-        <div className="fj-hub__plan">
-          <div className="fj-hub__plan-icon fj-hub__plan-icon--rest">
-            <Moon size={20} />
-          </div>
-          <div className="fj-hub__plan-text">
-            <div className="fj-hub__plan-title">{hasAnyPlan ? 'Rest day' : 'No weekly plan yet'}</div>
-            <div className="fj-hub__plan-sub">
-              {hasAnyPlan
-                ? streak.current > 0
-                  ? 'Your streak is safe — recovery is part of the work.'
-                  : 'Recover well, then come back strong.'
-                : 'Set up a weekly schedule to see your plan here.'}
-            </div>
-          </div>
-          {!hasAnyPlan && (
-            <Button size="sm" variant="secondary" onClick={() => navigate('plan')}>
-              Plan my week
-            </Button>
-          )}
-        </div>
-      )}
-
-      {nudge && (
-        <div className="fj-hub__nudge">
-          <Lightbulb size={15} />
-          <span>{nudge.text}</span>
-        </div>
-      )}
-    </Card>
+      <h2 className="fj-today-ambient__title">{title}</h2>
+    </section>
   )
+}
+
+/* ---------- Sticky Start FAB (P0.2) ----------
+ * Thumb-zone shortcut into the in-workout session. Sub-label trades the dense
+ * "what's queued" rundown of the old hub for a single number — count + the
+ * heaviest top-set you're aiming for (sourced from each exercise's last time
+ * if today's weight isn't entered yet).
+ */
+function TodayStartFab({
+  exercises,
+  weightUnit,
+}: {
+  exercises: ExerciseEntry[]
+  weightUnit: string
+}) {
+  const { data, startSession } = useStore()
+  const todayK = todayKey()
+
+  const count = exercises.length
+  const liftWord = count === 1 ? 'LIFT' : 'LIFTS'
+  const suggestedTop = useMemo(() => {
+    let best = 0
+    for (const e of exercises) {
+      const planned = topSetWeight(e)
+      if (planned > 0) {
+        best = Math.max(best, planned)
+        continue
+      }
+      const last = findLastTime(data.workouts, e.name, todayK)
+      if (last) best = Math.max(best, topSetWeight(last.entry))
+    }
+    return best
+  }, [exercises, data.workouts, todayK])
+  const sub =
+    suggestedTop > 0
+      ? `${count} ${liftWord} · TRY ${Math.round(suggestedTop)}`
+      : `${count} ${liftWord}`
+
+  return (
+    <button
+      type="button"
+      className="fj-start-fab"
+      onClick={() => startSession()}
+      aria-label={`Start session — ${count} exercise${count === 1 ? '' : 's'}${
+        suggestedTop > 0 ? `, try ${Math.round(suggestedTop)} ${weightUnit}` : ''
+      }`}
+    >
+      <span className="fj-start-fab__row">
+        <Play size={18} fill="currentColor" aria-hidden="true" />
+        <span className="fj-start-fab__label">Start session</span>
+      </span>
+      <span className="fj-start-fab__sub">{sub}</span>
+    </button>
+  )
+}
+
+/* ---------- Lift-row delta pill (P0.3) ----------
+ * A "where am I vs last time" pill at the trailing edge of each row. PR shot
+ * takes precedence (planning to exceed the standing PR), then weight gain,
+ * then rep gain, then same-as-last. Returns null when there's no last time
+ * to compare against, or when this entry hasn't been entered yet (top == 0).
+ */
+function computeRowDelta(
+  entry: ExerciseEntry,
+  workouts: Record<string, Workout>,
+  todayK: string,
+  weightUnit: string,
+  pr: StrengthPR | undefined,
+): { label: string; tone: 'success' | 'neutral' | 'pr'; aria: string } | null {
+  const top = topSetWeight(entry)
+  if (top <= 0) return null
+  if (pr && pr.date !== todayK && top > pr.weight) {
+    return {
+      label: 'PR shot ★',
+      tone: 'pr',
+      aria: `Planned top set ${top} ${weightUnit} — would beat your ${pr.weight} ${weightUnit} record`,
+    }
+  }
+  const last = findLastTime(workouts, entry.name, todayK)
+  if (!last) return null
+  const lastTop = topSetWeight(last.entry)
+  if (lastTop <= 0) return null
+  const topReps = entry.sets.reduce(
+    (max, s) => (s.weight === top ? Math.max(max, s.reps) : max),
+    0,
+  )
+  const lastTopReps = last.entry.sets.reduce(
+    (max, s) => (s.weight === lastTop ? Math.max(max, s.reps) : max),
+    0,
+  )
+  if (top > lastTop) {
+    const diff = Math.round(top - lastTop)
+    return {
+      label: `+${diff} ${weightUnit}`,
+      tone: 'success',
+      aria: `Up ${diff} ${weightUnit} from last time`,
+    }
+  }
+  if (top === lastTop && topReps > lastTopReps) {
+    const diff = topReps - lastTopReps
+    return {
+      label: `+${diff} rep${diff === 1 ? '' : 's'}`,
+      tone: 'success',
+      aria: `Up ${diff} rep${diff === 1 ? '' : 's'} from last time`,
+    }
+  }
+  if (top === lastTop && topReps === lastTopReps) {
+    return { label: 'same as last', tone: 'neutral', aria: 'Same as last time' }
+  }
+  return null
 }
 
 /* ---------- Workout summary ---------- */

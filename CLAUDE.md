@@ -316,4 +316,51 @@ covering four user-reported issues:
   `@media (max-width: 768px)` block flips `.fj-hub__top` to
   `flex-direction: column` and turns `.fj-hub__divider` into a full-width
   horizontal rule, so the streak stat and the weekly-progress ring each get
-  the full card width rather than fighting over ~130 px each.
+  the full card width rather than fighting over ~130 px each. (Note: that
+  rule was retired in the v2 redesign below — `TodayHub` itself is gone.)
+
+## v2 redesign (UX-audit v2)
+
+A second design pass landed in `design_handoff_fitjournal_v2/` (annotated
+wireframes + a 32-item P0–P3 backlog spanning all 7 screens). It builds on the
+earlier audit; the wireframes are mid-fi (layout, hierarchy and copy are final;
+visuals stay on the existing token system). Commits prefix the backlog ID
+(`P0.1 …`, `P0.2 …`) so the git log lines up with the handoff.
+
+**v2 P0 — shipped 2026-05-24.** Today's hierarchy is reversed: the lift list
+is the screen now, not a row inside a dashboard.
+
+- **P0.1 — Ambient header.** `TodayHub` (the 6-card streak/weekly/plan
+  dashboard) was removed entirely. In its place a new `TodayAmbientHeader`
+  renders a monospace strip (`SAT · MAY 24 · 12🔥 · 3/4 wk`) above a heavier
+  display title — the assigned template name, or `"Today's workout"` if
+  exercises are logged without one, or `"Rest day"` / `"No plan"` otherwise.
+  Only shown when viewing today. The streak/weekly numbers haven't gone away
+  — they live in full on Progress.
+- **P0.2 — Sticky Start FAB.** New `TodayStartFab` — fixed bottom-right, 56px
+  min-height, `--color-success` background, clears the bottom nav on mobile
+  via the same `bottom: calc(64px + …)` pattern as the rest timer. Two-line
+  content: `▶ Start session` and a monospace sub-label `N LIFT(S) · TRY <top>`
+  where `<top>` is the heaviest planned top-set (falls back to each exercise's
+  `findLastTime` top-set when today's weight is still 0). Mounted only when
+  `isToday && exercises.length > 0`; the inline `Session` button in the
+  Weight Lifting section head was removed (the FAB replaces it).
+  `ResumeSessionPill` already hides on Today, so the two never collide.
+- **P0.3 — Lift-row delta pill.** Each exercise row in Today's table carries
+  a trailing `.fj-ex-delta` pill computed by the local `computeRowDelta`
+  helper: `PR shot ★` (amber, takes precedence) when the planned top-set
+  would beat the standing PR; `+N <unit>` (green) on a weight gain; `+N reps`
+  (green) on a rep gain at the same weight; `same as last` (neutral) when
+  matched. Returns `null` when the entry hasn't been entered yet (top == 0)
+  or when `findLastTime` has nothing to compare against — first-time
+  exercises stay quiet rather than shouting "PR".
+- **P0.4 — Save dot system-wide.** Already shipped in v1's P1.1 — every
+  `PageHeader` renders `.fj-save-dot` keyed on `lastSavedAt`, so the dot
+  pulses on every screen that uses PageHeader (all 7). No change needed;
+  verified.
+
+Dead `.fj-hub__*` rules were dropped from `app.css` along with the imports
+they backed (`Bell`, `CalendarCheck`, `Lightbulb`, `Moon`, `PlayCircle`,
+`ProgressRing`, `computeInsights`). The mobile `.fj-hub__top` override
+mentioned above was retired in the same pass; `.fj-today-ambient__title`
+drops to `--text-title` on mobile and `.fj-start-fab` clears the bottom nav.

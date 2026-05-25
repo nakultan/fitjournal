@@ -15,13 +15,17 @@ on top of the full feature set and polish pass.
 
 ## What it does
 
-- **Today** — a hub showing your streak, weekly-goal progress and today's planned
-  workout; log body weight, cardio, and exercises set by set (tap any entry to
-  edit it, or reorder with the ▲/▼ chevrons); jot a short *day note* — energy,
-  sleep, soreness — that follows the workout into History and the summary; tap
-  *Start* (or the *Session* chip) to enter an in-workout view with checkable
-  set rows and an automatic rest timer; finish with a session recap — and a
-  celebration when you set a record
+- **Today** — a calm ambient header (today's date · streak · weekly-goal
+  progress, with the day's plan as a heavier title) sits above the lift list
+  itself; each row carries a delta pill ("+5 lb", "+2 reps", "same as last",
+  or "PR shot ★") sourced from the last time you logged that exercise. Log
+  body weight, cardio, and exercises set by set (tap any entry to edit it, or
+  reorder with the ▲/▼ chevrons); jot a short *day note* — energy, sleep,
+  soreness — that follows the workout into History and the summary. A sticky
+  green **Start session** FAB in the thumb zone (sub-label: lift count + the
+  heaviest top-set you're aiming for) drops you into the in-workout view —
+  checkable set rows and an automatic rest timer — and finishes with a
+  session recap, and a celebration when you set a record
 - **Progress** — one screen with three tabs: an **Overview** (streak, weekly
   recap, body-weight trend, 30-day stats, charts, automatic insights, muscle
   balance), **Exercises** (strength & cardio personal records, per-exercise

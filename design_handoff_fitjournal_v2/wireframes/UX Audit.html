@@ -1,0 +1,1654 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitJournal — UX Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #f7f4ec;
+    --paper-2: #efeadc;
+    --rule: #cdc6b3;
+    --rule-2: #b8b09a;
+    --red: #c03a2b;
+    --red-soft: #c03a2b22;
+    --blue: #1f4e8c;
+    --blue-soft: #1f4e8c22;
+    --green: #2f7a3a;
+    --green-soft: #2f7a3a22;
+    --amber: #c98a1b;
+    --amber-soft: #c98a1b22;
+    --dim: #6a6557;
+    --hand: 'Patrick Hand', 'Kalam', sans-serif;
+    --hand-bold: 'Caveat', cursive;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); font-family: var(--hand); font-size: 17px; line-height: 1.55; }
+  /* paper grain */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(rgba(0,0,0,0.025) 1px, transparent 1px),
+      radial-gradient(rgba(0,0,0,0.018) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+    z-index: 50;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 28px 120px; position: relative; }
+
+  /* ---- masthead ---- */
+  .masthead {
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    padding: 22px 26px 18px;
+    background: var(--paper);
+    box-shadow: 4px 4px 0 var(--ink);
+    margin-bottom: 28px;
+    transform: rotate(-0.2deg);
+  }
+  .masthead h1 {
+    font-family: var(--hand-bold);
+    font-weight: 700;
+    font-size: 56px;
+    line-height: 1;
+    margin: 0 0 4px;
+    letter-spacing: -0.5px;
+  }
+  .masthead .stamp {
+    display: inline-block;
+    border: 1.5px solid var(--red);
+    color: var(--red);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    padding: 4px 10px;
+    transform: rotate(-3deg);
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+  .masthead .meta {
+    display: flex; flex-wrap: wrap; gap: 18px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--dim);
+    margin-top: 12px;
+    border-top: 1px dashed var(--rule);
+    padding-top: 10px;
+  }
+  .masthead .meta b { color: var(--ink); }
+
+  /* ---- sticky nav ---- */
+  .tocbar {
+    position: sticky;
+    top: 12px;
+    z-index: 30;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    padding: 6px 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    box-shadow: 3px 3px 0 var(--ink);
+    margin-bottom: 28px;
+  }
+  .tocbar a {
+    font-family: var(--hand);
+    font-size: 14px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    color: var(--ink);
+    text-decoration: none;
+    border: 1px dashed transparent;
+  }
+  .tocbar a:hover { border-color: var(--ink); background: var(--paper-2); }
+
+  /* ---- section heads ---- */
+  section { margin: 0 0 56px; }
+  .sec-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 4px;
+  }
+  h2.sec {
+    font-family: var(--hand-bold);
+    font-weight: 700;
+    font-size: 44px;
+    margin: 0 0 4px;
+    line-height: 1;
+  }
+  .sec-sub {
+    font-family: var(--hand);
+    color: var(--dim);
+    font-size: 16px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid var(--ink);
+    position: relative;
+  }
+  .sec-sub::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 30%; bottom: -5px;
+    border-bottom: 1px solid var(--rule-2);
+  }
+  h3.sub {
+    font-family: var(--hand-bold);
+    font-size: 28px;
+    font-weight: 700;
+    margin: 26px 0 8px;
+  }
+  h4.subsub {
+    font-family: var(--hand);
+    font-size: 18px;
+    font-weight: 700;
+    margin: 18px 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  p { margin: 0 0 10px; }
+  p + p { margin-top: 8px; }
+
+  /* ---- callouts ---- */
+  .callout {
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    padding: 14px 16px;
+    border-radius: 4px;
+    margin: 12px 0;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .callout--red    { border-color: var(--red); background: var(--red-soft);   box-shadow: 3px 3px 0 var(--red); }
+  .callout--blue   { border-color: var(--blue); background: var(--blue-soft); box-shadow: 3px 3px 0 var(--blue); }
+  .callout--green  { border-color: var(--green); background: var(--green-soft); box-shadow: 3px 3px 0 var(--green); }
+  .callout--amber  { border-color: var(--amber); background: var(--amber-soft); box-shadow: 3px 3px 0 var(--amber); }
+  .callout__label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    color: var(--ink);
+    opacity: 0.75;
+  }
+  .callout--red    .callout__label { color: var(--red); }
+  .callout--blue   .callout__label { color: var(--blue); }
+  .callout--green  .callout__label { color: var(--green); }
+  .callout--amber  .callout__label { color: var(--amber); }
+
+  /* ---- grid layouts ---- */
+  .row { display: grid; gap: 18px; }
+  .row-2 { grid-template-columns: 1fr 1fr; }
+  .row-3 { grid-template-columns: repeat(3, 1fr); }
+  .row-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 840px) {
+    .row-2, .row-3, .row-4 { grid-template-columns: 1fr; }
+  }
+
+  /* ---- heatmap matrix ---- */
+  .matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--hand);
+    font-size: 14px;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+  }
+  .matrix th, .matrix td {
+    border: 1px solid var(--rule);
+    padding: 8px 10px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .matrix th {
+    background: var(--paper-2);
+    font-family: var(--hand-bold);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .matrix td:first-child {
+    text-align: left;
+    font-family: var(--hand);
+    font-weight: 700;
+    background: var(--paper-2);
+    white-space: nowrap;
+  }
+  .dot { display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--ink); }
+  .dot-0 { background: transparent; opacity: 0.3; }
+  .dot-1 { background: #e9d8a6; }
+  .dot-2 { background: #ee9b00; }
+  .dot-3 { background: #c03a2b; }
+  .dot-legend { display: flex; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; margin-top: 10px; color: var(--dim); }
+  .dot-legend .li { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* ---- priority matrix ---- */
+  .pmatrix {
+    width: 100%;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    border-collapse: collapse;
+  }
+  .pmatrix td { border: 1.5px solid var(--ink); padding: 16px; vertical-align: top; height: 200px; width: 50%; position: relative; }
+  .pmatrix .quad-label {
+    position: absolute;
+    top: 8px; left: 12px;
+    font-family: var(--hand-bold);
+    font-size: 22px;
+  }
+  .pmatrix ul { margin: 30px 0 0; padding-left: 18px; font-size: 14.5px; }
+  .pmatrix li { margin-bottom: 4px; line-height: 1.35; }
+  .pmatrix .axis-x, .pmatrix .axis-y {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; color: var(--dim); text-transform: uppercase;
+  }
+  .axes { display: grid; grid-template-columns: 30px 1fr; grid-template-rows: 1fr 24px; gap: 6px; margin: 12px 0 30px; }
+  .axes .y { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; color: var(--dim); text-transform: uppercase; }
+  .axes .x { grid-column: 2; text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; color: var(--dim); text-transform: uppercase; }
+
+  /* ---- wireframe boxes ---- */
+  .wf {
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 0;
+    font-family: var(--hand);
+    position: relative;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .wf-title {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 1.5px;
+    padding: 6px 10px;
+    border-bottom: 1.5px solid var(--ink);
+    background: var(--paper-2);
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+  }
+  .wf-body { padding: 14px 14px 16px; }
+
+  /* phone frame */
+  .phone {
+    width: 280px;
+    border: 2.5px solid var(--ink);
+    border-radius: 28px;
+    padding: 8px;
+    background: var(--paper);
+    box-shadow: 4px 4px 0 var(--ink);
+    margin: 0 auto;
+  }
+  .phone__notch {
+    width: 70px; height: 14px;
+    background: var(--ink);
+    border-radius: 0 0 10px 10px;
+    margin: 0 auto 4px;
+  }
+  .phone__screen {
+    border: 1.5px solid var(--ink);
+    border-radius: 18px;
+    padding: 10px 8px 6px;
+    font-family: var(--hand);
+    font-size: 12px;
+    line-height: 1.3;
+    background: var(--paper);
+    min-height: 480px;
+    position: relative;
+  }
+  .phone__statusbar {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 9px;
+    color: var(--dim); padding: 0 4px 6px;
+    border-bottom: 1px dashed var(--rule);
+    margin-bottom: 6px;
+  }
+  .phone__bottomnav {
+    position: absolute; bottom: 4px; left: 4px; right: 4px;
+    border-top: 1.5px solid var(--ink);
+    padding-top: 6px;
+    display: flex; justify-content: space-around;
+    font-family: var(--mono); font-size: 8.5px;
+    color: var(--dim); text-transform: uppercase;
+  }
+  .phone__bottomnav .active { color: var(--ink); font-weight: 700; }
+
+  .box {
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 4px 0;
+    background: var(--paper);
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .box--dashed { border-style: dashed; }
+  .box--filled { background: var(--paper-2); }
+  .box--accent { background: var(--blue-soft); border-color: var(--blue); }
+  .box--good   { background: var(--green-soft); border-color: var(--green); }
+  .box--bad    { background: var(--red-soft); border-color: var(--red); }
+  .box--placeholder {
+    background: repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.05) 6px 7px);
+    color: var(--dim);
+    font-style: italic;
+    text-align: center;
+  }
+  .pill {
+    display: inline-block;
+    border: 1.2px solid var(--ink);
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-size: 11px;
+    margin: 1px 2px;
+    background: var(--paper);
+  }
+  .pill--solid { background: var(--ink); color: var(--paper); }
+  .pill--accent { background: var(--blue); color: var(--paper); border-color: var(--blue); }
+
+  .stack { display: flex; flex-direction: column; gap: 6px; }
+  .hstack { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .between { display: flex; justify-content: space-between; align-items: center; }
+
+  /* arrow callout — points at things on the wireframe */
+  .annot {
+    position: relative;
+    margin: 8px 0 16px;
+    padding-left: 36px;
+    font-family: var(--hand);
+    font-size: 14px;
+  }
+  .annot::before {
+    content: "→";
+    position: absolute;
+    left: 8px;
+    top: 0;
+    font-family: var(--hand-bold);
+    font-size: 22px;
+    color: var(--red);
+    transform: rotate(-12deg);
+  }
+  .annot--ok::before { content: "✓"; color: var(--green); transform: none; }
+  .annot--idea::before { content: "★"; color: var(--blue); transform: none; }
+  .annot strong { background: #ffec99; padding: 0 3px; }
+
+  /* number badge for friction list */
+  .fnum {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    border: 1.5px solid var(--red);
+    border-radius: 50%;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    color: var(--red);
+    background: var(--paper);
+    margin-right: 6px;
+    vertical-align: -4px;
+  }
+
+  ul.tick, ul.cross, ul.dash {
+    list-style: none;
+    padding: 0; margin: 6px 0;
+  }
+  ul.tick li, ul.cross li, ul.dash li {
+    padding-left: 22px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  ul.tick li::before { content: "✓"; color: var(--green); position: absolute; left: 0; font-family: var(--hand-bold); font-size: 18px; }
+  ul.cross li::before { content: "✗"; color: var(--red); position: absolute; left: 0; font-family: var(--hand-bold); font-size: 18px; }
+  ul.dash li::before { content: "—"; position: absolute; left: 0; }
+
+  .kbd {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--paper-2);
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+
+  /* cognitive load bars */
+  .clbar {
+    display: grid;
+    grid-template-columns: 140px 1fr 50px;
+    gap: 10px;
+    align-items: center;
+    margin: 4px 0;
+    font-size: 14px;
+  }
+  .clbar .track {
+    height: 14px;
+    background: var(--paper-2);
+    border: 1px solid var(--ink);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .clbar .fill {
+    height: 100%;
+    background: repeating-linear-gradient(135deg, var(--red) 0 4px, #d65648 4px 8px);
+  }
+  .clbar .fill--low { background: repeating-linear-gradient(135deg, var(--green) 0 4px, #4a9a55 4px 8px); }
+  .clbar .fill--med { background: repeating-linear-gradient(135deg, var(--amber) 0 4px, #d99e30 4px 8px); }
+  .clbar .val { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+
+  /* friction marker overlays on phone */
+  .mark {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid var(--red);
+    border-radius: 50%;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    color: var(--red);
+    background: var(--paper);
+    text-align: center;
+    line-height: 14px;
+    margin: 0 2px;
+  }
+  .mark--idea { border-color: var(--blue); color: var(--blue); }
+  .mark--ok { border-color: var(--green); color: var(--green); }
+
+  /* "redesign" big arrow */
+  .bigArrow {
+    text-align: center;
+    font-family: var(--hand-bold);
+    font-size: 36px;
+    color: var(--ink);
+    margin: 14px 0;
+  }
+  .bigArrow span { display: inline-block; transform: rotate(-2deg); border-bottom: 3px solid var(--ink); padding: 0 10px; }
+
+  /* tag chip */
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    margin: 0 4px 4px 0;
+    background: var(--paper-2);
+    text-transform: uppercase;
+  }
+  .tag--p0 { background: var(--red); color: var(--paper); border-color: var(--red); }
+  .tag--p1 { background: var(--amber); color: var(--paper); border-color: var(--amber); }
+  .tag--p2 { background: var(--blue); color: var(--paper); border-color: var(--blue); }
+  .tag--p3 { background: var(--paper-2); color: var(--dim); }
+
+  /* ---- side-by-side compare ---- */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .compare .arrow {
+    align-self: center;
+    text-align: center;
+    font-family: var(--hand-bold);
+    font-size: 40px;
+  }
+  @media (max-width: 840px) {
+    .compare { grid-template-columns: 1fr; }
+    .compare .arrow { transform: rotate(90deg); }
+  }
+
+  /* redesign variant chips */
+  .vchip {
+    display: inline-block;
+    border: 1.5px solid var(--ink);
+    background: var(--paper-2);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-family: var(--hand-bold);
+    font-size: 18px;
+    margin: 0 6px 6px 0;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .vchip--on { background: var(--ink); color: var(--paper); }
+
+  /* footer */
+  .end {
+    text-align: center;
+    margin: 60px 0 0;
+    font-family: var(--hand-bold);
+    font-size: 28px;
+    color: var(--dim);
+  }
+  .end::before, .end::after {
+    content: " ~ ";
+  }
+
+  .label-small { font-family: var(--mono); font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); }
+
+  /* anchor offset for sticky toc */
+  section[id] { scroll-margin-top: 80px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ======================= MASTHEAD ======================= -->
+<div class="masthead">
+  <div>
+    <h1>FitJournal — UX Audit <span class="stamp">Round 6 · v2026.05.24</span></h1>
+    <div style="font-family: var(--hand); font-size: 19px; color: var(--dim); margin-top: 2px;">
+      Eight lenses · ten dimensions · seven screens · one redesign at the end
+    </div>
+  </div>
+  <div class="meta">
+    <span><b>Scope</b> /Today /Session /Progress /Plan /Recipes /Settings /ExerciseDetail</span>
+    <span><b>Lenses</b> Nielsen-10 · Hick · Fitts · Cog-load · Prog.disc · Jakob · WCAG 2.2 · BehavRein</span>
+    <span><b>Method</b> code-read + heuristic walk-through</span>
+    <span><b>Baseline</b> commit 83c5514 + P0–P3 audit (already shipped)</span>
+  </div>
+</div>
+
+<!-- ======================= TOC ======================= -->
+<nav class="tocbar">
+  <a href="#summary">① Summary</a>
+  <a href="#frameworks">② Lenses</a>
+  <a href="#today">③ Today</a>
+  <a href="#session">④ Session</a>
+  <a href="#progress">⑤ Progress</a>
+  <a href="#plan">⑥ Plan</a>
+  <a href="#recipes">⑦ Recipes</a>
+  <a href="#settings">⑧ Settings</a>
+  <a href="#exdetail">⑨ ExDetail</a>
+  <a href="#friction">⑩ Friction</a>
+  <a href="#redesign">⑪ Redesign</a>
+  <a href="#backlog">⑫ Backlog</a>
+</nav>
+
+<!-- ======================================================== -->
+<!-- 1. EXECUTIVE SUMMARY                                      -->
+<!-- ======================================================== -->
+<section id="summary">
+  <div class="sec-num">SECTION ONE</div>
+  <h2 class="sec">Executive summary</h2>
+  <div class="sec-sub">What's strong, what's leaking trust, and where the biggest design lift is.</div>
+
+  <div class="row row-3">
+    <div class="callout callout--green">
+      <div class="callout__label">★ STRENGTHS</div>
+      <ul class="tick" style="margin:0">
+        <li>Tokenised design system — colour, type, motion all swappable</li>
+        <li>Offline-first storage with multi-tier fallback + save-fail banner</li>
+        <li>Five rounds of post-audit fixes already shipped (P0–P3)</li>
+        <li>Per-set logging + Apple Health bridge w/o native code</li>
+        <li>WCAG 2.5.8 touch targets globalised (44px floor)</li>
+      </ul>
+    </div>
+    <div class="callout callout--amber">
+      <div class="callout__label">⚠ CAUTIONS</div>
+      <ul class="dash" style="margin:0">
+        <li><b>Today</b> is still 1,228 lines — the most-used screen carries the most cognitive load</li>
+        <li><b>Progress</b> mashes three modes (Overview / Exercises / History) into one segmented control with 6+ sections each</li>
+        <li>Streak & PR loops are reactive — no <i>proactive</i> reinforcement (no streak-save nudge, no PR teasing)</li>
+        <li>"Focused" Today layout is a preference hidden in Settings — most users will never find it</li>
+      </ul>
+    </div>
+    <div class="callout callout--red">
+      <div class="callout__label">✗ AMATEUR TELLS</div>
+      <ul class="cross" style="margin:0">
+        <li>Pure black `#000` background on dark theme reads as "developer demo", not "premium app"</li>
+        <li>Every header has the same heft — no visual rhythm between hub-screens and tool-screens</li>
+        <li>Empty states use the same generic icon-title-button pattern across 5 screens (Jakob's Law inverted: too consistent)</li>
+        <li>Bottom nav is 5 evenly-weighted items — Today should dominate</li>
+        <li>No "first 30 seconds" celebration: log first set → silent toast. Should be a moment.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sub">Cognitive load by screen (relative estimate)</h3>
+  <p class="label-small">Counts surfaced controls + decisions per first viewport · normalised 0–100</p>
+
+  <div class="clbar"><span>Today (classic)</span><div class="track"><div class="fill" style="width:88%"></div></div><span class="val">88 high</span></div>
+  <div class="clbar"><span>Today (focused)</span><div class="track"><div class="fill fill--med" style="width:54%"></div></div><span class="val">54 mid</span></div>
+  <div class="clbar"><span>Progress overview</span><div class="track"><div class="fill" style="width:78%"></div></div><span class="val">78 high</span></div>
+  <div class="clbar"><span>Session</span><div class="track"><div class="fill fill--low" style="width:32%"></div></div><span class="val">32 low ✓</span></div>
+  <div class="clbar"><span>Plan</span><div class="track"><div class="fill fill--med" style="width:48%"></div></div><span class="val">48 mid</span></div>
+  <div class="clbar"><span>Recipes</span><div class="track"><div class="fill fill--med" style="width:52%"></div></div><span class="val">52 mid</span></div>
+  <div class="clbar"><span>Settings (index)</span><div class="track"><div class="fill fill--low" style="width:28%"></div></div><span class="val">28 low ✓</span></div>
+  <div class="clbar"><span>ExerciseDetail</span><div class="track"><div class="fill fill--low" style="width:38%"></div></div><span class="val">38 low ✓</span></div>
+
+  <h3 class="sub">Priority matrix (impact × effort)</h3>
+  <div class="axes">
+    <div class="y">UX IMPACT →</div>
+    <div>
+      <table class="pmatrix">
+        <tr>
+          <td>
+            <div class="quad-label">★ Quick wins</div>
+            <ul>
+              <li>Reverse Today's hierarchy: workout-in-progress > stats</li>
+              <li>Promote streak to a <i>persistent</i> top-of-screen ambient — not buried in a hub card</li>
+              <li>Replace Progress segmented control with mode-routes (own URL each)</li>
+              <li>Empty-state diversity: each screen gets its own metaphor</li>
+            </ul>
+          </td>
+          <td>
+            <div class="quad-label">⛰ Big bets</div>
+            <ul>
+              <li>"Train" mode → a dedicated, voice-friendly in-workout shell that takes over the whole screen</li>
+              <li>Predictive next-set: auto-fill weight from last session w/ progressive-overload bump</li>
+              <li>Adaptive bottom nav — Train tab swaps to Resume / Finish during a session</li>
+            </ul>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="quad-label">○ Maybe later</div>
+            <ul>
+              <li>Sparkline tooltips on hover</li>
+              <li>Recipe ingredient unit-conversion</li>
+              <li>Plan day re-order by drag</li>
+            </ul>
+          </td>
+          <td>
+            <div class="quad-label">⛓ Heavy / blocked</div>
+            <ul>
+              <li>Multi-device sync (deferred to post-account work)</li>
+              <li>Native iOS HealthKit (deliberately deferred per README)</li>
+              <li>Scheduled OS reminders (deliberately deferred)</li>
+            </ul>
+          </td>
+        </tr>
+      </table>
+      <div class="x">EFFORT →</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 2. FRAMEWORKS / LENSES                                    -->
+<!-- ======================================================== -->
+<section id="frameworks">
+  <div class="sec-num">SECTION TWO</div>
+  <h2 class="sec">The lenses, applied</h2>
+  <div class="sec-sub">Each framework scored across all seven screens · darker dot = bigger problem</div>
+
+  <div style="overflow-x:auto;">
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th style="text-align:left">Lens \ Screen</th>
+        <th>Today</th><th>Session</th><th>Progress</th><th>Plan</th><th>Recipes</th><th>Settings</th><th>ExDetail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Nielsen — Visibility of status</td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Nielsen — Match real world</td><td><span class="dot dot-1"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Nielsen — User control / undo</td><td><span class="dot dot-0"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Nielsen — Consistency / Jakob</td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Nielsen — Error prevention</td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-0"></span></td></tr>
+      <tr><td>Nielsen — Recognition not recall</td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-3"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Nielsen — Flexibility / shortcuts</td><td><span class="dot dot-2"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Nielsen — Minimalist design</td><td><span class="dot dot-3"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-3"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Nielsen — Error recovery</td><td><span class="dot dot-0"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-0"></span></td></tr>
+      <tr><td>Nielsen — Help / docs</td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Hick — choice paralysis</td><td><span class="dot dot-3"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-3"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Fitts — target size + distance</td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Cognitive load</td><td><span class="dot dot-3"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-3"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Progressive disclosure</td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-0"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Jakob — convention fit</td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>WCAG 2.2 (targets, contrast, focus)</td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td><td><span class="dot dot-1"></span></td></tr>
+      <tr><td>Behavioural reinforcement</td><td><span class="dot dot-3"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-3"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-3"></span></td><td><span class="dot dot-2"></span></td><td><span class="dot dot-2"></span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="dot-legend">
+    <span class="li"><span class="dot dot-0"></span> none / shipped</span>
+    <span class="li"><span class="dot dot-1"></span> minor</span>
+    <span class="li"><span class="dot dot-2"></span> noteworthy</span>
+    <span class="li"><span class="dot dot-3"></span> major friction</span>
+  </div>
+
+  <div class="row row-2" style="margin-top:24px">
+    <div class="callout callout--blue">
+      <div class="callout__label">★ Reading the heatmap</div>
+      <p>The diagonal cluster of dark dots is on <b>Recognition not recall · Hick · Cog-load · Behavioural reinforcement</b> — all four spike on <b>Today</b> and <b>Progress</b>. These are the two screens carrying real <i>aggregation</i> work, and the design hasn't kept up.</p>
+      <p>Conversely <b>Session</b> and <b>Settings</b> are mostly clean — Session because it was rebuilt focused; Settings because P2.3 split it into cards. The lesson: shipped focused-mode work pays out.</p>
+    </div>
+    <div class="callout">
+      <div class="callout__label">Behavioural reinforcement is the worst column</div>
+      <p>Every row is dot-2 or dot-3. Translation: the app reliably <i>records</i> what happened but rarely makes the user <i>feel</i> something about it. The streak counter is a number on a card. PRs trigger confetti — once. Empty states say "no recipes yet" with a button. No anticipation, no near-miss feedback, no fresh-start moments.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 3. TODAY                                                  -->
+<!-- ======================================================== -->
+<section id="today">
+  <div class="sec-num">SECTION THREE · SCREEN AUDIT</div>
+  <h2 class="sec">/ Today</h2>
+  <div class="sec-sub">The hub. Most-used screen. Most-asked-to-do screen. Carries the most friction.</div>
+
+  <div class="row row-2">
+    <div>
+      <h4 class="subsub">As built — classic layout</h4>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div class="phone__statusbar"><span>9:41</span><span>● ● ●</span></div>
+          <div class="between" style="margin-bottom:6px">
+            <div>
+              <div style="font-family:var(--hand-bold); font-size:18px; line-height:1">Today's Log</div>
+              <div style="font-size:10px; color:var(--dim)">Log your workout, one day at a time</div>
+            </div>
+            <div class="hstack"><span class="pill">◀</span><span class="pill">Sat May 24</span><span class="pill">▶</span></div>
+          </div>
+
+          <div class="box box--filled" style="padding:10px 8px">
+            <div class="between">
+              <div>
+                <div style="font-size:10px; color:var(--dim)">STREAK</div>
+                <div style="font-family:var(--hand-bold); font-size:24px">12🔥</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:10px; color:var(--dim)">WEEK GOAL</div>
+                <div>3 / 4 <span class="pill pill--solid">75%</span></div>
+              </div>
+            </div>
+            <div style="font-size:10px; color:var(--dim); margin-top:6px">Today's plan: Push Day · 6 exercises</div>
+            <div class="hstack" style="margin-top:6px"><span class="pill pill--accent">▶ Start session</span><span class="pill">Apple Health · use</span></div>
+          </div>
+
+          <div class="box box--accent" style="margin-top:6px">
+            <div class="between"><b>Body weight</b><span>187.2 lb</span></div>
+          </div>
+
+          <div class="label-small" style="margin-top:6px">CARDIO</div>
+          <div class="box box--dashed">+ Add cardio</div>
+
+          <div class="label-small" style="margin-top:6px">WEIGHT LIFTING</div>
+          <div class="hstack" style="margin:2px 0 4px"><span style="font-size:9px;color:var(--dim)">Start from template:</span><span class="pill">Push</span><span class="pill">Pull</span><span class="pill">Legs</span></div>
+          <div class="box">Bench press · 3×8 @ 185 ▲▼ <span class="pill">edit</span></div>
+          <div class="box">OHP · 3×6 @ 115 ▲▼ <span class="pill">edit</span></div>
+          <div class="box">Incline DB · 3×10 @ 60 ▲▼ <span class="pill">edit</span></div>
+          <div class="box box--dashed">+ Add exercise</div>
+
+          <div class="label-small" style="margin-top:6px">DAY NOTE</div>
+          <div class="box box--dashed">+ Day note</div>
+
+          <div class="phone__bottomnav">
+            <span class="active">Today</span><span>Progress</span><span>Plan</span><span>Recipes</span><span>⚙</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h4 class="subsub">Audit — by dimension</h4>
+      <div class="callout callout--red" style="margin-top:0">
+        <div class="callout__label">1 — Visual hierarchy</div>
+        <p>Hub card, weight banner, cardio, lifting, day-note all carry equal weight. <b>Nothing</b> on the screen says "your next action is here." Streak is the brightest stat but the user came to log a set — not admire a number.</p>
+      </div>
+      <div class="callout callout--red">
+        <div class="callout__label">2 — Information density · Hick</div>
+        <p>First viewport surfaces ~14 decisions: 3 nav arrows, 3 template chips, 5 stat cells, 4 add-affordances, the session button, the date picker. Choice paralysis at the moment of greatest mental commitment.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">3 — Tap efficiency · Fitts</div>
+        <p>"Start session" — the most behaviourally valuable action — is a secondary chip beside the Lifting heading. Distance from thumb-rest (bottom-right) is maximum. It should be a primary CTA pinned bottom-right.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">4 — Error prevention</div>
+        <p>P3.2 added soft warnings on weight/reps maxes. Good. Still missing: date picker lets you scroll to year 2099 then silently log. Hide future days entirely.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">5 — Discoverability</div>
+        <p><b>Focused layout</b> is a 50% information-density reduction that lives in <span class="kbd">Settings › Preferences</span>. Nobody finds preference flags. Promote to a one-tap "Calm mode" toggle in the header.</p>
+      </div>
+      <div class="callout callout--red">
+        <div class="callout__label">6 — Motivation loops</div>
+        <p>Streak number sits there waiting to be looked at. No "save your streak" nudge at 22:00. No "you're one workout from your weekly goal" beat at 4/4 - 1. No fresh-start moment Monday morning. Reinforcement is reactive, not anticipatory.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">7 — Empty states</div>
+        <p>P1.7 added the "Ready to train?" hero — already shipped. ✓</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">8 — Microinteractions</div>
+        <p>Reorder ▲▼ does the job but has no animation — list jumps. CountUp is used on summary; could also bump streak on first log of day for that "ratchet" feel.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">9 — Accessibility</div>
+        <p>Date arrows have aria-labels, skip-link in place, 44px floor. ✓ Remaining gap: date <i>label</i> is a button but doesn't say <span class="kbd">aria-haspopup="dialog"</span>.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">10 — Offline-first trust</div>
+        <p>SaveErrorBanner exists. But the absence of a banner doesn't mean "saved" — it means "nothing's wrong." P3.3 added "Auto-saved · 4s ago" in Settings → Data. <b>That signal belongs on Today</b>, not buried two screens away.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 4. SESSION                                                -->
+<!-- ======================================================== -->
+<section id="session">
+  <div class="sec-num">SECTION FOUR · SCREEN AUDIT</div>
+  <h2 class="sec">/ Session</h2>
+  <div class="sec-sub">The in-workout view. Already the cleanest screen in the app. A few targeted nudges away from excellent.</div>
+
+  <div class="row row-2">
+    <div>
+      <h4 class="subsub">As built</h4>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div class="phone__statusbar"><span>9:52</span><span>Session · 23:14</span></div>
+          <div class="between" style="margin-bottom:4px">
+            <div class="hstack"><span class="pill">◀ Back</span></div>
+            <div style="font-family:var(--hand-bold); font-size:18px">Push Day</div>
+            <div></div>
+          </div>
+
+          <div class="box box--accent" style="text-align:center">
+            <div style="font-size:10px; color:var(--blue)">REST</div>
+            <div style="font-family:var(--hand-bold); font-size:30px">1:42</div>
+            <div class="hstack" style="justify-content:center"><span class="pill">↻ +15s</span><span class="pill">Skip</span></div>
+          </div>
+
+          <div class="box">
+            <b>Bench press</b><br/>
+            <div class="hstack" style="margin-top:2px">
+              <span class="pill pill--solid">✓ 8 × 185</span>
+              <span class="pill pill--solid">✓ 8 × 185</span>
+              <span class="pill">○ 8 × 185</span>
+            </div>
+            <div style="font-size:10px;color:var(--dim);margin-top:4px">Last time: 3 × 8 @ 180</div>
+          </div>
+
+          <div class="box">
+            <b>OHP</b><br/>
+            <div class="hstack" style="margin-top:2px">
+              <span class="pill">○ 6 × 115</span>
+              <span class="pill">○ 6 × 115</span>
+              <span class="pill">○ 6 × 115</span>
+            </div>
+          </div>
+
+          <div class="box box--dashed">+ Add exercise</div>
+          <div class="box box--good" style="text-align:center"><b>Finish workout</b></div>
+
+          <div class="phone__bottomnav">
+            <span>Today</span><span>Progress</span><span>Plan</span><span>Recipes</span><span>⚙</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h4 class="subsub">Audit — by dimension</h4>
+      <div class="callout callout--green">
+        <div class="callout__label">✓ Strong: visual hierarchy</div>
+        <p>Rest timer, current exercise, next exercise — clearly ranked. Finish is the only green button. Good rhythm.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">1 — Density</div>
+        <p>32/100 cognitive load — lowest in the app. Don't add anything.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">3 — Tap efficiency · Fitts</div>
+        <p>Set chips are ~28pt wide; checkable area should be entire row, not just the checkmark. P3.x said .fj-session-check is 44×44 — ✓ but the surrounding row tap area still routes to "edit set" not "complete set". Decide on one default.</p>
+      </div>
+      <div class="callout callout--red">
+        <div class="callout__label">6 — Motivation</div>
+        <p>"Last time: 3×8 @ 180" is mentioned but small grey. This is the <i>single most motivating piece of context</i> in lifting apps. It should be the dominant subtitle of each exercise card, with a delta: <i>"+5 lb vs last time"</i>.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">8 — Microinteractions</div>
+        <p>Rest timer chimes ✓. But no <i>visual</i> rest countdown ring on the exercise card itself; user has to look at the pill. A faint progress-fill on the next set chip would tie countdown to context.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">10 — Offline trust</div>
+        <p>Mid-session save fail would be catastrophic to user trust. Persisted check-state is fine, but a "saved 2s ago" micro-affordance on the Finish row would do real work.</p>
+      </div>
+      <div class="callout callout--blue">
+        <div class="callout__label">★ Transformative idea — Train Mode</div>
+        <p>Session is so close to a "no thinking" mode. Hide the bottom nav while a session is active. Hide the back button behind a long-press. Treat it like a video call — the whole screen is the activity.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 5. PROGRESS                                               -->
+<!-- ======================================================== -->
+<section id="progress">
+  <div class="sec-num">SECTION FIVE · SCREEN AUDIT</div>
+  <h2 class="sec">/ Progress</h2>
+  <div class="sec-sub">Three screens behind one tab strip. The heaviest cognitive load in the app.</div>
+
+  <div class="row row-2">
+    <div>
+      <h4 class="subsub">As built — Overview tab</h4>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div style="font-family:var(--hand-bold); font-size:18px">Progress</div>
+          <div class="hstack" style="margin:4px 0"><span class="pill pill--solid">Overview</span><span class="pill">Exercises</span><span class="pill">History</span></div>
+          <div class="box box--filled">
+            <div class="between"><b>Streak</b><span>🔥 12 days</span></div>
+            <div class="between"><b>This week</b><span>3 / 4 workouts</span></div>
+          </div>
+          <div class="box box--filled">
+            <div class="label-small">BODY WEIGHT TREND</div>
+            <div class="box--placeholder box" style="margin:4px 0; padding:16px">~~~ sparkline ~~~</div>
+            <div style="font-size:10px;color:var(--dim)">187.2 lb · -1.4 this month</div>
+          </div>
+          <div class="box box--filled">
+            <div class="label-small">30 DAY STATS</div>
+            <div class="hstack"><span class="pill">15 sessions</span><span class="pill">38,400 lb</span><span class="pill">128 sets</span></div>
+          </div>
+          <div class="box box--filled">
+            <div class="label-small">APPLE HEALTH</div>
+            <div class="hstack"><span class="pill">8,420 steps</span><span class="pill">38 min</span><span class="pill">62 bpm</span></div>
+          </div>
+          <div class="box box--dashed">▼ Show charts, insights &amp; muscle balance</div>
+          <div class="phone__bottomnav">
+            <span>Today</span><span class="active">Progress</span><span>Plan</span><span>Recipes</span><span>⚙</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h4 class="subsub">Audit — by dimension</h4>
+      <div class="callout callout--red">
+        <div class="callout__label">1 — Visual hierarchy · Hick</div>
+        <p>Six top-level cards on Overview, each its own sub-system. The "Show charts &amp; insights" disclosure (P2.5) was the right move — but it admits the screen <i>has too much</i> and hides it instead of restructuring it. Five+ stat blocks with no anchor.</p>
+      </div>
+      <div class="callout callout--red">
+        <div class="callout__label">6 — Recognition not recall</div>
+        <p>"Overview / Exercises / History" are three different mental models on one tab strip. After a week away, the user doesn't remember which tab held the PR list. Each needs a distinct visual identity AND a URL.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">2 — Density</div>
+        <p>Tab strip + 4 stat tiles + Apple Health + weight chart + collapsed disclosure + heatmap. First scroll only. Treat Overview as a story, not a dashboard.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">5 — Discoverability</div>
+        <p>"Exercises" tab is where strength progression lives — the most rewarding part of the screen. But the name doesn't promise that. <i>"Records"</i> or <i>"Progress per exercise"</i> would tell users what they're tapping for.</p>
+      </div>
+      <div class="callout callout--red">
+        <div class="callout__label">6 — Motivation loops</div>
+        <p>The Overview has every ingredient for a "progress story" — PR count, week-on-week tonnage, streak trajectory — but presents them as detached tiles. A single hero sentence (<i>"You've moved 38,400 lb in the last 30 days — that's 12% more than last month."</i>) would do more than five tiles.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">7 — Empty states</div>
+        <p>Currently each tab has its own generic "no data yet" empty state. Good but undifferentiated.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">8 — Microinteractions</div>
+        <p>Sparkline tooltips would close a real gap — you can see a trend but not <i>read</i> any specific point.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">9 — Accessibility</div>
+        <p>P1.3 added aria-labels on Sparkline. ✓ The tab strip uses pill buttons; missing role="tablist" + role="tab" pattern. Keyboard users get nothing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 6. PLAN                                                   -->
+<!-- ======================================================== -->
+<section id="plan">
+  <div class="sec-num">SECTION SIX · SCREEN AUDIT</div>
+  <h2 class="sec">/ Plan</h2>
+  <div class="sec-sub">Templates + weekly schedule. P2.2 already cleaned this up — what's left.</div>
+
+  <div class="row row-2">
+    <div>
+      <h4 class="subsub">As built</h4>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div style="font-family:var(--hand-bold); font-size:18px">Plan</div>
+          <div style="font-size:10px;color:var(--dim)">Templates and weekly schedule</div>
+          <div class="label-small" style="margin-top:6px">TEMPLATES</div>
+          <div class="row" style="grid-template-columns:1fr 1fr; gap:4px">
+            <div class="box"><b>Push</b><br/>Bench, OHP, Dips…</div>
+            <div class="box"><b>Pull</b><br/>Rows, Pull-ups…</div>
+            <div class="box"><b>Legs</b><br/>Squat, RDL…</div>
+            <div class="box box--dashed">+ New</div>
+          </div>
+          <div class="label-small" style="margin-top:6px">WEEKLY SCHEDULE</div>
+          <div class="stack" style="font-size:11px">
+            <div class="box between"><span>Mon</span><span>Push ▸</span></div>
+            <div class="box between"><span>Tue</span><span>Pull ▸</span></div>
+            <div class="box between"><span>Wed</span><span class="pill">Rest day</span></div>
+            <div class="box between"><span>Thu</span><span>Legs ▸</span></div>
+            <div class="box between"><span>Fri</span><span>Push ▸</span></div>
+            <div class="box between"><span>Sat</span><span>Pull ▸</span></div>
+            <div class="box between"><span>Sun</span><span class="pill">Rest day</span></div>
+          </div>
+          <div class="phone__bottomnav">
+            <span>Today</span><span>Progress</span><span class="active">Plan</span><span>Recipes</span><span>⚙</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h4 class="subsub">Audit — by dimension</h4>
+      <div class="callout callout--green">
+        <div class="callout__label">✓ Shipped wins</div>
+        <p>P2.2 rewrote weekly schedule as 7 tappable rows with an AssignDaySheet — exactly the right Fitts-friendly pattern. P1.8 added EmptyState w/ CTA when no templates exist. Both visible above.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">1 — Visual hierarchy</div>
+        <p>Templates and schedule carry equal weight. But schedule is where the <i>repeat use</i> is. After first setup, templates should collapse to a header row.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">6 — Recognition not recall</div>
+        <p>"Push / Pull / Legs" are the seeded names — users renaming to "Heavy day" or "30 min upper" deserve recognition cues (icons, colour swatches per template).</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">8 — Microinteractions</div>
+        <p>No drag-reorder for plan days; only ▲▼ within a template (P1 already). Drag would be the natural gesture here — calendars are draggable.</p>
+      </div>
+      <div class="callout callout--blue">
+        <div class="callout__label">★ Idea — "this week" view</div>
+        <p>The schedule is templates-by-day. But behaviourally the user wants <i>"what am I doing the next 7 days, starting today?"</i>. Same data, different anchor — rotate so today is row 1.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 7. RECIPES                                                -->
+<!-- ======================================================== -->
+<section id="recipes">
+  <div class="sec-num">SECTION SEVEN · SCREEN AUDIT</div>
+  <h2 class="sec">/ Recipes</h2>
+  <div class="sec-sub">A premium keeper. Solid bones — but feels grafted onto a workout app.</div>
+
+  <div class="row row-2">
+    <div>
+      <h4 class="subsub">As built</h4>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div class="between">
+            <div style="font-family:var(--hand-bold); font-size:18px">Recipes</div>
+            <span class="pill">Sort: Recent ▾</span>
+          </div>
+          <div class="hstack" style="margin:4px 0"><span class="pill">All</span><span class="pill">Quick</span><span class="pill">High-prot</span><span class="pill">Low-carb</span></div>
+          <div class="row" style="grid-template-columns:1fr 1fr; gap:4px">
+            <div class="box" style="padding:4px">
+              <div class="box--placeholder box" style="height:48px; margin:0; padding:0">photo</div>
+              <div style="font-size:11px;font-weight:700;margin-top:2px">Chicken bowl ★</div>
+              <div style="font-size:9px;color:var(--dim)">22m · 540 kcal · 👨‍🍳</div>
+            </div>
+            <div class="box" style="padding:4px">
+              <div class="box--placeholder box" style="height:48px; margin:0; padding:0">photo</div>
+              <div style="font-size:11px;font-weight:700;margin-top:2px">Oats &amp; whey</div>
+              <div style="font-size:9px;color:var(--dim)">5m · 420 kcal · 👨‍🍳</div>
+            </div>
+            <div class="box" style="padding:4px">
+              <div class="box--placeholder box" style="height:48px; margin:0; padding:0">photo</div>
+              <div style="font-size:11px;font-weight:700;margin-top:2px">Salmon &amp; rice</div>
+              <div style="font-size:9px;color:var(--dim)">30m · 620 kcal</div>
+            </div>
+            <div class="box box--dashed" style="padding:14px;text-align:center">+ New</div>
+          </div>
+          <div class="phone__bottomnav">
+            <span>Today</span><span>Progress</span><span>Plan</span><span class="active">Recipes</span><span>⚙</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h4 class="subsub">Audit — by dimension</h4>
+      <div class="callout callout--green">
+        <div class="callout__label">✓ Strong</div>
+        <p>P2.6 added the ChefHat shortcut to skip detail and go straight to Cook mode. Photos make the grid the highest-signal screen in the app.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">1 — Visual hierarchy</div>
+        <p>Sort + tag chips + grid + new — all top-aligned. Tag chips should hide behind a "Filter" pill on grids over 20.</p>
+      </div>
+      <div class="callout callout--red">
+        <div class="callout__label">6 — Motivation / integration</div>
+        <p>This screen is the orphan. It doesn't talk to the rest of the app. <b>Today</b> doesn't suggest "post-workout: try Chicken Bowl (high protein, 22 min)." That's the only reason a fitness journal would have a recipe keeper.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">5 — Discoverability</div>
+        <p>Cook mode (the screen-awake step-through) is the killer feature, hidden two taps deep. P2.6 helped. A Cook button on Today (linked from today's planned meal) would surface it weekly.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">7 — Empty states</div>
+        <p>Generic "No recipes yet" — ok. But seeding 3 starter recipes (matching the seeded Push/Pull/Legs templates) would be net-positive.</p>
+      </div>
+      <div class="callout callout--blue">
+        <div class="callout__label">★ Idea — protein math link-up</div>
+        <p>If recipes carry per-serving macros and the app knows weight + goal, surface "X g protein logged today" on the recipe detail — and one-tap "log as eaten" to a future nutrition page. Don't build the page; build the bridge.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 8. SETTINGS                                               -->
+<!-- ======================================================== -->
+<section id="settings">
+  <div class="sec-num">SECTION EIGHT · SCREEN AUDIT</div>
+  <h2 class="sec">/ Settings</h2>
+  <div class="sec-sub">P2.3 split into four cards with deep-link routes — already best-in-class. Tiny polish remaining.</div>
+
+  <div class="row row-2">
+    <div>
+      <h4 class="subsub">As built</h4>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div style="font-family:var(--hand-bold); font-size:18px">Settings</div>
+          <div class="box box--filled" style="font-size:10px">🔒 Everything stays on this device — no account, no servers.</div>
+          <div class="stack" style="margin-top:6px">
+            <div class="box between"><b>Preferences</b><span>▸</span></div>
+            <div class="box between"><b>Your data</b><span>▸</span></div>
+            <div class="box between"><b>Apple Health</b><span>▸</span></div>
+            <div class="box between"><b>About</b><span>▸</span></div>
+          </div>
+          <div style="font-size:10px;color:var(--dim);margin-top:8px">Auto-saved 4s ago · Last backup 12 days ago</div>
+          <div class="phone__bottomnav">
+            <span>Today</span><span>Progress</span><span>Plan</span><span>Recipes</span><span class="active">⚙</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h4 class="subsub">Audit — by dimension</h4>
+      <div class="callout callout--green">
+        <div class="callout__label">✓ Cleanest screen in the app</div>
+        <ul class="tick" style="margin:0">
+          <li>P2.3 grouped cards + deep-link routes</li>
+          <li>P3.3 auto-save + last-backup line</li>
+          <li>P3.6 trust strip prominently placed</li>
+          <li>P3.7 discreet "What's new" expander</li>
+        </ul>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">5 — Discoverability</div>
+        <p>"Backup reminder" lives globally (P0 ship). Good. But the user who got the reminder and chose to dismiss <i>has no way to find it again</i> — Settings → Your data shows last-backup date but not "remind me weekly." Add a cadence pref.</p>
+      </div>
+      <div class="callout">
+        <div class="callout__label">10 — Trust signalling</div>
+        <p>Trust strip is good. Consider rotating microcopy on the cards index — different signal each load: "1.2 MB on device", "47 workouts saved", "Backup 12 days ago" — reinforces that something real is happening.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 9. EXERCISE DETAIL                                        -->
+<!-- ======================================================== -->
+<section id="exdetail">
+  <div class="sec-num">SECTION NINE · SCREEN AUDIT</div>
+  <h2 class="sec">/ Exercise Detail</h2>
+  <div class="sec-sub">Per-exercise progression. Reached by tapping a strength row.</div>
+
+  <div class="row row-2">
+    <div>
+      <h4 class="subsub">As built</h4>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div class="hstack"><span class="pill">◀ Progress</span></div>
+          <div style="font-family:var(--hand-bold); font-size:20px; margin-top:4px">Bench press</div>
+          <div class="hstack"><span class="pill">PR 205 lb</span><span class="pill">e1RM 218 lb</span><span class="pill">Goal: 225 ▸</span></div>
+          <div class="label-small" style="margin-top:6px">TOP SET (LB)</div>
+          <div class="box--placeholder box" style="padding:18px">~~~ sparkline ~~~</div>
+          <div class="label-small">E1RM</div>
+          <div class="box--placeholder box" style="padding:18px">~~~ sparkline ~~~</div>
+          <div class="label-small">HISTORY</div>
+          <div class="box">May 22 · 3×8 @ 185</div>
+          <div class="box">May 19 · 3×8 @ 180</div>
+          <div class="box">May 15 · 3×8 @ 180</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h4 class="subsub">Audit — by dimension</h4>
+      <div class="callout callout--green">
+        <div class="callout__label">✓ Strong</div>
+        <p>P1.2 made the goal tile a tappable button that opens GoalModal — exactly right. P1.3 added aria-labels on Sparklines.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">1 — Visual hierarchy</div>
+        <p>PR pill, e1RM pill, Goal pill all look the same — but they're different categories: a past achievement, a derived projection, a future commitment. Visually distinguish.</p>
+      </div>
+      <div class="callout callout--amber">
+        <div class="callout__label">6 — Motivation</div>
+        <p>"Goal 225" is right there but there's no <i>distance signal</i>. A "20 lb to go · ~6 weeks at current rate" caption turns a number into a path.</p>
+      </div>
+      <div class="callout callout--blue">
+        <div class="callout__label">★ Idea — "next time, try"</div>
+        <p>Append a recommendation card under the charts: <i>"Last session was 3×8 @ 185 — try 3×8 @ 190 next time."</i> Progressive overload, automated.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 10. FRICTION POINTS TOP 10                                -->
+<!-- ======================================================== -->
+<section id="friction">
+  <div class="sec-num">SECTION TEN</div>
+  <h2 class="sec">Top friction points</h2>
+  <div class="sec-sub">The ten things that, removed, change the feel of the app most.</div>
+
+  <div class="row row-2">
+    <div>
+      <p><span class="fnum">1</span><b>Today's hub does not start with the workout.</b> The streak/goal card and weight banner sit above the lifting list. The thing the user came to do is below the thing they came to feel good about.</p>
+      <p><span class="fnum">2</span><b>"Start session" is a secondary chip.</b> The single highest-value action lives next to a heading, sized like every other button. Should be a sticky FAB.</p>
+      <p><span class="fnum">3</span><b>Progress' tab strip hides three different mental models.</b> Recognition fails on return. Needs three URLs + three distinct identities.</p>
+      <p><span class="fnum">4</span><b>Behavioural reinforcement is reactive.</b> Reward fires <i>after</i> a PR. Nothing builds <i>anticipation</i>. Show "1 set away from a PR" before they lift.</p>
+      <p><span class="fnum">5</span><b>"Focused" layout is hidden in Settings.</b> A 50%-density reduction nobody knows exists. Promote.</p>
+    </div>
+    <div>
+      <p><span class="fnum">6</span><b>Last-time numbers in Session are tiny grey.</b> The single best motivator in lifting is "+5 lb vs last time" — and it's a 10pt muted caption.</p>
+      <p><span class="fnum">7</span><b>Bottom nav is five equally-weighted items.</b> Today, Plan, and Settings get used daily / weekly / monthly. Same visual heft for all.</p>
+      <p><span class="fnum">8</span><b>Empty states all look the same.</b> Icon + title + paragraph + button × 6 screens. Jakob's Law inverted — too consistent, no recognition cues.</p>
+      <p><span class="fnum">9</span><b>Recipes feels like a separate app.</b> No bridge to the workout side. The reason this app has recipes at all is invisible.</p>
+      <p><span class="fnum">10</span><b>Auto-save signal is buried.</b> P3.3 added it to Settings. Belongs on every screen — quiet, always there.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 11. TRANSFORMATIVE REDESIGNS                              -->
+<!-- ======================================================== -->
+<section id="redesign">
+  <div class="sec-num">SECTION ELEVEN — THE REDESIGN</div>
+  <h2 class="sec">Today, reimagined</h2>
+  <div class="sec-sub">Three directions — same data, different orchestration. Pick one or mix.</div>
+
+  <p>The thesis: <b>Today is a workout screen with a streak strip, not a streak screen with a workout list.</b> Every direction below leads with the next physical action; every direction puts the streak in service of that action, not in competition with it.</p>
+
+  <div style="margin: 18px 0 12px;">
+    <span class="vchip vchip--on">A · Action-first</span>
+    <span class="vchip">B · Coach card</span>
+    <span class="vchip">C · Calm log</span>
+  </div>
+
+  <div class="row row-3">
+    <!-- ===== Variant A ===== -->
+    <div>
+      <h4 class="subsub">A — Action-first</h4>
+      <p style="font-size:14px;color:var(--dim)">Workout list dominates. Streak compressed to a single ambient line. One big sticky CTA.</p>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div class="phone__statusbar"><span>9:41</span><span>● auto-saved</span></div>
+          <div class="between" style="margin-bottom:4px">
+            <div>
+              <div style="font-size:9px;color:var(--dim)">SAT MAY 24 · DAY 12 🔥 · 3/4 THIS WEEK</div>
+              <div style="font-family:var(--hand-bold); font-size:22px; line-height:1">Push Day</div>
+            </div>
+            <div class="hstack"><span class="pill">◀</span><span class="pill">▶</span></div>
+          </div>
+
+          <div class="box box--good" style="text-align:center; padding:14px">
+            <div style="font-family:var(--hand-bold); font-size:22px">▶ Start session</div>
+            <div style="font-size:10px;color:var(--dim)">6 exercises · ~50 min · last 3×8 @ 180 → try 185</div>
+          </div>
+
+          <div class="label-small" style="margin-top:8px">TODAY'S LIFTS</div>
+          <div class="box">Bench press <span class="pill">3×8</span> <span style="font-size:10px;color:var(--green)">+5 lb</span></div>
+          <div class="box">OHP <span class="pill">3×6</span> <span style="font-size:10px;color:var(--green)">+2.5 lb</span></div>
+          <div class="box">Incline DB <span class="pill">3×10</span> <span style="font-size:10px;color:var(--dim)">same as last</span></div>
+          <div class="box">Dips <span class="pill">3×AMRAP</span></div>
+
+          <div class="label-small" style="margin-top:6px">OPTIONAL</div>
+          <div class="hstack"><span class="pill">+ Weight</span><span class="pill">+ Cardio</span><span class="pill">+ Note</span></div>
+
+          <div class="phone__bottomnav">
+            <span class="active">Today</span><span>Progress</span><span>Plan</span><span>Recipes</span><span>⚙</span>
+          </div>
+        </div>
+      </div>
+      <p class="annot annot--ok"><b>Hierarchy:</b> next action ranks 1st, lifts 2nd, peripherals 3rd.</p>
+      <p class="annot annot--idea"><b>Anticipation:</b> "+5 lb" deltas baked into each row before lifting.</p>
+      <p class="annot annot--idea"><b>Ambient streak:</b> a single 9pt line, never absent, never shouting.</p>
+    </div>
+
+    <!-- ===== Variant B ===== -->
+    <div>
+      <h4 class="subsub">B — Coach card</h4>
+      <p style="font-size:14px;color:var(--dim)">A narrative sentence at the top tells the user what today is and why. Then the list.</p>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div class="phone__statusbar"><span>9:41</span><span>● auto-saved</span></div>
+          <div class="hstack" style="font-size:9px;color:var(--dim)"><span>SAT MAY 24</span><span>·</span><span>12🔥</span><span>·</span><span>3/4</span></div>
+
+          <div class="box box--accent" style="padding:12px">
+            <div style="font-family:var(--hand-bold); font-size:18px; line-height:1.2">
+              "One workout from your weekly goal."
+            </div>
+            <div style="font-size:11px;color:var(--blue);margin-top:4px">Push Day · 6 exercises · 50 min · 1 PR opportunity (Bench → 195)</div>
+            <div class="hstack" style="margin-top:6px"><span class="pill pill--accent">▶ Start</span><span class="pill">Edit plan</span></div>
+          </div>
+
+          <div class="label-small" style="margin-top:8px">TODAY'S LIFTS</div>
+          <div class="box between"><span>Bench press · 3×8</span><span style="font-size:10px;color:var(--amber)">PR shot ★</span></div>
+          <div class="box between"><span>OHP · 3×6</span><span style="font-size:10px;color:var(--dim)">last: 6,6,5</span></div>
+          <div class="box between"><span>Incline DB · 3×10</span><span style="font-size:10px;color:var(--dim)">last: 60lb</span></div>
+          <div class="box between"><span>Dips · 3×AMRAP</span><span style="font-size:10px;color:var(--dim)">last: 12,10,8</span></div>
+
+          <div class="phone__bottomnav">
+            <span class="active">Today</span><span>Progress</span><span>Plan</span><span>Recipes</span><span>⚙</span>
+          </div>
+        </div>
+      </div>
+      <p class="annot annot--ok"><b>One sentence beats six tiles.</b> A real "story" replaces the dashboard.</p>
+      <p class="annot annot--idea"><b>PR-shot flag:</b> behavioural reinforcement <i>before</i> the lift, not after.</p>
+      <p class="annot"><b>Risk:</b> the sentence has to be true. Bad copy here is worse than no copy.</p>
+    </div>
+
+    <!-- ===== Variant C ===== -->
+    <div>
+      <h4 class="subsub">C — Calm log</h4>
+      <p style="font-size:14px;color:var(--dim)">Minimal chrome. Looks like Notes. The streak is a footnote. Everything is one tap.</p>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="phone__screen">
+          <div class="phone__statusbar"><span>9:41</span><span>● saved</span></div>
+          <div style="font-family:var(--hand-bold); font-size:26px; line-height:1; margin-top:2px">Saturday</div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:6px">May 24 · day 12</div>
+
+          <div style="font-family:var(--mono); font-size:11px; line-height:1.55">
+            <div>—  187.2 lb body weight</div>
+            <div>—  Push Day</div>
+            <div style="margin-left:14px">Bench  3×8 @ 185  <span style="color:var(--green)">↑5</span></div>
+            <div style="margin-left:14px">OHP    3×6 @ 115</div>
+            <div style="margin-left:14px">DB     3×10 @ 60</div>
+            <div style="margin-left:14px">Dips   3×AMRAP</div>
+            <div>—  &nbsp;<span style="color:var(--dim)">add cardio / note</span></div>
+          </div>
+
+          <div class="box box--good" style="position:absolute; left:6px; right:6px; bottom:28px; text-align:center; padding:8px">
+            <b>▶ Start session</b>
+          </div>
+
+          <div class="phone__bottomnav">
+            <span class="active">Today</span><span>Progress</span><span>Plan</span><span>Recipes</span><span>⚙</span>
+          </div>
+        </div>
+      </div>
+      <p class="annot annot--idea"><b>Anti-app aesthetic:</b> for the user who's allergic to gamification.</p>
+      <p class="annot annot--ok"><b>Sticky FAB</b> guarantees "Start" is always one thumb-reach away.</p>
+      <p class="annot"><b>Risk:</b> users who want reinforcement get none.</p>
+    </div>
+  </div>
+
+  <!-- ===================== before / after big ===================== -->
+  <h3 class="sub">Before · after — Today screen</h3>
+
+  <div class="compare">
+    <div>
+      <div class="wf">
+        <div class="wf-title"><span>BEFORE — current shipping</span><span>cog load 88</span></div>
+        <div class="wf-body">
+          <div style="font-family:var(--hand-bold); font-size:18px">Today's Log</div>
+          <div style="font-size:11px;color:var(--dim)">Log your workout, one day at a time</div>
+          <div class="box box--filled"><b>HUB</b><br/>Streak · Goal · Apple Health · Start (chip)</div>
+          <div class="box box--accent">Body weight · banner</div>
+          <div class="box">Cardio + form</div>
+          <div class="box">Template chips</div>
+          <div class="box">Lifts list</div>
+          <div class="box box--dashed">+ Day note</div>
+          <p class="annot"><b>Hierarchy collision:</b> 6 cards × equal weight.</p>
+          <p class="annot"><b>Hick:</b> 14 decisions in first viewport.</p>
+          <p class="annot"><b>Fitts:</b> Start is a 28pt chip, far from thumb.</p>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">→</div>
+    <div>
+      <div class="wf">
+        <div class="wf-title"><span>AFTER — variant A</span><span>cog load ≈42</span></div>
+        <div class="wf-body">
+          <div style="font-size:9px;color:var(--dim)">SAT · 12🔥 · 3/4</div>
+          <div style="font-family:var(--hand-bold); font-size:22px">Push Day</div>
+          <div class="box box--good" style="text-align:center"><b>▶ Start session</b><br/><span style="font-size:10px;color:var(--dim)">6 lifts · 50 min · try 185</span></div>
+          <div class="box">Bench 3×8 <span style="color:var(--green)">+5</span></div>
+          <div class="box">OHP 3×6 <span style="color:var(--green)">+2.5</span></div>
+          <div class="box">DB 3×10</div>
+          <div class="box">Dips 3×AMRAP</div>
+          <div class="hstack"><span class="pill">+ Weight</span><span class="pill">+ Cardio</span><span class="pill">+ Note</span></div>
+          <p class="annot annot--ok"><b>Action-first hierarchy.</b></p>
+          <p class="annot annot--ok"><b>Streak demoted to ambient.</b></p>
+          <p class="annot annot--ok"><b>Optional items collapsed.</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== other screen quick-redesigns ===================== -->
+  <h3 class="sub">Quick redesigns — other screens</h3>
+
+  <div class="row row-3">
+    <div>
+      <h4 class="subsub">Session → Train Mode</h4>
+      <div class="phone" style="width:230px">
+        <div class="phone__notch"></div>
+        <div class="phone__screen" style="min-height:380px">
+          <div class="phone__statusbar"><span>23:14</span><span>auto-saved</span></div>
+          <div style="font-family:var(--hand-bold);font-size:18px;text-align:center">Bench press</div>
+          <div style="font-size:10px;color:var(--dim);text-align:center">set 3 of 3 · prev: 8 @ 185</div>
+          <div class="box box--accent" style="text-align:center;padding:14px;margin-top:8px">
+            <div style="font-family:var(--hand-bold);font-size:34px">1:42</div>
+            <div style="font-size:10px">rest</div>
+          </div>
+          <div class="box box--good" style="text-align:center"><b>✓ Complete set</b></div>
+          <div class="hstack" style="justify-content:center"><span class="pill">edit</span><span class="pill">skip rest</span></div>
+          <div style="font-size:10px;color:var(--dim);text-align:center;margin-top:14px">— bottom nav hidden —</div>
+        </div>
+      </div>
+      <p class="annot annot--idea"><b>Full screen takeover</b> while session is live. Bottom nav reappears on finish.</p>
+      <p class="annot annot--idea"><b>"Complete set"</b> as the only green button. One choice at a time.</p>
+    </div>
+
+    <div>
+      <h4 class="subsub">Progress → three rooms</h4>
+      <div class="phone" style="width:230px">
+        <div class="phone__notch"></div>
+        <div class="phone__screen" style="min-height:380px">
+          <div style="font-family:var(--hand-bold);font-size:18px">Progress</div>
+          <div class="box box--good" style="padding:10px">
+            <div style="font-family:var(--hand-bold);font-size:14px">"+12% tonnage this month."</div>
+            <div style="font-size:10px;color:var(--dim)">38,400 lb moved · ▶ see story</div>
+          </div>
+          <div class="stack" style="margin-top:6px">
+            <div class="box between"><b>📈 Story</b><span>weekly recap, insights</span></div>
+            <div class="box between"><b>🏆 Records</b><span>PRs, per-exercise progress</span></div>
+            <div class="box between"><b>📅 History</b><span>past workouts &amp; heatmap</span></div>
+          </div>
+          <div style="font-size:10px;color:var(--dim);margin-top:8px">each route a real URL · own identity</div>
+        </div>
+      </div>
+      <p class="annot annot--idea"><b>Three rooms not three tabs.</b> Each gets a URL, an icon, a metaphor.</p>
+      <p class="annot annot--ok"><b>Hero sentence on entry</b> — a "story" that earned its keep.</p>
+    </div>
+
+    <div>
+      <h4 class="subsub">Bottom nav → adaptive</h4>
+      <div class="phone" style="width:230px">
+        <div class="phone__notch"></div>
+        <div class="phone__screen" style="min-height:380px">
+          <div style="font-family:var(--hand-bold);font-size:18px">Idle state</div>
+          <div class="box box--dashed" style="text-align:center; padding:12px">5-tab nav · Today highlighted</div>
+          <div style="font-family:var(--hand-bold);font-size:18px;margin-top:14px">Mid-session state</div>
+          <div class="box box--good" style="text-align:center; padding:12px">
+            <span class="pill pill--solid">⏸ Pause</span>
+            <span class="pill pill--solid">✓ Finish</span>
+          </div>
+          <div style="font-size:10px;color:var(--dim);margin-top:6px">Other tabs gone — focus mode.</div>
+          <div style="font-family:var(--hand-bold);font-size:18px;margin-top:14px">Post-session state</div>
+          <div class="box box--accent" style="text-align:center; padding:8px">Summary &amp; share</div>
+        </div>
+      </div>
+      <p class="annot annot--idea"><b>Nav as state machine.</b> The bar reflects what's happening, not what's possible.</p>
+      <p class="annot"><b>Risk:</b> users expect persistent nav. Test carefully.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== -->
+<!-- 12. PRIORITISED BACKLOG                                   -->
+<!-- ======================================================== -->
+<section id="backlog">
+  <div class="sec-num">SECTION TWELVE</div>
+  <h2 class="sec">Prioritised backlog</h2>
+  <div class="sec-sub">P0 = ship before next release · P3 = ice box</div>
+
+  <div class="row row-2">
+    <div>
+      <h3 class="sub">P0 — ship this week</h3>
+      <div class="callout">
+        <span class="tag tag--p0">P0.1</span> <b>Reverse Today's hierarchy.</b> Lifts above hub; hub demoted to a single ambient line. Implement variant A behind a flag, expose via Tweaks.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p0">P0.2</span> <b>Promote "Start session" to a sticky FAB.</b> Bottom-right, accent fill, 56pt — when today has exercises and is today.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p0">P0.3</span> <b>"Last time" deltas baked into Today's lift rows.</b> +5 lb / +1 rep / same — coloured.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p0">P0.4</span> <b>Auto-save signal in PageHeader on every screen,</b> not just Settings (move the 6px dot global).
+      </div>
+
+      <h3 class="sub">P1 — next sprint</h3>
+      <div class="callout">
+        <span class="tag tag--p1">P1.1</span> <b>Promote "Focused" → "Calm mode"</b> — a one-tap header toggle, persisted; remove from Preferences as a buried flag.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.2</span> <b>Progress: convert tab strip to three routes</b> (<span class="kbd">#/progress/story</span> · <span class="kbd">/records</span> · <span class="kbd">/history</span>); each gets a hero sentence on entry. Rename "Exercises" → "Records" while you're in there.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.3</span> <b>"Next time, try X" recommendation</b> on ExerciseDetail (Epley + progressive overload bump).
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.4</span> <b>PR-shot flag.</b> When today's planned reps × weight exceeds the current PR by &lt;2.5%, flag the row before the lift.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.5</span> <b>Empty-state diversity.</b> Each screen gets its own metaphor + copy. No more icon-title-button × 6.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.6</span> <b>Distance-to-goal caption</b> on ExerciseDetail goal pill — <i>"20 lb to go · ~6 weeks at current rate"</i>. Turns a number into a path.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.7</span> <b>Visually distinguish PR / e1RM / Goal</b> on ExerciseDetail — they're past · projection · future, currently all the same pill style.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.8</span> <b>First-set-of-day moment.</b> First completed set ratchets the streak counter with CountUp + soft haptic. Tiny celebration, immediate reward.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.9</span> <b>Hide future days in the date picker.</b> Today's the max; the date arrow ▶ disables when on today. Error prevention.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.10</span> <b>A11y polish bundle.</b> <span class="kbd">role="tablist"/"tab"</span> on Progress segmented; <span class="kbd">aria-haspopup="dialog"</span> on Today's date label; tab-strip arrow-key nav.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p1">P1.11</span> <b>Session set row — pick one default.</b> Whole-row tap = complete set (44pt floor already met); edit moves to long-press / explicit pencil. Stop routing the same tap to two intents.
+      </div>
+    </div>
+
+    <div>
+      <h3 class="sub">P2 — design round</h3>
+      <div class="callout">
+        <span class="tag tag--p2">P2.1</span> <b>Train Mode for Session.</b> Hide bottom nav + back during active session; single-CTA layout.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.2</span> <b>Recipes ↔ Today bridge.</b> "Post-workout meal idea" card on Today; "Cook now" deep-link.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.3</span> <b>Schedule rotated to "next 7 days from today"</b> instead of Mon-Sun.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.4</span> <b>Sparkline tooltips</b> + per-point readout on tap.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.5</span> <b>Streak-save nudge</b> — push (via PWA notif if granted) at 19:00 if today's still empty and streak ≥ 5.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.6</span> <b>Bottom nav adaptive</b> — Session swaps to Pause / Finish; Summary state.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.7</span> <b>Visual rest countdown</b> as a thin progress ring around the active exercise card — ties the timer to its context, not just the floating pill.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.8</span> <b>Templates collapse to a header row</b> on Plan after first setup; weekly schedule becomes the primary surface (it's the repeat-use one).
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.9</span> <b>Seeded starter recipes</b> on first install (3 high-protein basics) — mirrors the seeded Push/Pull/Legs templates and gets the empty Recipes screen out of zero-state.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.10</span> <b>Protein bridge.</b> Recipe macros + "log as eaten" → daily protein total visible on Today. Don't build a full nutrition page; build the link.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.11</span> <b>Recipes filter pill</b> — collapse the tag chip row behind a single "Filter" pill once the grid exceeds ~20 cards.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p2">P2.12</span> <b>Fresh-start Monday moment.</b> First Today visit each Monday gets a one-line "New week — last week you trained 3×. Match it?" prompt that dismisses on first interaction.
+      </div>
+
+      <h3 class="sub">P3 — ice box</h3>
+      <div class="callout">
+        <span class="tag tag--p3">P3.1</span> Drag-reorder for plan days.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p3">P3.2</span> Recipe unit conversion (metric ↔ imperial).
+      </div>
+      <div class="callout">
+        <span class="tag tag--p3">P3.3</span> Hover-tooltips on desktop sparklines (mobile users get tap).
+      </div>
+      <div class="callout">
+        <span class="tag tag--p3">P3.4</span> Per-template colour / icon picker.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p3">P3.5</span> "Backup reminder cadence" preference.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p3">P3.6</span> <b>Soften the dark theme</b> — pure <span class="kbd">#000</span> bg reads as "developer demo." Bump to <span class="kbd">#0d0d10</span> or oklch-based near-black for a "premium app" feel.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p3">P3.7</span> <b>Page-header rhythm.</b> Hub screens (Today, Progress) get a heavier display title; tool screens (Plan, Recipes, Settings) keep the current sub-display. Differentiate the role of each surface visually.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p3">P3.8</span> <b>Reorder ▲▼ animation.</b> 150ms FLIP transition on swap — list currently jumps, breaking the connection between tap and result.
+      </div>
+      <div class="callout">
+        <span class="tag tag--p3">P3.9</span> <b>Rotating Settings microcopy</b> on the cards index — "1.2 MB on device" / "47 workouts saved" / "Last backup 12 days ago." Quiet trust reinforcement.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout--blue" style="margin-top:24px">
+    <div class="callout__label">★ How to read priority · 32 items</div>
+    <p><b>P0 (4)</b> moves the cognitive-load needle on the most-used screen. <b>P1 (11)</b> closes the behavioural-reinforcement &amp; A11y gaps. <b>P2 (12)</b> is the design round — bold ideas that need user testing. <b>P3 (9)</b> is good-to-have polish that won't change feel but raises craft.</p>
+    <p>If you only ship four things from this audit, ship the four P0s. They turn Today from a hub into a workout screen. Every recommendation surfaced in the screen-by-screen audits above (sections 3–9) is represented here — nothing dropped on the floor.</p>
+  </div>
+</section>
+
+<div class="end">end of audit</div>
+
+</div>
+</body>
+</html>

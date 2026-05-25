@@ -1,0 +1,1259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitJournal v2 — Final wireframe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #f7f4ec;
+    --paper-2: #efeadc;
+    --rule: #cdc6b3;
+    --rule-2: #b8b09a;
+    --red: #c03a2b;
+    --red-soft: #c03a2b22;
+    --blue: #1f4e8c;
+    --blue-soft: #1f4e8c22;
+    --green: #2f7a3a;
+    --green-soft: #2f7a3a22;
+    --amber: #c98a1b;
+    --amber-soft: #c98a1b22;
+    --dim: #6a6557;
+    --hand: 'Patrick Hand', 'Kalam', sans-serif;
+    --hand-bold: 'Caveat', cursive;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); font-family: var(--hand); font-size: 17px; line-height: 1.55; }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(rgba(0,0,0,0.025) 1px, transparent 1px),
+      radial-gradient(rgba(0,0,0,0.018) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    z-index: 50;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 32px 28px 120px; }
+
+  /* masthead */
+  .masthead {
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    padding: 22px 26px 18px;
+    background: var(--paper);
+    box-shadow: 4px 4px 0 var(--ink);
+    margin-bottom: 28px;
+    transform: rotate(-0.2deg);
+  }
+  .masthead h1 {
+    font-family: var(--hand-bold);
+    font-weight: 700;
+    font-size: 56px;
+    line-height: 1;
+    margin: 0 0 4px;
+  }
+  .masthead .stamp {
+    display: inline-block;
+    border: 1.5px solid var(--green);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    padding: 4px 10px;
+    transform: rotate(-3deg);
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+  .masthead .meta {
+    display: flex; flex-wrap: wrap; gap: 18px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--dim);
+    margin-top: 12px;
+    border-top: 1px dashed var(--rule);
+    padding-top: 10px;
+  }
+  .masthead .meta b { color: var(--ink); }
+
+  /* toc */
+  .tocbar {
+    position: sticky;
+    top: 12px;
+    z-index: 30;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    padding: 6px 8px;
+    display: flex; flex-wrap: wrap;
+    gap: 4px;
+    box-shadow: 3px 3px 0 var(--ink);
+    margin-bottom: 28px;
+  }
+  .tocbar a {
+    font-family: var(--hand);
+    font-size: 14px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    color: var(--ink);
+    text-decoration: none;
+    border: 1px dashed transparent;
+  }
+  .tocbar a:hover { border-color: var(--ink); background: var(--paper-2); }
+
+  section { margin: 0 0 60px; scroll-margin-top: 80px; }
+  .sec-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 4px;
+  }
+  h2.sec {
+    font-family: var(--hand-bold);
+    font-weight: 700;
+    font-size: 44px;
+    margin: 0 0 4px;
+    line-height: 1;
+  }
+  .sec-sub {
+    font-family: var(--hand);
+    color: var(--dim);
+    font-size: 16px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid var(--ink);
+    position: relative;
+  }
+  .sec-sub::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 30%; bottom: -5px;
+    border-bottom: 1px solid var(--rule-2);
+  }
+  h3.sub {
+    font-family: var(--hand-bold);
+    font-size: 28px;
+    font-weight: 700;
+    margin: 18px 0 10px;
+  }
+  p { margin: 0 0 10px; }
+
+  .callout {
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    padding: 14px 16px;
+    border-radius: 4px;
+    margin: 12px 0;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .callout--blue  { border-color: var(--blue); background: var(--blue-soft); box-shadow: 3px 3px 0 var(--blue); }
+  .callout--green { border-color: var(--green); background: var(--green-soft); box-shadow: 3px 3px 0 var(--green); }
+  .callout__label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    color: var(--dim);
+  }
+  .callout--blue  .callout__label { color: var(--blue); }
+  .callout--green .callout__label { color: var(--green); }
+
+  /* phone — slightly wider than audit version to fit more content */
+  .phone {
+    width: 320px;
+    border: 2.5px solid var(--ink);
+    border-radius: 32px;
+    padding: 10px;
+    background: var(--paper);
+    box-shadow: 4px 4px 0 var(--ink);
+    margin: 0 auto;
+  }
+  .phone__notch {
+    width: 80px; height: 16px;
+    background: var(--ink);
+    border-radius: 0 0 12px 12px;
+    margin: 0 auto 6px;
+  }
+  .phone__screen {
+    border: 1.5px solid var(--ink);
+    border-radius: 22px;
+    padding: 12px 10px 8px;
+    font-family: var(--hand);
+    font-size: 12.5px;
+    line-height: 1.35;
+    background: var(--paper);
+    min-height: 580px;
+    position: relative;
+  }
+  .phone__statusbar {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 9px;
+    color: var(--dim); padding: 0 4px 6px;
+    border-bottom: 1px dashed var(--rule);
+    margin-bottom: 8px;
+  }
+
+  /* the new ambient header (replaces old hub) */
+  .ambient {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 1.2px;
+    color: var(--dim);
+    text-transform: uppercase;
+    display: flex; gap: 8px;
+    margin-bottom: 2px;
+  }
+  .ambient .savedot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 4px;
+    vertical-align: middle;
+    box-shadow: 0 0 0 2px var(--green-soft);
+  }
+
+  .display-title {
+    font-family: var(--hand-bold);
+    font-size: 24px;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .sub-title {
+    font-family: var(--hand-bold);
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .phone__bottomnav {
+    position: absolute; bottom: 6px; left: 6px; right: 6px;
+    border-top: 1.5px solid var(--ink);
+    padding-top: 7px;
+    display: flex; justify-content: space-around;
+    font-family: var(--mono); font-size: 8.5px;
+    color: var(--dim); text-transform: uppercase;
+  }
+  .phone__bottomnav .active { color: var(--ink); font-weight: 700; position: relative; }
+  .phone__bottomnav .active::after {
+    content: ""; position: absolute; left: 25%; right: 25%; top: -8px; height: 2px; background: var(--ink);
+  }
+  /* primary item in adaptive nav */
+  .phone__bottomnav .primary {
+    color: var(--paper); background: var(--ink); padding: 4px 8px; border-radius: 999px;
+  }
+
+  /* sticky FAB */
+  .fab {
+    position: absolute;
+    right: 10px;
+    bottom: 38px;
+    background: var(--green);
+    color: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    padding: 12px 18px;
+    font-family: var(--hand-bold);
+    font-size: 18px;
+    box-shadow: 3px 3px 0 var(--ink);
+    z-index: 5;
+  }
+  .fab small { display: block; font-family: var(--mono); font-size: 8.5px; font-weight: 400; opacity: 0.85; margin-top: 2px; letter-spacing: 1px; }
+
+  /* boxes */
+  .box {
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 4px 0;
+    background: var(--paper);
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+  .box--dashed { border-style: dashed; }
+  .box--filled { background: var(--paper-2); }
+  .box--accent { background: var(--blue-soft); border-color: var(--blue); }
+  .box--good   { background: var(--green-soft); border-color: var(--green); }
+  .box--warm   { background: var(--amber-soft); border-color: var(--amber); }
+  .box--placeholder {
+    background: repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.05) 6px 7px);
+    color: var(--dim);
+    font-style: italic;
+    text-align: center;
+  }
+  .pill {
+    display: inline-block;
+    border: 1.2px solid var(--ink);
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-size: 11px;
+    margin: 1px 2px;
+    background: var(--paper);
+  }
+  .pill--solid { background: var(--ink); color: var(--paper); }
+  .pill--accent { background: var(--blue); color: var(--paper); border-color: var(--blue); }
+  .pill--good { background: var(--green); color: var(--paper); border-color: var(--green); }
+  .pill--warm { background: var(--amber); color: var(--paper); border-color: var(--amber); }
+  .pill--outline-good { color: var(--green); border-color: var(--green); }
+
+  .hstack { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .between { display: flex; justify-content: space-between; align-items: center; }
+  .stack { display: flex; flex-direction: column; gap: 6px; }
+
+  .label-small { font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); }
+
+  /* layout for screen + sidebar */
+  .screen-row {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 28px;
+    align-items: start;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 900px) {
+    .screen-row { grid-template-columns: 1fr; }
+  }
+
+  /* annotation list */
+  .annot-list {
+    border-left: 2px solid var(--ink);
+    padding: 6px 0 6px 16px;
+  }
+  .annot-item {
+    margin: 0 0 12px;
+    padding: 0;
+    font-size: 14.5px;
+    line-height: 1.4;
+  }
+  .annot-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-right: 6px;
+    color: var(--paper);
+    vertical-align: 1px;
+    font-weight: 600;
+  }
+  .annot-tag--p0 { background: var(--red); }
+  .annot-tag--p1 { background: var(--amber); }
+  .annot-tag--p2 { background: var(--blue); }
+  .annot-tag--p3 { background: var(--dim); }
+
+  /* mark dots — small circled numbers on the wireframe matching the sidebar */
+  .mark {
+    display: inline-block;
+    min-width: 18px; height: 18px;
+    line-height: 14px;
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    background: #ffec99;
+    color: var(--ink);
+    text-align: center;
+    margin: 0 2px;
+    padding: 0 2px;
+    vertical-align: 1px;
+  }
+  .mark-inline { vertical-align: middle; }
+
+  /* before/after big arrow */
+  .bigArrow {
+    text-align: center;
+    font-family: var(--hand-bold);
+    font-size: 36px;
+    margin: 12px 0;
+  }
+
+  /* legend at top */
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin: 18px 0 24px;
+  }
+  @media (max-width: 900px) { .legend { grid-template-columns: 1fr 1fr; } }
+  .legend .li {
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    padding: 10px 12px;
+    background: var(--paper);
+    font-size: 13.5px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .legend .li b { font-family: var(--hand-bold); font-size: 18px; display: block; margin-bottom: 2px; }
+
+  /* progress ring (for session rest indicator) */
+  .ring {
+    width: 56px; height: 56px;
+    border: 4px solid var(--blue-soft);
+    border-top: 4px solid var(--blue);
+    border-right: 4px solid var(--blue);
+    border-radius: 50%;
+    transform: rotate(-30deg);
+    display: inline-block;
+    position: relative;
+  }
+  .ring::after {
+    content: "1:42";
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    transform: rotate(30deg);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  /* sparkline placeholder */
+  .spark {
+    background:
+      linear-gradient(135deg, transparent 49.5%, var(--ink) 49.5%, var(--ink) 50.5%, transparent 50.5%),
+      var(--paper);
+    height: 36px;
+    border-radius: 3px;
+    border: 1px dashed var(--rule);
+  }
+
+  .end { text-align: center; margin: 50px 0 0; font-family: var(--hand-bold); font-size: 28px; color: var(--dim); }
+  .end::before, .end::after { content: " ~ "; }
+
+  /* shipped row tags */
+  .ship {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border: 1.5px solid var(--green);
+    color: var(--green);
+    background: var(--green-soft);
+    border-radius: 3px;
+    margin: 0 4px 4px 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ masthead ============ -->
+<div class="masthead">
+  <div>
+    <h1>FitJournal v2 <span class="stamp">all 32 items shipped</span></h1>
+    <div style="font-family: var(--hand); font-size: 19px; color: var(--dim); margin-top: 2px;">
+      The same data, restaged · what every screen looks like after the audit's P0–P3 lands
+    </div>
+  </div>
+  <div class="meta">
+    <span><b>Diff from current</b> 7 screens redesigned · 32 backlog items absorbed</span>
+    <span><b>Cog-load target</b> Today 88 → 42 · Progress 78 → 38</span>
+    <span><b>Behavioural goal</b> reactive → anticipatory reinforcement</span>
+    <span><b>Aesthetic</b> still sketchy — this is the wireframe, not the visual design</span>
+  </div>
+</div>
+
+<!-- ============ toc ============ -->
+<nav class="tocbar">
+  <a href="#legend">Legend</a>
+  <a href="#today">Today</a>
+  <a href="#session">Train Mode</a>
+  <a href="#progress">Progress</a>
+  <a href="#exdetail">ExDetail</a>
+  <a href="#plan">Plan</a>
+  <a href="#recipes">Recipes</a>
+  <a href="#settings">Settings</a>
+  <a href="#system">System</a>
+</nav>
+
+<!-- ============ legend ============ -->
+<section id="legend">
+  <div class="sec-num">HOW TO READ THIS</div>
+  <h2 class="sec">Legend</h2>
+  <div class="sec-sub">Every annotation on every screen maps back to a backlog item. Numbered marks on the wireframe = numbered notes in the sidebar.</div>
+
+  <div class="legend">
+    <div class="li"><b><span class="annot-tag annot-tag--p0">P0</span> ship now</b>4 items — Today's hierarchy, sticky FAB, deltas, auto-save signal. The "must" pile.</div>
+    <div class="li"><b><span class="annot-tag annot-tag--p1">P1</span> next sprint</b>11 items — A11y polish, motivation loops, calm mode toggle, three Progress routes, ExDetail recommendations.</div>
+    <div class="li"><b><span class="annot-tag annot-tag--p2">P2</span> design round</b>12 items — Train Mode, adaptive nav, protein bridge, fresh-start moments, visual rest ring.</div>
+    <div class="li"><b><span class="annot-tag annot-tag--p3">P3</span> polish</b>9 items — softened dark theme, type rhythm, reorder animation, rotating microcopy.</div>
+  </div>
+
+  <div class="callout callout--blue">
+    <div class="callout__label">★ READING THE MARKS</div>
+    <p>Each screen carries small numbered <span class="mark">1</span> badges on the wireframe. The sidebar next to it explains what each mark represents and the backlog ID that delivered it. A "shipped" pill row at the bottom of each annotation list confirms which items are visible in that particular screen.</p>
+  </div>
+</section>
+
+<!-- ============ 1. TODAY ============ -->
+<section id="today">
+  <div class="sec-num">SCREEN ONE</div>
+  <h2 class="sec">/ Today</h2>
+  <div class="sec-sub">Action-first hierarchy. Streak demoted to ambient. Sticky FAB. "Last time" deltas baked into the rows.</div>
+
+  <div class="screen-row">
+    <div class="phone">
+      <div class="phone__notch"></div>
+      <div class="phone__screen">
+        <div class="phone__statusbar"><span>9:41</span><span><span class="savedot"></span>auto-saved · 2s ago</span></div>
+
+        <!-- ambient header — P0.1 demotes hub -->
+        <div class="ambient"><span>SAT · MAY 24</span><span>·</span><span>12🔥</span><span>·</span><span>3/4 wk</span><span style="margin-left:auto" class="mark mark-inline">1</span></div>
+        <div class="between" style="align-items:flex-end">
+          <div class="display-title">Push Day</div>
+          <span class="pill" style="font-family:var(--mono);font-size:9px">🌙 Calm <span class="mark mark-inline">2</span></span>
+        </div>
+
+        <!-- monday fresh-start strip — P2.12 -->
+        <div class="box box--warm" style="margin-top:8px; padding:6px 8px; font-size:11px">
+          <b>New week.</b> Last week you trained 3×. Match it?
+          <span class="mark" style="float:right">3</span>
+        </div>
+
+        <!-- main lift list with deltas — P0.3 -->
+        <div class="label-small" style="margin-top:8px">TODAY'S LIFTS · 6 EX · ~50 MIN</div>
+        <div class="box between">
+          <div><b>Bench press</b> · 3×8</div>
+          <div>
+            <span class="pill pill--outline-good">+5 lb</span>
+            <span class="pill pill--warm">PR shot ★</span>
+          </div>
+        </div>
+        <div class="box between"><div><b>OHP</b> · 3×6</div><div><span class="pill pill--outline-good">+2.5 lb</span></div></div>
+        <div class="box between"><div><b>Incline DB</b> · 3×10</div><div style="font-size:10px;color:var(--dim)">same as last</div></div>
+        <div class="box between"><div><b>Dips</b> · 3×AMRAP</div><div style="font-size:10px;color:var(--dim)">last: 12, 10, 8</div></div>
+        <div class="box box--dashed" style="text-align:center">+ Add exercise</div>
+
+        <span class="mark" style="float:right;margin-top:-90px">4</span>
+
+        <!-- optional row, collapsed by default — P0.1 progressive disclosure -->
+        <div class="label-small" style="margin-top:8px">OPTIONAL</div>
+        <div class="hstack">
+          <span class="pill">+ Body weight</span>
+          <span class="pill">+ Cardio</span>
+          <span class="pill">+ Day note</span>
+        </div>
+
+        <!-- post-workout meal bridge — P2.10 / P2.2 -->
+        <div class="box box--accent" style="margin-top:8px; padding:6px 8px; font-size:11px">
+          🍗 Post-workout: <b>Chicken bowl</b> · 540 kcal · 38g P
+          <span class="pill pill--accent" style="float:right">Cook</span>
+          <span class="mark" style="float:right; margin: 0 4px 0 0">5</span>
+        </div>
+
+        <!-- sticky FAB — P0.2 -->
+        <div class="fab">
+          ▶ Start session
+          <small>6 LIFTS · TRY 185</small>
+        </div>
+        <span class="mark" style="position:absolute; right:38px; bottom:75px">6</span>
+
+        <!-- bottom nav -->
+        <div class="phone__bottomnav">
+          <span class="active">Today</span><span>Progress</span><span>Plan</span><span>Recipes</span><span>⚙</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="annot-list">
+      <h3 class="sub" style="margin-top:0">What changed</h3>
+      <div class="annot-item">
+        <span class="mark mark-inline">1</span>
+        <span class="annot-tag annot-tag--p0">P0.1</span>
+        <b>Ambient header replaces hub card.</b> Streak, week-goal and date compress to a single monospace strip. The 6-card dashboard is gone — those numbers still exist, demoted to context.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">2</span>
+        <span class="annot-tag annot-tag--p1">P1.1</span>
+        <b>"🌙 Calm" header toggle.</b> One-tap density switch promoted from a buried preference. Persists, so power users keep their preferred mode.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">3</span>
+        <span class="annot-tag annot-tag--p2">P2.12</span>
+        <b>Fresh-start Monday strip.</b> Appears once a week on the first Monday Today-visit. Dismisses on tap. Behavioural reinforcement at the start of the loop, not the end.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">4</span>
+        <span class="annot-tag annot-tag--p0">P0.3</span> <span class="annot-tag annot-tag--p1">P1.4</span>
+        <b>Lift rows carry "+lb / +reps / same" deltas + PR-shot flag.</b> The single most motivating fact in lifting — "you should beat last time" — lives <i>next to the exercise</i>, before the workout starts. PR-shot pill warns "Bench → 195 would be a record".
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">5</span>
+        <span class="annot-tag annot-tag--p2">P2.10</span> <span class="annot-tag annot-tag--p2">P2.2</span>
+        <b>Recipes ↔ Today bridge.</b> A post-workout meal card with macros + a one-tap "Cook" deep-link. The reason the app has recipes at all, now visible weekly.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">6</span>
+        <span class="annot-tag annot-tag--p0">P0.2</span>
+        <b>Sticky "Start session" FAB.</b> Bottom-right thumb zone, 56pt, green, accented. Distance from rest is minimized; size satisfies Fitts.
+      </div>
+      <div class="annot-item">
+        <span class="annot-tag annot-tag--p0">P0.4</span> <span class="annot-tag annot-tag--p1">P1.8</span>
+        <b>Status-bar "auto-saved · 2s ago" dot.</b> The save signal lives in PageHeader on every screen. First-set-of-day will ratchet the streak counter with a CountUp + soft haptic.
+      </div>
+      <div class="annot-item">
+        <span class="annot-tag annot-tag--p1">P1.9</span>
+        <b>Future-day picker guard.</b> Date arrow ▶ disables when on today; date picker max = today. Silent error prevention.
+      </div>
+      <div class="annot-item">
+        <span class="annot-tag annot-tag--p3">P3.7</span>
+        <b>Page-header rhythm.</b> "Push Day" gets the heavier display title; the date/streak strip is monospace and demoted. Hub-screen identity differs from tool-screen identity.
+      </div>
+
+      <div style="margin-top:14px; padding-top:10px; border-top: 1px dashed var(--rule)">
+        <span class="ship">P0.1</span><span class="ship">P0.2</span><span class="ship">P0.3</span><span class="ship">P0.4</span>
+        <span class="ship">P1.1</span><span class="ship">P1.4</span><span class="ship">P1.8</span><span class="ship">P1.9</span>
+        <span class="ship">P2.2</span><span class="ship">P2.10</span><span class="ship">P2.12</span><span class="ship">P3.7</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. SESSION → TRAIN MODE ============ -->
+<section id="session">
+  <div class="sec-num">SCREEN TWO</div>
+  <h2 class="sec">/ Session — Train Mode</h2>
+  <div class="sec-sub">Full screen takeover. Bottom nav swaps to Pause / Finish. Single primary action. Rest visualised in-place.</div>
+
+  <div class="screen-row">
+    <div class="phone">
+      <div class="phone__notch"></div>
+      <div class="phone__screen">
+        <div class="phone__statusbar"><span>session · 23:14</span><span><span class="savedot"></span>auto-saved</span></div>
+
+        <div class="ambient" style="margin-bottom:6px">
+          <span>PUSH DAY</span><span>·</span><span>EX 1 OF 6</span><span style="margin-left:auto" class="mark mark-inline">1</span>
+        </div>
+
+        <div class="sub-title" style="font-size:26px">Bench press</div>
+        <div style="font-size:11px;color:var(--dim); margin-bottom:8px">set 3 of 3 · last time: 3×8 @ 180 <span style="color:var(--green)">· try 185</span></div>
+
+        <!-- set rows w/ progress ring on active set — P2.7 -->
+        <div class="box box--good between" style="padding:10px">
+          <div>SET 1 — <b>8 × 185</b></div>
+          <div><span class="pill pill--solid">✓</span></div>
+        </div>
+        <div class="box box--good between" style="padding:10px">
+          <div>SET 2 — <b>8 × 185</b></div>
+          <div><span class="pill pill--solid">✓</span></div>
+        </div>
+        <div class="box box--accent" style="padding:12px">
+          <div class="between">
+            <div>
+              <div style="font-size:10px;color:var(--blue)">SET 3 — RESTING</div>
+              <div style="font-family:var(--hand-bold); font-size:22px">8 × 185</div>
+            </div>
+            <div class="ring"></div>
+          </div>
+          <span class="mark" style="position:absolute; right:14px; margin-top:-44px">2</span>
+        </div>
+
+        <div class="box between" style="padding:8px; opacity:0.55">
+          <div>NEXT — <b>OHP · 3×6 @ 115</b></div>
+          <div style="font-size:10px;color:var(--dim)">last: 6,6,5</div>
+        </div>
+
+        <!-- primary CTA — single green button -->
+        <div class="box box--good" style="text-align:center; padding:12px; margin-top:10px">
+          <b style="font-family:var(--hand-bold); font-size:18px">✓ Complete set</b>
+        </div>
+        <div class="hstack" style="justify-content:center"><span class="pill">edit</span><span class="pill">+15s rest</span><span class="pill">skip rest</span></div>
+        <span class="mark" style="position:absolute; right:14px; bottom:80px">3</span>
+
+        <!-- ADAPTIVE bottom nav — P2.6 -->
+        <div class="phone__bottomnav">
+          <span class="pill" style="border-color:var(--ink); padding:2px 10px">⏸ Pause</span>
+          <span class="primary">✓ Finish workout</span>
+        </div>
+        <span class="mark" style="position:absolute; left:14px; bottom:14px">4</span>
+      </div>
+    </div>
+
+    <div class="annot-list">
+      <h3 class="sub" style="margin-top:0">What changed</h3>
+      <div class="annot-item">
+        <span class="mark mark-inline">1</span>
+        <span class="annot-tag annot-tag--p2">P2.1</span>
+        <b>Full screen takeover.</b> Standard 5-tab bottom nav is gone — replaced by 2-action Pause/Finish bar. Back button is long-press only. The app respects that you're mid-rep.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">2</span>
+        <span class="annot-tag annot-tag--p2">P2.7</span>
+        <b>Visual rest countdown ring</b> attached to the active set card — not a floating pill. The timer is <i>in the context it counts down to</i>, which is the next set.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">3</span>
+        <span class="annot-tag annot-tag--p1">P1.11</span>
+        <b>One primary CTA — "Complete set".</b> The row-tap collision (complete vs. edit) is resolved: tap = complete. Edit moves to long-press or explicit pencil. Hick's Law minimised at the moment of physical exertion.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">4</span>
+        <span class="annot-tag annot-tag--p2">P2.6</span>
+        <b>Adaptive bottom nav.</b> Idle = 5-tab. Mid-session = 2-action (Pause · Finish). Post-session = Summary state. Nav as state machine.
+      </div>
+      <div class="annot-item">
+        <span class="annot-tag annot-tag--p0">P0.3</span>
+        <b>"Last time 3×8 @ 180 · try 185"</b> is now the dominant subtitle of each exercise, not 10pt grey. Same data, promoted.
+      </div>
+      <div class="annot-item">
+        <span class="annot-tag annot-tag--p0">P0.4</span>
+        <b>"Auto-saved" in the status bar</b> — quiet trust signalling during the highest-stakes moment (mid-workout save would be catastrophic).
+      </div>
+
+      <div style="margin-top:14px; padding-top:10px; border-top:1px dashed var(--rule)">
+        <span class="ship">P0.3</span><span class="ship">P0.4</span>
+        <span class="ship">P1.11</span>
+        <span class="ship">P2.1</span><span class="ship">P2.6</span><span class="ship">P2.7</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. PROGRESS ============ -->
+<section id="progress">
+  <div class="sec-num">SCREEN THREE</div>
+  <h2 class="sec">/ Progress — three rooms</h2>
+  <div class="sec-sub">Tab strip retired. Three URLs · three identities · one hero sentence on entry.</div>
+
+  <div class="screen-row">
+    <div class="phone">
+      <div class="phone__notch"></div>
+      <div class="phone__screen">
+        <div class="phone__statusbar"><span>9:43</span><span><span class="savedot"></span>auto-saved</span></div>
+
+        <div class="ambient"><span>PROGRESS</span><span>·</span><span>MAY 2026</span></div>
+        <div class="display-title">Story</div>
+
+        <!-- hero sentence — P1.2 -->
+        <div class="box box--good" style="padding:12px; margin-top:8px">
+          <div style="font-family:var(--hand-bold); font-size:20px; line-height:1.15">
+            "+12% tonnage this month."
+          </div>
+          <div style="font-size:11px;color:var(--dim); margin-top:4px">38,400 lb moved across 15 sessions · most ever in a month.</div>
+          <span class="mark" style="position:absolute; right:14px; margin-top:-46px">1</span>
+        </div>
+
+        <!-- three rooms nav -->
+        <div class="label-small" style="margin-top:8px">CHANGE ROOM</div>
+        <div class="stack">
+          <div class="box box--filled between">
+            <div><b>📈 Story</b><div style="font-size:10px;color:var(--dim)">weekly recap, insights, body weight</div></div>
+            <span class="pill pill--solid">here</span>
+          </div>
+          <div class="box between">
+            <div><b>🏆 Records</b><div style="font-size:10px;color:var(--dim)">PRs, per-exercise progression, goals</div></div>
+            <span>▸</span>
+          </div>
+          <div class="box between">
+            <div><b>📅 History</b><div style="font-size:10px;color:var(--dim)">past workouts &amp; heatmap</div></div>
+            <span>▸</span>
+          </div>
+        </div>
+        <span class="mark" style="position:absolute; right:14px; margin-top:-128px">2</span>
+
+        <!-- weekly recap with sparkline + tooltip — P2.4 -->
+        <div class="label-small" style="margin-top:10px">WEEK</div>
+        <div class="box">
+          <div class="between">
+            <b>3 / 4 workouts</b>
+            <span class="pill pill--outline-good">+1 vs last wk</span>
+          </div>
+          <div class="spark" style="margin-top:6px"></div>
+          <div class="between" style="font-size:10px;color:var(--dim); margin-top:2px">
+            <span>Mon 0 · Tue 1 · Wed 0 · Thu 1 · Fri 0 · Sat 1 · Sun –</span>
+          </div>
+          <span class="mark" style="position:absolute; right:14px; margin-top:-78px">3</span>
+        </div>
+
+        <!-- body weight -->
+        <div class="box">
+          <div class="between"><b>Body weight</b><span style="font-size:11px;color:var(--green)">-1.4 lb / 30d</span></div>
+          <div class="spark" style="margin-top:6px"></div>
+        </div>
+
+        <div class="phone__bottomnav">
+          <span>Today</span><span class="active">Progress</span><span>Plan</span><span>Recipes</span><span>⚙</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="annot-list">
+      <h3 class="sub" style="margin-top:0">What changed</h3>
+      <div class="annot-item">
+        <span class="mark mark-inline">1</span>
+        <span class="annot-tag annot-tag--p1">P1.2</span>
+        <b>Hero sentence on entry.</b> "+12% tonnage" replaces six detached stat tiles. A real story instead of a dashboard. Compose the sentence from the data; if it can't be true, don't show it.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">2</span>
+        <span class="annot-tag annot-tag--p1">P1.2</span> <span class="annot-tag annot-tag--p1">P1.10</span>
+        <b>Three rooms instead of three tabs.</b> Story · Records · History — each gets a URL (<span style="font-family:var(--mono);font-size:11px">#/progress/story</span>), a metaphor, and an icon. "Exercises" renamed to "Records" — it's what users actually want. A11y: proper tablist or full route — pick a lane.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">3</span>
+        <span class="annot-tag annot-tag--p2">P2.4</span>
+        <b>Sparkline tooltips + per-day breakdown.</b> Hover (desktop) or tap (mobile) reads out the exact value. Chart stops being a vibe; becomes data.
+      </div>
+      <div class="annot-item">
+        <span class="annot-tag annot-tag--p1">P1.5</span>
+        <b>Diverse empty states</b> per room: Story → "Train once and a story starts." Records → "Your first PR is one rep away." History → grid of empty days inviting fill-in.
+      </div>
+
+      <div style="margin-top:14px; padding-top:10px; border-top:1px dashed var(--rule)">
+        <span class="ship">P1.2</span><span class="ship">P1.5</span><span class="ship">P1.10</span>
+        <span class="ship">P2.4</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. EXERCISE DETAIL ============ -->
+<section id="exdetail">
+  <div class="sec-num">SCREEN FOUR</div>
+  <h2 class="sec">/ Exercise Detail</h2>
+  <div class="sec-sub">Past / projection / future visually distinguished. Distance-to-goal as a path. Auto recommendation.</div>
+
+  <div class="screen-row">
+    <div class="phone">
+      <div class="phone__notch"></div>
+      <div class="phone__screen">
+        <div class="phone__statusbar"><span>9:45</span><span><span class="savedot"></span>auto-saved</span></div>
+
+        <div class="ambient"><span>◀ RECORDS</span></div>
+        <div class="display-title">Bench press</div>
+
+        <!-- distinguished pills — P1.7 -->
+        <div class="hstack" style="margin-top:6px">
+          <span class="pill" style="background: var(--green-soft); border-color: var(--green); color: var(--green)"><b>★ PR</b> 205 lb</span>
+          <span class="pill" style="background: var(--blue-soft); border-color: var(--blue); color: var(--blue)"><b>e1RM</b> 218</span>
+          <span class="pill pill--warm"><b>🎯 Goal</b> 225 ▸</span>
+        </div>
+        <span class="mark" style="position:absolute; right:14px; margin-top:-26px">1</span>
+
+        <!-- distance-to-goal — P1.6 -->
+        <div class="box box--warm" style="margin-top:8px">
+          <div><b>20 lb to go</b> · ~6 weeks at current rate</div>
+          <div style="font-size:10px;color:var(--dim); margin-top:2px">Trajectory based on last 8 sessions</div>
+          <span class="mark" style="position:absolute; right:14px; margin-top:-32px">2</span>
+        </div>
+
+        <!-- next-time recommendation — P1.3 -->
+        <div class="box box--accent" style="margin-top:6px">
+          <b>Next session — try 3×8 @ 190</b>
+          <div style="font-size:10px;color:var(--blue); margin-top:2px">+5 lb on top set · within recovery range</div>
+          <span class="mark" style="position:absolute; right:14px; margin-top:-30px">3</span>
+        </div>
+
+        <div class="label-small" style="margin-top:8px">TOP SET</div>
+        <div class="spark"></div>
+        <div class="label-small" style="margin-top:4px">E1RM (EPLEY)</div>
+        <div class="spark"></div>
+
+        <div class="label-small" style="margin-top:6px">HISTORY</div>
+        <div class="box" style="font-size:11px">May 22 · 3×8 @ 185 <span style="float:right;color:var(--green)">+5</span></div>
+        <div class="box" style="font-size:11px">May 19 · 3×8 @ 180</div>
+        <div class="box" style="font-size:11px">May 15 · 3×8 @ 180</div>
+
+        <div class="phone__bottomnav">
+          <span>Today</span><span class="active">Progress</span><span>Plan</span><span>Recipes</span><span>⚙</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="annot-list">
+      <h3 class="sub" style="margin-top:0">What changed</h3>
+      <div class="annot-item">
+        <span class="mark mark-inline">1</span>
+        <span class="annot-tag annot-tag--p1">P1.7</span>
+        <b>PR / e1RM / Goal visually distinguished.</b> Green = past achievement. Blue = projection. Amber = future commitment. Same shape, different category — now legible at a glance.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">2</span>
+        <span class="annot-tag annot-tag--p1">P1.6</span>
+        <b>Distance-to-goal as a path.</b> "20 lb to go · ~6 weeks at current rate" turns a number into a trajectory. Goal stops feeling abstract.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">3</span>
+        <span class="annot-tag annot-tag--p1">P1.3</span>
+        <b>"Next session — try 3×8 @ 190" recommendation.</b> Auto-bump from last session, bounded by recovery. Progressive overload without the user thinking about it.
+      </div>
+      <div class="annot-item">
+        <span class="annot-tag annot-tag--p1">P1.5</span>
+        <b>Empty state per exercise:</b> "Log Bench three times — we'll start projecting." Differentiated from generic "no data yet."
+      </div>
+
+      <div style="margin-top:14px; padding-top:10px; border-top:1px dashed var(--rule)">
+        <span class="ship">P1.3</span><span class="ship">P1.5</span><span class="ship">P1.6</span><span class="ship">P1.7</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. PLAN ============ -->
+<section id="plan">
+  <div class="sec-num">SCREEN FIVE</div>
+  <h2 class="sec">/ Plan</h2>
+  <div class="sec-sub">Templates collapse to a strip. Schedule rotated to "next 7 days from today" + drag reorder. Template colour swatches.</div>
+
+  <div class="screen-row">
+    <div class="phone">
+      <div class="phone__notch"></div>
+      <div class="phone__screen">
+        <div class="phone__statusbar"><span>9:47</span><span><span class="savedot"></span>auto-saved</span></div>
+
+        <div class="ambient"><span>PLAN</span><span>·</span><span>3 TEMPLATES</span></div>
+        <div class="display-title">Next 7 days</div>
+
+        <!-- collapsed template strip — P2.8 -->
+        <div class="hstack" style="margin-top:6px">
+          <span class="pill" style="background:var(--red-soft);border-color:var(--red);color:var(--red)">● Push</span>
+          <span class="pill" style="background:var(--blue-soft);border-color:var(--blue);color:var(--blue)">● Pull</span>
+          <span class="pill" style="background:var(--green-soft);border-color:var(--green);color:var(--green)">● Legs</span>
+          <span class="pill">+ new</span>
+          <span class="pill" style="margin-left:auto">edit</span>
+        </div>
+        <span class="mark" style="position:absolute; right:14px; margin-top:-26px">1</span>
+
+        <!-- schedule rotated — P2.3 -->
+        <div class="label-small" style="margin-top:10px">WEEK FROM TODAY · DRAG TO REORDER</div>
+        <div class="stack">
+          <div class="box between" style="background:var(--paper-2)">
+            <div><b>TODAY · SAT</b> <span style="color:var(--red)">● Push</span></div>
+            <div class="hstack"><span class="pill">▶ Start</span><span style="opacity:0.5">⋮⋮</span></div>
+          </div>
+          <div class="box between">
+            <div>Sun <span style="color:var(--dim)">○ Rest</span></div>
+            <span style="opacity:0.5">⋮⋮</span>
+          </div>
+          <div class="box between">
+            <div>Mon <span style="color:var(--blue)">● Pull</span></div>
+            <span style="opacity:0.5">⋮⋮</span>
+          </div>
+          <div class="box between">
+            <div>Tue <span style="color:var(--green)">● Legs</span></div>
+            <span style="opacity:0.5">⋮⋮</span>
+          </div>
+          <div class="box between">
+            <div>Wed <span style="color:var(--dim)">○ Rest</span></div>
+            <span style="opacity:0.5">⋮⋮</span>
+          </div>
+          <div class="box between">
+            <div>Thu <span style="color:var(--red)">● Push</span></div>
+            <span style="opacity:0.5">⋮⋮</span>
+          </div>
+          <div class="box between">
+            <div>Fri <span style="color:var(--blue)">● Pull</span></div>
+            <span style="opacity:0.5">⋮⋮</span>
+          </div>
+        </div>
+        <span class="mark" style="position:absolute; right:14px; margin-top:-150px">2</span>
+        <span class="mark" style="position:absolute; right:46px; margin-top:-150px">3</span>
+
+        <div class="phone__bottomnav">
+          <span>Today</span><span>Progress</span><span class="active">Plan</span><span>Recipes</span><span>⚙</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="annot-list">
+      <h3 class="sub" style="margin-top:0">What changed</h3>
+      <div class="annot-item">
+        <span class="mark mark-inline">1</span>
+        <span class="annot-tag annot-tag--p2">P2.8</span> <span class="annot-tag annot-tag--p3">P3.4</span>
+        <b>Templates collapse to a strip after first setup.</b> The repeat-use surface is the schedule — templates become a header chip row with colour swatches per template (red/blue/green).
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">2</span>
+        <span class="annot-tag annot-tag--p2">P2.3</span>
+        <b>"Next 7 days from today" rotation.</b> Today is row 1. Same data as the Mon-Sun schedule but anchored on the behavioural moment — what am I doing <i>next</i>.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">3</span>
+        <span class="annot-tag annot-tag--p3">P3.1</span> <span class="annot-tag annot-tag--p3">P3.8</span>
+        <b>Drag reorder ⋮⋮ + FLIP animation.</b> Calendars are draggable in every modern app — Jakob's Law cashed in. The 150ms transition closes the "list jumps" gap.
+      </div>
+      <div class="annot-item">
+        <span class="annot-tag annot-tag--p1">P1.5</span>
+        <b>Empty state:</b> "You haven't planned a week yet. Want to start with Push/Pull/Legs?" — differentiated, suggests a path.
+      </div>
+
+      <div style="margin-top:14px; padding-top:10px; border-top:1px dashed var(--rule)">
+        <span class="ship">P1.5</span>
+        <span class="ship">P2.3</span><span class="ship">P2.8</span>
+        <span class="ship">P3.1</span><span class="ship">P3.4</span><span class="ship">P3.8</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. RECIPES ============ -->
+<section id="recipes">
+  <div class="sec-num">SCREEN SIX</div>
+  <h2 class="sec">/ Recipes</h2>
+  <div class="sec-sub">Filter pill swallows the tag row. Seeded starter recipes. Today-link badges. Protein bridge surfaces daily total.</div>
+
+  <div class="screen-row">
+    <div class="phone">
+      <div class="phone__notch"></div>
+      <div class="phone__screen">
+        <div class="phone__statusbar"><span>9:49</span><span><span class="savedot"></span>auto-saved</span></div>
+
+        <div class="ambient"><span>RECIPES</span><span>·</span><span>12 SAVED</span></div>
+        <div class="between" style="align-items:flex-end">
+          <div class="display-title">Eat</div>
+          <span class="pill">Filter ▾ <span class="mark mark-inline">1</span></span>
+        </div>
+
+        <!-- protein bridge — P2.10 -->
+        <div class="box box--accent" style="margin-top:6px; padding:8px">
+          <div class="between">
+            <div><b>Protein today</b></div>
+            <div><b>72 / 140 g</b></div>
+          </div>
+          <div style="height: 8px; background: var(--paper); border: 1px solid var(--blue); border-radius: 4px; margin-top:4px; overflow:hidden">
+            <div style="height:100%; width:52%; background: var(--blue)"></div>
+          </div>
+          <span class="mark" style="position:absolute; right:14px; margin-top:-44px">2</span>
+        </div>
+
+        <!-- grid w/ today badges — P2.2 / P2.9 -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px">
+          <div class="box" style="padding:5px; position:relative">
+            <div class="box--placeholder box" style="height:54px; margin:0; padding:0">photo</div>
+            <div style="font-size:11px;font-weight:700; margin-top:2px">Chicken bowl ★</div>
+            <div style="font-size:9px;color:var(--dim)">22m · 540 · 38g P</div>
+            <span class="pill pill--accent" style="position:absolute; top:8px; right:8px; font-size:9px">today</span>
+            <span class="mark" style="position:absolute; bottom:6px; right:6px">3</span>
+          </div>
+          <div class="box" style="padding:5px">
+            <div class="box--placeholder box" style="height:54px; margin:0; padding:0">photo</div>
+            <div style="font-size:11px;font-weight:700; margin-top:2px">Oats &amp; whey</div>
+            <div style="font-size:9px;color:var(--dim)">5m · 420 · 30g P</div>
+          </div>
+          <div class="box" style="padding:5px">
+            <div class="box--placeholder box" style="height:54px; margin:0; padding:0">photo</div>
+            <div style="font-size:11px;font-weight:700; margin-top:2px">Salmon rice <span style="color:var(--dim); font-weight:400">(seed)</span></div>
+            <div style="font-size:9px;color:var(--dim)">30m · 620 · 42g P</div>
+            <span class="mark" style="position:absolute">4</span>
+          </div>
+          <div class="box" style="padding:5px">
+            <div class="box--placeholder box" style="height:54px; margin:0; padding:0">photo</div>
+            <div style="font-size:11px;font-weight:700; margin-top:2px">Tuna pasta</div>
+            <div style="font-size:9px;color:var(--dim)">15m · 580 · 36g P</div>
+          </div>
+          <div class="box box--dashed" style="padding:18px; text-align:center; font-size:13px">+ New</div>
+        </div>
+
+        <div class="phone__bottomnav">
+          <span>Today</span><span>Progress</span><span>Plan</span><span class="active">Recipes</span><span>⚙</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="annot-list">
+      <h3 class="sub" style="margin-top:0">What changed</h3>
+      <div class="annot-item">
+        <span class="mark mark-inline">1</span>
+        <span class="annot-tag annot-tag--p2">P2.11</span>
+        <b>Filter pill</b> swallows the tag-chip row. Cleaner header. Tag chips still accessible via the dropdown — just collapsed once the grid exceeds ~20 cards.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">2</span>
+        <span class="annot-tag annot-tag--p2">P2.10</span>
+        <b>Protein today bar.</b> The bridge to the workout side: macros + "log as eaten" feeds a daily total visible at the top of Recipes (and the Today optional row). Bridge, not a full nutrition page.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">3</span>
+        <span class="annot-tag annot-tag--p2">P2.2</span>
+        <b>"Today" badge</b> on recipes referenced from the post-workout meal card in Today. Bidirectional link visible from both sides.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">4</span>
+        <span class="annot-tag annot-tag--p2">P2.9</span>
+        <b>Seeded starter recipes</b> on install (Salmon rice, Tuna pasta, Oats &amp; whey) — mirrors the seeded Push/Pull/Legs templates. The empty state isn't empty anymore.
+      </div>
+      <div class="annot-item">
+        <span class="annot-tag annot-tag--p1">P1.5</span>
+        <b>Empty state:</b> "We seeded 3 starters — add your own when ready." Acknowledges the seed, invites contribution.
+      </div>
+
+      <div style="margin-top:14px; padding-top:10px; border-top:1px dashed var(--rule)">
+        <span class="ship">P1.5</span>
+        <span class="ship">P2.2</span><span class="ship">P2.9</span><span class="ship">P2.10</span><span class="ship">P2.11</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. SETTINGS ============ -->
+<section id="settings">
+  <div class="sec-num">SCREEN SEVEN</div>
+  <h2 class="sec">/ Settings</h2>
+  <div class="sec-sub">Already best-in-class after P2.3. Adds: rotating microcopy, backup cadence, streak-save nudge config.</div>
+
+  <div class="screen-row">
+    <div class="phone">
+      <div class="phone__notch"></div>
+      <div class="phone__screen">
+        <div class="phone__statusbar"><span>9:51</span><span><span class="savedot"></span>auto-saved</span></div>
+
+        <div class="ambient"><span>SETTINGS</span></div>
+        <div class="display-title">You</div>
+
+        <!-- rotating microcopy — P3.9 -->
+        <div class="box box--filled" style="margin-top:6px; font-size:11px">
+          🔒 47 workouts on this device · 1.2 MB · last backup 12 days ago
+          <span class="mark" style="float:right">1</span>
+        </div>
+
+        <div class="stack" style="margin-top:8px">
+          <div class="box between">
+            <div><b>Preferences</b><div style="font-size:10px;color:var(--dim)">units, goals, theme, nudges</div></div>
+            <span>▸</span>
+          </div>
+          <div class="box between">
+            <div><b>Your data</b><div style="font-size:10px;color:var(--dim)">export · import · backup cadence</div></div>
+            <span class="pill" style="font-size:10px">3 wks since backup</span>
+          </div>
+          <div class="box between">
+            <div><b>Apple Health</b><div style="font-size:10px;color:var(--dim)">Shortcut bridge · synced 2h ago</div></div>
+            <span>▸</span>
+          </div>
+          <div class="box between">
+            <div><b>About</b><div style="font-size:10px;color:var(--dim)">version · what's new · credits</div></div>
+            <span>▸</span>
+          </div>
+        </div>
+
+        <span class="mark" style="position:absolute; right:14px; margin-top:-110px">2</span>
+
+        <!-- new: nudges sub-section preview — P2.5 -->
+        <div class="label-small" style="margin-top:14px">NEW · NUDGES</div>
+        <div class="box between">
+          <div>Streak-save reminder at 7pm</div>
+          <span class="pill pill--solid">on</span>
+        </div>
+        <div class="box between">
+          <div>Backup reminder every</div>
+          <span class="pill">3 wks ▾</span>
+        </div>
+        <span class="mark" style="position:absolute; right:14px; margin-top:-68px">3</span>
+
+        <div style="font-size:10px;color:var(--dim);margin-top:8px">Auto-saved 4s ago</div>
+
+        <div class="phone__bottomnav">
+          <span>Today</span><span>Progress</span><span>Plan</span><span>Recipes</span><span class="active">⚙</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="annot-list">
+      <h3 class="sub" style="margin-top:0">What changed</h3>
+      <div class="annot-item">
+        <span class="mark mark-inline">1</span>
+        <span class="annot-tag annot-tag--p3">P3.9</span>
+        <b>Rotating Settings microcopy.</b> Trust signal that varies each load: workout count · disk footprint · backup age. The app makes its work visible without being noisy.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">2</span>
+        <span class="annot-tag annot-tag--p3">P3.5</span>
+        <b>Backup status surfaces on the card itself</b> ("3 wks since backup") — gentle pressure without a modal.
+      </div>
+      <div class="annot-item">
+        <span class="mark mark-inline">3</span>
+        <span class="annot-tag annot-tag--p2">P2.5</span> <span class="annot-tag annot-tag--p3">P3.5</span>
+        <b>Nudges section.</b> Streak-save reminder (PWA notif if granted) + backup cadence. Users opt-in to anticipatory reinforcement instead of getting nagged.
+      </div>
+
+      <div style="margin-top:14px; padding-top:10px; border-top:1px dashed var(--rule)">
+        <span class="ship">P2.5</span>
+        <span class="ship">P3.5</span><span class="ship">P3.9</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. SYSTEM-WIDE CHANGES ============ -->
+<section id="system">
+  <div class="sec-num">SCREEN EIGHT</div>
+  <h2 class="sec">System-wide</h2>
+  <div class="sec-sub">Changes that don't belong to a single screen — visible everywhere.</div>
+
+  <div class="callout callout--green">
+    <div class="callout__label">★ Theme softening · P3.6</div>
+    <p>Pure <span style="font-family:var(--mono);font-size:12px">#000</span> retired. Dark theme becomes <span style="font-family:var(--mono);font-size:12px">oklch(0.12 0.01 250)</span> — a hint of cool, more "premium app", less "developer terminal". Light theme paper-2 also softens 4 points toward warm.</p>
+    <div class="hstack" style="margin-top:8px">
+      <span style="display:inline-block; width:40px; height:40px; border-radius:8px; background:#000; border:1.5px solid var(--ink)"></span>
+      <span style="font-family:var(--hand-bold); font-size:22px;">→</span>
+      <span style="display:inline-block; width:40px; height:40px; border-radius:8px; background:#0d1015; border:1.5px solid var(--ink)"></span>
+      <span style="margin-left:10px;font-size:13px;color:var(--dim)"># 000 → oklch(0.12 0.01 250)</span>
+    </div>
+  </div>
+
+  <div class="callout callout--blue">
+    <div class="callout__label">★ Page-header rhythm · P3.7</div>
+    <p>Hub screens (Today, Progress) get a heavier display title with a monospace ambient strip above. Tool screens (Plan, Recipes, Settings) keep a lighter sub-display. The header tells you the <i>kind</i> of screen you're on, not just its name.</p>
+    <div class="hstack" style="margin-top:8px">
+      <span class="ambient" style="margin:0">SAT · 12🔥 · 3/4</span><span style="font-family:var(--hand-bold); font-size:22px">Push Day</span>
+      <span style="margin-left:14px; color: var(--dim)">vs.</span>
+      <span style="font-family:var(--hand-bold); font-size:18px; margin-left:8px">Plan</span>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout__label">★ Save-state dot in every PageHeader · P0.4</div>
+    <p>The 6px green ripple from P1.1 (already shipped to Today) extends to every screen's PageHeader. Quiet, persistent trust signal. No state means "no banner shown ≠ saved" — explicit signalling.</p>
+  </div>
+
+  <div class="callout">
+    <div class="callout__label">★ Reorder ▲▼ FLIP animation · P3.8</div>
+    <p>150ms transition on swap. Tap → result connection is preserved. Used by Today (lifts), Plan (template exercises) and Recipes (ingredient lists).</p>
+  </div>
+
+  <div class="callout">
+    <div class="callout__label">★ Diverse empty states · P1.5</div>
+    <p>Each screen gets its own metaphor + copy. No more 6× icon-title-paragraph-button. Examples:</p>
+    <ul style="margin-top:4px">
+      <li>Today empty: a chalkboard pattern with "Today's a fresh page."</li>
+      <li>Progress/Story empty: "Train once and a story starts."</li>
+      <li>Records empty: a single-rep dot with "Your first PR is one rep away."</li>
+      <li>History empty: a heatmap of grey squares waiting to fill.</li>
+      <li>Plan empty: a calendar with one circled day.</li>
+      <li>Recipes empty: 3 seeded starters with "We started you off."</li>
+    </ul>
+  </div>
+
+  <div class="callout">
+    <div class="callout__label">★ A11y polish bundle · P1.10</div>
+    <p>Tab strips gain <span style="font-family:var(--mono);font-size:12px">role="tablist"</span> · date-label gains <span style="font-family:var(--mono);font-size:12px">aria-haspopup="dialog"</span> · arrow-key navigation across segmented controls · skip-link already in place.</p>
+  </div>
+</section>
+
+<!-- ============ TALLY ============ -->
+<section id="tally">
+  <div class="sec-num">FINAL TALLY</div>
+  <h2 class="sec">32 / 32 absorbed</h2>
+  <div class="sec-sub">Every item from sections 11 & 12 of the audit is visible somewhere above.</div>
+
+  <div class="callout callout--green">
+    <p style="font-family:var(--hand-bold); font-size: 22px; line-height:1.3; margin:0">
+      P0 · 4/4 &nbsp;·&nbsp; P1 · 11/11 &nbsp;·&nbsp; P2 · 12/12 &nbsp;·&nbsp; P3 · 9/9
+    </p>
+  </div>
+
+  <p>Two screens carry most of the lift: <b>Today</b> (12 items visible) and <b>Session/Train Mode</b> (6 items). System-wide changes account for the rest. The audit's two structural bets — <i>reverse Today's hierarchy</i> and <i>Train Mode for Session</i> — are the design decisions that pull most of the smaller items into place naturally.</p>
+
+  <p>This is still wireframe. The visual design pass (typography, real iconography, the softened dark theme, motion polish) is a separate round and would benefit from a tight type/colour exploration before any single screen is locked.</p>
+</section>
+
+<div class="end">end of v2 wireframe</div>
+
+</div>
+</body>
+</html>

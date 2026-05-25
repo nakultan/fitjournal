@@ -1480,132 +1480,123 @@
 }
 
 /* ============================================================
-   Phase 3 — Today hub, completion celebration, weekly recap
+   Today — ambient header, start FAB, lift-row deltas (P0)
    ============================================================ */
 
-/* ---- Today hub --------------------------------------------- */
-.fj-hub {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
+/* ---- Ambient header (P0.1) --------------------------------- */
+.fj-today-ambient {
+  margin-bottom: var(--space-5);
 }
-.fj-hub__reminder {
+.fj-today-ambient__strip {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font:
+    600 0.75rem/1 ui-monospace,
+    SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.5px;
+  color: var(--color-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.fj-today-ambient__streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-warning);
+}
+.fj-today-ambient__streak svg {
+  flex-shrink: 0;
+}
+.fj-today-ambient__title {
+  font: var(--text-display);
+  letter-spacing: -0.5px;
+  margin-top: var(--space-2);
+}
+
+/* ---- Start session FAB (P0.2) ------------------------------ */
+.fj-start-fab {
+  position: fixed;
+  right: calc(var(--space-5) + env(safe-area-inset-right));
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 56px;
+  padding: 10px 18px;
+  background: var(--color-success);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-modal);
+  font: inherit;
+  cursor: pointer;
+  z-index: 85;
+  animation: fj-toast-in var(--dur) var(--ease);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+.fj-start-fab:hover {
+  transform: translateY(-1px);
+}
+.fj-start-fab:focus-visible {
+  outline: 2px solid var(--color-success);
+  outline-offset: 3px;
+}
+.fj-start-fab__row {
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 10px var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-.fj-hub__top {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-.fj-hub__stat {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex: 1;
-  min-width: 0;
-}
-.fj-hub__divider {
-  width: 1px;
-  align-self: stretch;
-  background: var(--color-border);
-  flex-shrink: 0;
-}
-.fj-hub__flame {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.fj-hub__big {
-  font: var(--text-title);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-.fj-hub__cap {
-  font: var(--text-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--color-text-dim);
-  margin-top: 3px;
-}
-.fj-hub__sub {
-  font: var(--text-caption);
-  color: var(--color-text-muted);
-  margin-top: 1px;
-}
-.fj-hub__ringnum {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 700;
+}
+.fj-start-fab__label {
+  letter-spacing: 0.1px;
+}
+.fj-start-fab__sub {
+  font:
+    600 0.625rem/1.2 ui-monospace,
+    SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.6px;
+  opacity: 0.85;
   font-variant-numeric: tabular-nums;
+  text-align: left;
 }
-.fj-hub__ringnum small {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--color-text-dim);
+@media (prefers-reduced-motion: reduce) {
+  .fj-start-fab {
+    animation: none;
+  }
+  .fj-start-fab:hover {
+    transform: none;
+  }
 }
-.fj-hub__plan {
-  display: flex;
+
+/* ---- Lift-row delta pill (P0.3) ---------------------------- */
+.fj-ex-delta {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-2);
-}
-.fj-hub__plan-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm);
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.fj-hub__plan-icon--rest {
+.fj-ex-delta--success {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+.fj-ex-delta--neutral {
   background: var(--color-inset);
   color: var(--color-text-muted);
 }
-.fj-hub__plan-text {
-  flex: 1;
-  min-width: 0;
-}
-.fj-hub__plan-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-.fj-hub__plan-sub {
-  font: var(--text-caption);
-  color: var(--color-text-muted);
-  margin-top: 1px;
-}
-.fj-hub__nudge {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: var(--color-text-muted);
-  padding: 0 var(--space-1);
-}
-.fj-hub__nudge svg {
+.fj-ex-delta--pr {
+  background: var(--color-warning-soft);
   color: var(--color-warning);
-  flex-shrink: 0;
-  margin-top: 2px;
 }
 
 /* ---- Finish workout ---------------------------------------- */
@@ -2131,21 +2122,17 @@
     padding-right: var(--space-3);
   }
 
-  /* Today hub: stack streak + week stats vertically so neither the ring nor
-     the text are squeezed by the cramped two-column layout. */
-  .fj-hub__top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-3);
-  }
-  .fj-hub__divider {
-    width: 100%;
-    height: 1px;
-    align-self: auto;
+  /* Today ambient header: keep the title weight reasonable on small screens. */
+  .fj-today-ambient__title {
+    font: var(--text-title);
   }
 
-  /* The rest timer clears the fixed bottom nav. */
+  /* The Start FAB and rest timer both clear the fixed bottom nav. */
   .fj-rest-timer {
     bottom: calc(64px + env(safe-area-inset-bottom) + var(--space-2));
+  }
+  .fj-start-fab {
+    bottom: calc(64px + env(safe-area-inset-bottom) + var(--space-2));
+    right: calc(var(--space-4) + env(safe-area-inset-right));
   }
 }
