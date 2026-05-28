@@ -41,15 +41,27 @@ function recordPositions(container: HTMLElement | null): Map<string, DOMRect> {
  * to its new one and animate the transform away. Runs synchronously (in a
  * layout effect) so the inverted transform is applied before the browser
  * paints the new order — no flash.
+ *
+ * Returns the clean post-commit positions, captured for each row *before* its
+ * own inverting transform is applied — the caller keeps these as the next
+ * "previous". (Re-measuring after the loop would read the inverted positions
+ * and leave the baseline one move behind, so only the first reorder would
+ * animate and later ones would jump.)
  */
-function playFlip(container: HTMLElement | null, prev: Map<string, DOMRect>): void {
-  if (!container || prev.size === 0 || prefersReducedMotion()) return
+function playFlip(
+  container: HTMLElement | null,
+  prev: Map<string, DOMRect>,
+): Map<string, DOMRect> {
+  const next = new Map<string, DOMRect>()
+  if (!container) return next
+  const reduced = prefersReducedMotion()
   for (const el of container.querySelectorAll<HTMLElement>(`[${FLIP_ATTR}]`)) {
     const key = el.getAttribute(FLIP_ATTR)
     if (!key) continue
-    const before = prev.get(key)
-    if (!before) continue
     const after = el.getBoundingClientRect()
+    next.set(key, after)
+    const before = prev.get(key)
+    if (reduced || !before) continue
     const dx = before.left - after.left
     const dy = before.top - after.top
     if (dx === 0 && dy === 0) continue
@@ -68,6 +80,7 @@ function playFlip(container: HTMLElement | null, prev: Map<string, DOMRect>): vo
       el.addEventListener('transitionend', clear)
     })
   }
+  return next
 }
 
 /**
@@ -87,7 +100,8 @@ export function useFlip(containerRef: RefObject<HTMLElement | null>, key: string
       prevRef.current = recordPositions(containerRef.current)
       return
     }
-    playFlip(containerRef.current, prevRef.current)
-    prevRef.current = recordPositions(containerRef.current)
+    // playFlip returns the clean post-commit positions, so the baseline for
+    // the next reorder is correct even after rows have been transformed.
+    prevRef.current = playFlip(containerRef.current, prevRef.current)
   }, [containerRef, key])
 }

@@ -11,6 +11,7 @@ import type { ComponentType } from 'react'
 import type { PageId } from '@/data/types'
 import { useStore } from '@/data/store-context'
 import { cn } from '@/lib/cn'
+import { useStreakReminder } from '@/lib/useStreakReminder'
 import { TodayScreen } from '@/pages/Today'
 import { ProgressScreen } from '@/pages/Progress'
 import { PlanScreen } from '@/pages/Plan'
@@ -40,6 +41,9 @@ const SCREENS: Record<PageId, ComponentType> = {
 export function AppShell() {
   const { page, navigate } = useStore()
   const Screen = SCREENS[page]
+  // P2.5 — fire the opt-in streak-save reminder at the chosen time while the
+  // app is open (a PWA can't notify while fully closed without a server).
+  useStreakReminder()
   // P2.1 — Train Mode takeover. The 5-tab sidebar/bottom nav steps aside
   // mid-workout so the lift list, rest ring and 2-action Pause/Finish bar
   // own the entire screen. Session renders its own bottom bar via

@@ -385,7 +385,7 @@ function NudgesGroup() {
       const result = await Notification.requestPermission()
       if (result === 'granted') {
         setStreak({ enabled: true, time: streak.time })
-        showToast('Reminder set — your device will nudge at the chosen time.', 'success')
+        showToast(`Reminder on — we'll nudge you at ${streak.time} when today isn't logged.`, 'success')
       } else {
         setStreak({ enabled: false, time: streak.time })
         showToast('Reminder needs notification permission — try again later.', 'warning')
@@ -410,8 +410,9 @@ function NudgesGroup() {
         <div>
           <div className="fj-settings-row__label">Streak-save reminder</div>
           <div className="fj-settings-row__desc">
-            A daily reminder to log a workout — only fires if you granted
-            notification permission. Off by default.
+            A nudge at your chosen time when today isn't logged yet. It fires
+            while FitJournal is open — a web app can't alert you while fully
+            closed. Needs notification permission; off by default.
           </div>
           {canNotify && permission === 'denied' && streak.enabled && (
             <div

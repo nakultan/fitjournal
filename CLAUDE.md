@@ -181,8 +181,9 @@ database, and `navigator.storage.persist()` is requested to keep it durable.
 
 All five build phases are done, plus a Vitest suite over the data/logic
 layer and five rounds of post-audit fixes. The original single-file app has
-been retired to `../archive/`. OS-level scheduled reminders are deliberately
-deferred — unreliable for an offline, server-less app.
+been retired to `../archive/`. Background (closed-app) scheduled reminders
+are deliberately deferred — a server-less PWA can't fire them reliably; the
+streak-save reminder instead nudges in-session (see P2.5).
 
 Since the audit, the core has been re-modelled for **per-set logging**: an
 `ExerciseEntry` holds a `SetEntry[]` (each set its own reps and weight),
@@ -695,10 +696,16 @@ select (1 / 2 / 3 / 4 weeks). `BackupReminder` now reads
 `.fj-settings-card__pill` "N wks since backup" / "never backed up"
 amber chip when overdue.
 
-Open: the streak-save reminder *stores* the user's intent and asks
-for permission, but PWAs can't reliably schedule a wall-clock
-notification without a server. Treat the toggle as opt-in + a future
-hook for when a service-worker-side trigger lands.
+The streak-save reminder fires **in-session** (see the post-P3 review
+entry below): `useStreakReminder` (mounted in `AppShell`) schedules a
+one-shot timer for the next chosen `HH:mm`; on fire, if today still
+isn't logged, it shows the notification (service-worker
+`showNotification`, falling back to the `Notification` constructor) then
+reschedules for the next day. Opening the app *after* the time has
+passed waits until tomorrow, so it never double-fires. Closed-app
+delivery still needs Web Push + a server (deferred — it would break the
+no-account / no-servers promise); the toast + row copy are honest that
+the nudge fires only while FitJournal is open.
 
 **v2 P3 — shipped 2026-05-25** (build + 90 tests + lint + typecheck
 clean — P3 is UI/animation polish, so no new pure logic to unit-test).
@@ -734,12 +741,14 @@ no servers" `.fj-settings-trust` line still shows on the sub-section
 screens; the index swaps in the rotating line so the two never stack.
 
 P3.1 + P3.8 — Drag reorder + FLIP. New shared `lib/flip.ts`:
-`useFlip(containerRef, key)` records the viewport rect of every
-`[data-flip-key]` child after each commit, and when `key` next changes
-inverts each moved row to its old position then releases it over 150 ms
-`ease-out` (skips the first commit so rows don't slide in on mount;
-honours `prefers-reduced-motion`; clears inline styles on
-`transitionend`). Wired into:
+`useFlip(containerRef, key)` records the clean viewport rect of every
+`[data-flip-key]` child on each commit (captured *before* any inverting
+transform is applied, so the baseline never lags a move — see the
+post-P3 review fix below), and when `key` next changes inverts each
+moved row to its old position then releases it over 150 ms `ease-out`
+(skips the first commit so rows don't slide in on mount; honours
+`prefers-reduced-motion`; clears inline styles on `transitionend`).
+Wired into:
 - **Today lift rows** — `liftTableRef` on `.fj-table`, key = ordered
   exercise ids, `data-flip-key={e.id}` per row. Animates the existing
   ▲▼ `ReorderButtons` (Today keeps chevrons, per the brief — no drag
@@ -768,3 +777,34 @@ compositor, delaying every repaint inside the dialog by a frame or two
 which keeps the frosted look for a fraction of the per-frame cost.
 Affects all modals. If any lag remains the next lever is removing the
 blur entirely and keeping only the overlay tint.
+
+**Post-P3 review — fixes (2026-05-28)** (build + 90 tests + lint +
+typecheck clean). A full re-audit of the P2/P3 work against the handoff
+spec surfaced two issues, both fixed:
+
+- **FLIP reorder baseline was a move behind** (`lib/flip.ts`). The hook
+  re-measured positions *after* `playFlip` had applied the inverting
+  transforms, so `getBoundingClientRect()` (which includes transforms)
+  read each moved row's pre-move spot and the saved baseline never
+  advanced. Only the *first* reorder animated; later ones computed
+  zero/wrong deltas, so rows jumped or stayed still. Fix: `playFlip` now
+  captures each row's clean position *before* applying its transform and
+  returns that map as the next baseline (the post-loop `recordPositions`
+  re-measure is gone). Affects all three reorder surfaces — Today lifts,
+  `TemplateModal` exercise rows, `TemplateManagerModal`. No tests (it's
+  DOM-animation timing, which the suite can't observe) — verified by
+  trace.
+- **Streak-save reminder now actually fires.** The earlier "stores
+  intent only" gap is closed. New `lib/useStreakReminder.ts` — a hook
+  mounted in `AppShell` that, when the reminder is enabled and
+  permission is granted, sets a one-shot timer for the next chosen
+  `HH:mm`; at fire time, if `isLoggedWorkout(workouts[todayKey()])` is
+  false, it shows the notification (prefers the service-worker
+  `registration.showNotification`, falls back to `new Notification`;
+  icon = `import.meta.env.BASE_URL + 'pwa-192.png'`) then reschedules
+  for the next day. The latest workouts are read through a ref so logging
+  a set doesn't reset the timer. Opening the app after the time has
+  passed waits until tomorrow. The Settings toast + row description were
+  corrected to say the nudge fires *while the app is open* rather than
+  the old "your device will nudge at the chosen time" (which implied a
+  closed-app push that a server-less PWA can't deliver).
