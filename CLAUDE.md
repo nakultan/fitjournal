@@ -699,3 +699,72 @@ Open: the streak-save reminder *stores* the user's intent and asks
 for permission, but PWAs can't reliably schedule a wall-clock
 notification without a server. Treat the toggle as opt-in + a future
 hook for when a service-worker-side trigger lands.
+
+**v2 P3 — shipped 2026-05-25** (build + 90 tests + lint + typecheck
+clean — P3 is UI/animation polish, so no new pure logic to unit-test).
+The visual + motion round closes the v2 backlog. Seven actionable items;
+P3.5 was already delivered in P2.5, and P3.2 / P3.3 from the original
+audit were absorbed by earlier v1 work (input ceilings + the
+system-wide save dot / future-day guard), so they carried no new code.
+
+P3.6 — Dark-theme softening. `tokens.css` retires pure `#000` for a
+cool near-black: the dark surface ramp is now `oklch(...)` with hue 250
+and a tiny chroma (`--color-bg: oklch(0.12 0.01 250)` up through
+`--color-surface-3` / `--color-border`), lightness steps chosen to match
+the old neutral greys so contrast ratios hold. Light theme's
+`--color-surface-2` warms a few LCH points to a faint cream
+(`oklch(0.925 0.006 95)`) in both the explicit `[data-theme='light']`
+block and the `prefers-color-scheme` block. This is the only token-file
+diff in the round.
+
+P3.7 — Page-header rhythm. `PageHeader` gains a `kind?: 'hub' | 'tool'`
+prop (default `hub`). `tool` adds `.fj-page-header--tool`, dropping the
+title from `--text-display` to `--text-title`. Applied `kind="tool"` to
+Plan / Recipes / Settings; Today and Progress stay hub (heavier).
+ExerciseDetail and Session are left as-is (Session has its own custom
+`.fj-session-head`).
+
+P3.9 — Rotating Settings microcopy. New `RotatingTrust` component on the
+Settings *index* shows one trust signal at a time — workout count /
+on-disk footprint (`navigator.storage.estimate()`, async, dropped from
+the pool when unsupported) / backup age — picked deterministically from
+the calendar day (sum of the `YYYY-MM-DD` char codes mod pool size) so
+it's stable within a day but varies over time. The steady "no account,
+no servers" `.fj-settings-trust` line still shows on the sub-section
+screens; the index swaps in the rotating line so the two never stack.
+
+P3.1 + P3.8 — Drag reorder + FLIP. New shared `lib/flip.ts`:
+`useFlip(containerRef, key)` records the viewport rect of every
+`[data-flip-key]` child after each commit, and when `key` next changes
+inverts each moved row to its old position then releases it over 150 ms
+`ease-out` (skips the first commit so rows don't slide in on mount;
+honours `prefers-reduced-motion`; clears inline styles on
+`transitionend`). Wired into:
+- **Today lift rows** — `liftTableRef` on `.fj-table`, key = ordered
+  exercise ids, `data-flip-key={e.id}` per row. Animates the existing
+  ▲▼ `ReorderButtons` (Today keeps chevrons, per the brief — no drag
+  handle on the crowded row).
+- **TemplateModal exercise rows** — draft rows now carry a stable local
+  `_k` (`DraftExercise = TemplateExercise & { _k: string }`, stripped on
+  save) so identity survives reorders; `key`/`data-flip-key` use it. A
+  `GripVertical` `.fj-template-row__grip` is `draggable` (HTML5 DnD);
+  the row handles `onDragOver`/`onDrop` and calls the existing
+  `moveRow`. ▲▼ buttons stay as the keyboard-accessible fallback.
+
+P3.4 — Template manager (the strip's `edit` link). New
+`TemplateManagerModal` (shown only when `templates.length > 1`) lists
+every template as a `.fj-tmpl-manage-row` — grip + colour dot +
+tap-to-edit body + ▲▼ + delete (with Undo). Reorders persist via a new
+`reorderTemplate(fromIndex, toIndex)` store action and FLIP-animate via
+the same helper. The `edit` chip (`.fj-template-chip--edit`) is
+right-aligned at the end of the strip.
+
+Bug fix bundled in the same pass — **FirstRun unit-chip lag**. The
+kgs/lbs chips had no CSS transition (instant by design), so the
+perceived hover/active lag wasn't the chips — it was the modal
+`::backdrop`'s `backdrop-filter: blur(16px)` saturating the GPU
+compositor, delaying every repaint inside the dialog by a frame or two
+(visible on Retina Macs and iPhones alike). Dropped to `blur(4px)`,
+which keeps the frosted look for a fraction of the per-frame cost.
+Affects all modals. If any lag remains the next lever is removing the
+blur entirely and keeping only the overlay tint.

@@ -263,6 +263,23 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
         templates.splice(Math.min(Math.max(index, 0), templates.length), 0, template)
         return { ...d, templates }
       }),
+    reorderTemplate: (fromIndex, toIndex) =>
+      setData((d) => {
+        const last = d.templates.length - 1
+        if (
+          fromIndex === toIndex ||
+          fromIndex < 0 ||
+          fromIndex > last ||
+          toIndex < 0 ||
+          toIndex > last
+        ) {
+          return d
+        }
+        const templates = [...d.templates]
+        const [moved] = templates.splice(fromIndex, 1)
+        templates.splice(toIndex, 0, moved)
+        return { ...d, templates }
+      }),
 
     assignPlanDay: (day, templateId) =>
       setData((d) => {

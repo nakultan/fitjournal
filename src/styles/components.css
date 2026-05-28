@@ -96,7 +96,12 @@
 }
 .fj-modal::backdrop {
   background: var(--color-overlay);
-  backdrop-filter: blur(16px);
+  /* A heavy full-viewport blur saturates the compositor, so every repaint
+     inside the dialog — including :hover and active-state flips on the
+     unit chips — waits a frame or two behind it. This was the perceptible
+     "lag" on the FirstRun chips on both Retina Macs and iPhones. A light
+     blur keeps the frosted feel for a fraction of the per-frame GPU cost. */
+  backdrop-filter: blur(4px);
   animation: fj-overlay-in var(--dur) var(--ease);
 }
 @keyframes fj-overlay-in {
@@ -383,6 +388,12 @@
 .fj-page-header__title {
   font: var(--text-display);
   letter-spacing: -0.5px;
+}
+/* P3.7 — tool screens (Plan, Recipes, Settings) take a lighter sub-display
+   title so the header rhythm distinguishes them from the hub screens. */
+.fj-page-header--tool .fj-page-header__title {
+  font: var(--text-title);
+  letter-spacing: -0.25px;
 }
 .fj-page-header__subtitle {
   font: var(--text-caption);

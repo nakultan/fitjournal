@@ -67,6 +67,8 @@ export interface StoreValue {
   saveTemplate: (template: Template) => void
   deleteTemplate: (id: string) => void
   restoreTemplate: (template: Template, index: number) => void
+  /** Move a template within the list by index. No-op for invalid indices. */
+  reorderTemplate: (fromIndex: number, toIndex: number) => void
 
   // weekly plan
   assignPlanDay: (day: DayName, templateId: string | null) => void

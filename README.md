@@ -57,9 +57,12 @@ on top of the full feature set and polish pass.
   to-goal trajectory, and both sparklines now carry value-on-hover
   tooltips); **History** is the past-workouts list and the activity heatmap
 - **Plan** — templates collapse to a colour-swatched chip strip (red /
-  blue / green / amber per template), and the weekly schedule rotates
-  "next 7 days from today" so today is row 1 with a quick Start affordance;
-  tap any day to reassign it via a bottom-sheet picker
+  blue / green / amber per template); tap a chip to edit, or the *edit*
+  link to open a manager that drag- or arrow-reorders the whole set. Each
+  template editor carries a colour picker and drag-reorderable exercise
+  rows (with a 150 ms slide animation). The weekly schedule rotates "next
+  7 days from today" so today is row 1 with a quick Start affordance; tap
+  any day to reassign it via a bottom-sheet picker
 - **Recipes** — a searchable, taggable recipe keeper with a photo per
   recipe (downscaled), optional per-serving macros, a serving scaler,
   checkable ingredients and a focused cook mode that keeps the screen
@@ -96,7 +99,9 @@ npm run typecheck
 ## How it works
 
 - **React 19 + TypeScript**, bundled by **Vite**; `vite-plugin-pwa` for offline
-  support and installability; **Lucide** icons.
+  support and installability; **Lucide** icons. The dark theme is a softened
+  cool near-black (a hint of blue, not a developer-terminal pure black), and
+  reorder animations honour your reduced-motion setting.
 - **All data lives on your device** in the browser's IndexedDB storage — no
   server, no account, no cloud. The app asks the browser to keep that storage
   durable. Personal records, streaks and stats are *calculated* from your

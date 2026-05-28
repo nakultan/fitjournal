@@ -65,6 +65,7 @@ import type {
 import { addDays, dateKey, dayNameOf, formatLong, formatShort, isoWeek, parseKey, todayKey } from '@/lib/dates'
 import { uid } from '@/lib/uid'
 import { celebrate, tap } from '@/lib/feedback'
+import { useFlip } from '@/lib/flip'
 
 export function TodayScreen() {
   const { data, viewingDateKey, setViewingDateKey, reorderExercise } = useStore()
@@ -73,9 +74,13 @@ export function TodayScreen() {
   const [summaryOpen, setSummaryOpen] = useState(false)
   const [cardioExpanded, setCardioExpanded] = useState(false)
   const dateInputRef = useRef<HTMLInputElement>(null)
+  // P3.8 — FLIP-animate lift-row reorders so the ▲▼ chevrons slide rather
+  // than jump. Keyed on the ordered ids so it fires only on an actual move.
+  const liftTableRef = useRef<HTMLDivElement>(null)
 
   const date = parseKey(viewingDateKey)
   const workout = data.workouts[viewingDateKey]
+  useFlip(liftTableRef, (workout?.exercises ?? []).map((e) => e.id).join(','))
   const strengthPRs = useMemo(() => computeStrengthPRs(data.workouts), [data.workouts])
   const isToday = viewingDateKey === todayKey()
   const dayLogged = isLoggedWorkout(workout)
@@ -220,7 +225,7 @@ export function TodayScreen() {
             />
           )
         ) : (
-          <div className="fj-table">
+          <div className="fj-table" ref={liftTableRef}>
             {workout.exercises.map((e, idx) => {
               const top = topSetWeight(e)
               const pr = strengthPRs[exerciseKey(e.name)]
@@ -235,6 +240,7 @@ export function TodayScreen() {
               return (
                 <div
                   key={e.id}
+                  data-flip-key={e.id}
                   className="fj-ex-row fj-ex-row--clickable"
                   role="button"
                   tabIndex={0}

@@ -1039,6 +1039,74 @@
   color: var(--color-accent);
   border-color: var(--color-accent);
 }
+/* P3.4 — the "edit" link sits at the far right of the strip. */
+.fj-template-chip--edit {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.fj-template-chip--edit:hover {
+  color: var(--color-accent);
+}
+
+/* P3.1 — drag handle + draggable row treatment (template editor rows and
+ * the template manager). The grip is the drag affordance; the ▲▼ buttons
+ * stay as the keyboard-accessible fallback. */
+.fj-template-row__grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  flex-shrink: 0;
+  color: var(--color-text-dim);
+  cursor: grab;
+  touch-action: none;
+}
+.fj-template-row__grip:active {
+  cursor: grabbing;
+}
+.fj-template-row--dragging,
+.fj-tmpl-manage-row--dragging {
+  opacity: 0.5;
+}
+
+/* P3.4 — template manager rows. */
+.fj-tmpl-manage-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+}
+.fj-tmpl-manage-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.fj-tmpl-manage-row__name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+.fj-tmpl-manage-row__sub {
+  font: var(--text-caption);
+  color: var(--color-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Small coloured dot reused in plan day rows + the assign-day sheet. */
 .fj-plan-chip-dot {

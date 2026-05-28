@@ -51,12 +51,17 @@
      Colour — dark theme (the default)
      ============================================================ */
 
-  /* ---- Surfaces ---- */
-  --color-bg: #000000;
-  --color-surface: #1c1c1e;
-  --color-surface-2: #2c2c2e;
-  --color-surface-3: #3a3a3c;
-  --color-border: #38383a;
+  /* ---- Surfaces ----
+     P3.6 — softened dark theme. Pure #000 is retired for a cool near-black
+     (`oklch(0.12 0.01 250)`); the whole dark ramp carries a hint of cool
+     blue (hue 250, tiny chroma) so the app reads "premium" rather than
+     "developer terminal". Lightness steps roughly match the old neutral
+     greys, so contrast ratios are preserved. */
+  --color-bg: oklch(0.12 0.01 250);
+  --color-surface: oklch(0.2 0.012 250);
+  --color-surface-2: oklch(0.25 0.012 250);
+  --color-surface-3: oklch(0.31 0.013 250);
+  --color-border: oklch(0.31 0.013 250);
   --color-border-soft: rgba(255, 255, 255, 0.08);
 
   /* Recessed / hover / input fills — derived overlays, theme-aware so
@@ -112,7 +117,9 @@
 :root[data-theme='light'] {
   --color-bg: #f2f2f7;
   --color-surface: #ffffff;
-  --color-surface-2: #e9e9ef;
+  /* P3.6 — light surface-2 shifts a few LCH points warm (a faint cream
+     instead of cool grey), to echo the dark theme's deliberate temperature. */
+  --color-surface-2: oklch(0.925 0.006 95);
   --color-surface-3: #dcdce2;
   --color-border: #d4d4d9;
   --color-border-soft: rgba(0, 0, 0, 0.08);
@@ -147,7 +154,9 @@
   :root:not([data-theme]) {
     --color-bg: #f2f2f7;
     --color-surface: #ffffff;
-    --color-surface-2: #e9e9ef;
+    /* P3.6 — light surface-2 warmed ~4 LCH points (see the explicit
+       light-theme block above). */
+    --color-surface-2: oklch(0.925 0.006 95);
     --color-surface-3: #dcdce2;
     --color-border: #d4d4d9;
     --color-border-soft: rgba(0, 0, 0, 0.08);

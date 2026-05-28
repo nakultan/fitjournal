@@ -1,5 +1,14 @@
-import { useState } from 'react'
-import { CalendarDays, Check, Moon, Pencil, Play, Plus, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import {
+  CalendarDays,
+  Check,
+  GripVertical,
+  Moon,
+  Pencil,
+  Play,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 import {
   Button,
   Card,
@@ -15,10 +24,12 @@ import { useStore } from '@/data/store-context'
 import { MUSCLE_GROUPS } from '@/data/constants'
 import { seedPushPullLegs } from '@/data/storage'
 import { addDays, dateKey, dayNameOf, todayKey } from '@/lib/dates'
+import { useFlip } from '@/lib/flip'
 import { uid } from '@/lib/uid'
 import type {
   DayName,
   MuscleGroup,
+  Template,
   TemplateColor,
   TemplateExercise,
 } from '@/data/types'
@@ -37,6 +48,7 @@ export function PlanScreen() {
   const { showToast } = useToast()
   const [templateModal, setTemplateModal] = useState<{ id: string | null } | null>(null)
   const [assigning, setAssigning] = useState<DayName | null>(null)
+  const [managerOpen, setManagerOpen] = useState(false)
 
   const startWithPPL = (): void => {
     for (const t of seedPushPullLegs()) saveTemplate(t)
@@ -56,7 +68,7 @@ export function PlanScreen() {
 
   return (
     <div className="fj-screen">
-      <PageHeader title="Plan" subtitle="Your templates and the next 7 days" />
+      <PageHeader title="Plan" subtitle="Your templates and the next 7 days" kind="tool" />
 
       {data.templates.length === 0 ? (
         <EmptyState
@@ -105,6 +117,16 @@ export function PlanScreen() {
             >
               <Plus size={13} /> new
             </button>
+            {data.templates.length > 1 && (
+              <button
+                type="button"
+                className="fj-template-chip fj-template-chip--edit"
+                onClick={() => setManagerOpen(true)}
+                aria-label="Manage templates — reorder and delete"
+              >
+                edit
+              </button>
+            )}
           </div>
 
           <section className="fj-section">
@@ -189,6 +211,15 @@ export function PlanScreen() {
         </>
       )}
 
+      {managerOpen && (
+        <TemplateManagerModal
+          onEdit={(id) => {
+            setManagerOpen(false)
+            setTemplateModal({ id })
+          }}
+          onClose={() => setManagerOpen(false)}
+        />
+      )}
       {templateModal && (
         <TemplateModal
           key={templateModal.id ?? 'new'}
@@ -276,8 +307,117 @@ function AssignDaySheet({
   )
 }
 
-function emptyRow(): TemplateExercise {
-  return { name: '', muscle: 'chest', sets: 3, reps: 10 }
+/**
+ * P3.4 — the "full-screen template editor" reachable from the strip's
+ * `edit` link. Manages the template *set*: drag (or ▲▼) to reorder, tap to
+ * open the editor, trash to delete (with Undo). Reorders persist via the
+ * `reorderTemplate` store action and FLIP-animate via the shared helper.
+ */
+function TemplateManagerModal({
+  onEdit,
+  onClose,
+}: {
+  onEdit: (id: string) => void
+  onClose: () => void
+}) {
+  const { data, reorderTemplate, deleteTemplate, restoreTemplate } = useStore()
+  const { showToast } = useToast()
+  const listRef = useRef<HTMLDivElement>(null)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  useFlip(listRef, data.templates.map((t) => t.id).join(','))
+
+  const removeTemplate = (t: Template, index: number): void => {
+    deleteTemplate(t.id)
+    showToast('Template deleted', 'default', {
+      label: 'Undo',
+      onAction: () => restoreTemplate(t, index),
+    })
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Manage templates"
+      footer={<Button onClick={onClose}>Done</Button>}
+    >
+      <div className="fj-col" style={{ gap: 'var(--space-2)' }} ref={listRef}>
+        {data.templates.map((t, i) => {
+          const color: TemplateColor = t.color ?? 'neutral'
+          return (
+            <div
+              key={t.id}
+              data-flip-key={t.id}
+              className={
+                'fj-tmpl-manage-row' + (dragIndex === i ? ' fj-tmpl-manage-row--dragging' : '')
+              }
+              onDragOver={(e) => {
+                if (dragIndex === null) return
+                e.preventDefault()
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                if (dragIndex !== null && dragIndex !== i) reorderTemplate(dragIndex, i)
+                setDragIndex(null)
+              }}
+            >
+              <span
+                className="fj-template-row__grip"
+                role="button"
+                tabIndex={-1}
+                aria-label={`Drag to reorder ${t.name}`}
+                draggable
+                onDragStart={(e) => {
+                  setDragIndex(i)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragEnd={() => setDragIndex(null)}
+              >
+                <GripVertical size={16} aria-hidden="true" />
+              </span>
+              <span
+                className={`fj-plan-chip-dot fj-plan-chip-dot--${color}`}
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                className="fj-tmpl-manage-row__main"
+                onClick={() => onEdit(t.id)}
+                aria-label={`Edit ${t.name}`}
+              >
+                <span className="fj-tmpl-manage-row__name">{t.name}</span>
+                <span className="fj-tmpl-manage-row__sub">
+                  {t.subtitle || `${t.exercises.length} exercise${t.exercises.length === 1 ? '' : 's'}`}
+                </span>
+              </button>
+              <ReorderButtons
+                canUp={i > 0}
+                canDown={i < data.templates.length - 1}
+                onUp={() => reorderTemplate(i, i - 1)}
+                onDown={() => reorderTemplate(i, i + 1)}
+              />
+              <button
+                className="fj-icon-btn fj-icon-btn--danger"
+                aria-label={`Delete ${t.name}`}
+                onClick={() => removeTemplate(t, i)}
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </Modal>
+  )
+}
+
+/** A template-exercise row with a stable local key — the key travels with
+ *  the item across reorders so the FLIP animation (P3.8) and React's
+ *  reconciliation both track identity, not position. Stripped on save. */
+type DraftExercise = TemplateExercise & { _k: string }
+
+function emptyRow(): DraftExercise {
+  return { _k: uid(), name: '', muscle: 'chest', sets: 3, reps: 10 }
 }
 
 function TemplateModal({
@@ -294,10 +434,14 @@ function TemplateModal({
   const [name, setName] = useState(existing?.name ?? '')
   const [subtitle, setSubtitle] = useState(existing?.subtitle ?? '')
   const [color, setColor] = useState<TemplateColor>(existing?.color ?? 'neutral')
-  const [rows, setRows] = useState<TemplateExercise[]>(
-    existing ? existing.exercises.map((e) => ({ ...e })) : [emptyRow()],
+  const [rows, setRows] = useState<DraftExercise[]>(
+    existing ? existing.exercises.map((e) => ({ ...e, _k: uid() })) : [emptyRow()],
   )
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  // P3.1 / P3.8 — drag-to-reorder exercise rows, FLIP-animated on drop.
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const rowsRef = useRef<HTMLDivElement>(null)
+  useFlip(rowsRef, rows.map((r) => r._k).join(','))
 
   const updateRow = (i: number, patch: Partial<TemplateExercise>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
@@ -400,9 +544,39 @@ function TemplateModal({
         </div>
         <div className="fj-field">
           <label className="fj-field__label">Exercises</label>
-          <div className="fj-col" style={{ gap: 'var(--space-2)' }}>
+          <div className="fj-col" style={{ gap: 'var(--space-2)' }} ref={rowsRef}>
             {rows.map((r, i) => (
-              <div key={i} className="fj-row" style={{ gap: 'var(--space-2)', flexWrap: 'nowrap' }}>
+              <div
+                key={r._k}
+                data-flip-key={r._k}
+                className={
+                  'fj-row fj-template-row' + (dragIndex === i ? ' fj-template-row--dragging' : '')
+                }
+                style={{ gap: 'var(--space-2)', flexWrap: 'nowrap' }}
+                onDragOver={(e) => {
+                  if (dragIndex === null) return
+                  e.preventDefault()
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (dragIndex !== null && dragIndex !== i) moveRow(dragIndex, i)
+                  setDragIndex(null)
+                }}
+              >
+                <span
+                  className="fj-template-row__grip"
+                  role="button"
+                  tabIndex={-1}
+                  aria-label={`Drag to reorder ${r.name || `row ${i + 1}`}`}
+                  draggable
+                  onDragStart={(e) => {
+                    setDragIndex(i)
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  onDragEnd={() => setDragIndex(null)}
+                >
+                  <GripVertical size={16} aria-hidden="true" />
+                </span>
                 <ReorderButtons
                   canUp={i > 0}
                   canDown={i < rows.length - 1}

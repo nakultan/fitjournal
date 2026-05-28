@@ -190,6 +190,7 @@ export function RecipesScreen() {
       <PageHeader
         title="Recipes"
         subtitle="Your personal recipe collection"
+        kind="tool"
         actions={
           <Button onClick={() => setEditing({ id: null })}>
             <Plus size={16} /> Add recipe

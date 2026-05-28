@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,6 +12,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { Button, Card, Modal, PageHeader, Toggle, useToast } from '@/components'
 import { useStore } from '@/data/store-context'
+import { totalWorkoutsLogged } from '@/data/logic'
 import { importData } from '@/data/storage'
 import { downloadBackup, downloadCsv } from '@/lib/backup'
 import { LOG_WORKOUT_SHORTCUT_NAME, parseHealthPayload } from '@/lib/healthBridge'
@@ -75,6 +76,7 @@ export function SettingsScreen() {
       <PageHeader
         title={meta ? meta.title : 'Settings'}
         subtitle={meta ? meta.subtitle : 'Preferences, your data, and integrations'}
+        kind="tool"
         actions={
           section ? (
             <Button variant="ghost" onClick={() => viewSettings(null)}>
@@ -83,16 +85,79 @@ export function SettingsScreen() {
           ) : undefined
         }
       />
-      <div className="fj-settings-trust" role="note">
-        <Lock size={14} aria-hidden="true" />
-        <span>Everything stays on this device — no account, no servers.</span>
-      </div>
+      {/* P3.9 — on the index, a rotating trust signal (workout count / disk
+          footprint / backup age) varies by day; on the sub-sections the
+          steady "no account, no servers" line stays put. */}
+      {section ? (
+        <div className="fj-settings-trust" role="note">
+          <Lock size={14} aria-hidden="true" />
+          <span>Everything stays on this device — no account, no servers.</span>
+        </div>
+      ) : (
+        <RotatingTrust />
+      )}
 
       {!section && <SettingsIndex onPick={(s) => viewSettings(s)} />}
       {section === 'preferences' && <PreferencesSection />}
       {section === 'data' && <DataSection />}
       {section === 'health' && <HealthSection />}
       {section === 'about' && <AboutSection />}
+    </div>
+  )
+}
+
+/* ---------- Rotating trust microcopy (P3.9) ----------
+ * One trust signal at a time — workout count, on-disk footprint, or backup
+ * age — picked deterministically from the calendar day so it's stable for
+ * the day but varies over time. The app makes its work visible without
+ * being noisy. Disk footprint comes from `navigator.storage.estimate()`,
+ * which is async and may be unsupported; the candidate is simply dropped
+ * from the pool when it can't be measured.
+ */
+function RotatingTrust() {
+  const { data } = useStore()
+  const [diskMb, setDiskMb] = useState<number | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (typeof navigator !== 'undefined' && navigator.storage?.estimate) {
+      navigator.storage
+        .estimate()
+        .then((est) => {
+          if (cancelled) return
+          const usage = est.usage ?? 0
+          if (usage > 0) setDiskMb(usage / (1024 * 1024))
+        })
+        .catch(() => {
+          /* unsupported / denied — the disk line just won't appear */
+        })
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const workouts = totalWorkoutsLogged(data.workouts)
+  const messages: string[] = [`${workouts} workout${workouts === 1 ? '' : 's'} on this device`]
+  if (diskMb != null) {
+    messages.push(diskMb < 1 ? `${Math.round(diskMb * 1024)} KB on disk` : `${diskMb.toFixed(1)} MB on disk`)
+  }
+  messages.push(
+    data.lastBackupAt
+      ? `last backup ${relativeTime(new Date(data.lastBackupAt).getTime())}`
+      : 'no backup yet — export one soon',
+  )
+
+  // Day-stable seed: sum the YYYY-MM-DD char codes, modulo the pool size.
+  const daySeed = new Date().toISOString().slice(0, 10)
+  let seed = 0
+  for (let i = 0; i < daySeed.length; i++) seed += daySeed.charCodeAt(i)
+  const message = messages[seed % messages.length]
+
+  return (
+    <div className="fj-settings-trust" role="note">
+      <Lock size={14} aria-hidden="true" />
+      <span>{message}</span>
     </div>
   )
 }
