@@ -112,10 +112,17 @@ function StoreReady({
   // sidecar at the merged result first, so the ensuing diff is a no-op.
   const applyMerged = useCallback((merged: { data: AppData; meta: SyncMeta }) => {
     syncMetaRef.current = merged.meta
-    stampedAgainst.current = merged.data
-    latestData.current = merged.data
     void saveSyncMeta(merged.meta)
-    setData(merged.data)
+    // `merged.data` is always a fresh object (rebuilt by recompose), so calling
+    // setData unconditionally would re-render every sync, re-run the save effect,
+    // and schedule yet another sync — a ~per-second loop. Only replace state when
+    // the merge actually changed the journal's content; in steady state the
+    // round-trip is lossless, so this is a no-op and the loop never starts.
+    if (JSON.stringify(merged.data) !== JSON.stringify(latestData.current)) {
+      stampedAgainst.current = merged.data
+      latestData.current = merged.data
+      setData(merged.data)
+    }
   }, [])
 
   // Run one sync cycle (pull → merge → push). Safe to call from anywhere;
