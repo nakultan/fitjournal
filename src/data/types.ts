@@ -208,6 +208,26 @@ export interface HealthData {
   fileName: string | null
 }
 
+/**
+ * Per-record sync bookkeeping, kept *beside* the journal in IndexedDB — NOT a
+ * field of AppData, so JSON backups/exports stay clean and account-free. Only
+ * the sync engine (`data/sync.ts`) reads or writes it.
+ */
+export interface RecordMeta {
+  /** ISO timestamp of the last local change to this record — drives LWW. */
+  updatedAt: string
+  /** True when the record was deleted locally (a tombstone, so the delete
+   *  propagates on the next sync instead of the row resurrecting on pull). */
+  deleted?: boolean
+}
+
+export interface SyncMeta {
+  /** Keyed by a record's sync key, `${kind}:${id}`. */
+  records: Record<string, RecordMeta>
+  /** High-water mark: the newest `updated_at` seen on the last good pull. */
+  lastPulledAt: string | null
+}
+
 /** The full saved state. One of these lives in localStorage. */
 export interface AppData {
   schemaVersion: number

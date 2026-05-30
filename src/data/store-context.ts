@@ -13,6 +13,20 @@ import type {
 } from './types'
 import type { ProgressSection, SettingsSection } from '@/lib/router'
 
+/** Live multi-device sync status, surfaced to the Settings UI. */
+export interface SyncState {
+  /** True when the build has Supabase credentials (env vars present). */
+  configured: boolean
+  /** True when a user session is active. */
+  signedIn: boolean
+  /** The signed-in user's email, or null. */
+  email: string | null
+  /** Where the sync engine is right now. */
+  status: 'idle' | 'syncing' | 'error'
+  /** Date.now() of the last successful sync; null before the first. */
+  lastSyncedAt: number | null
+}
+
 /** Everything a component can read and do with app state. */
 export interface StoreValue {
   data: AppData
@@ -29,6 +43,14 @@ export interface StoreValue {
   saveFailed: boolean
   /** Timestamp (Date.now()) of the last successful save; 0 before first save. */
   lastSavedAt: number
+  /** Live multi-device sync status. */
+  sync: SyncState
+  /** Send a magic-link sign-in email. Returns an error message, or null on success. */
+  signIn: (email: string) => Promise<string | null>
+  /** Sign out — stops syncing; the local journal stays on the device. */
+  signOut: () => Promise<void>
+  /** Trigger a sync cycle now (no-op when signed out or unconfigured). */
+  syncNow: () => Promise<void>
 
   // navigation
   navigate: (page: PageId) => void

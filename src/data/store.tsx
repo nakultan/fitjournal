@@ -1,14 +1,23 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { AppData, Workout } from './types'
+import type { AppData, SyncMeta, Workout } from './types'
 import { StoreContext } from './store-context'
-import type { StoreValue } from './store-context'
-import { loadData, requestPersistentStorage, saveData } from './storage'
+import type { StoreValue, SyncState } from './store-context'
+import {
+  emptySyncMeta,
+  loadData,
+  loadSyncMeta,
+  requestPersistentStorage,
+  saveData,
+  saveSyncMeta,
+} from './storage'
+import { stampChanges, synchronize } from './sync'
 import { cardioMetric, topSetWeight, wouldBeCardioPR, wouldBeStrengthPR } from './logic'
 import { readHealthFromURL } from '@/lib/healthBridge'
 import { navigateTo, useRoute } from '@/lib/router'
 import { uid } from '@/lib/uid'
 import { applyTheme } from '@/lib/theme'
+import { supabase, isSyncConfigured } from '@/lib/supabase'
 
 function emptyWorkout(dateKey: string): Workout {
   return { date: dateKey, bodyWeight: null, exercises: [], cardio: [] }
@@ -30,36 +39,141 @@ const SAVE_DEBOUNCE_MS = 400
  * nothing over the app's black background, so there is no flash.
  */
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [initialData, setInitialData] = useState<AppData | null>(null)
+  const [initial, setInitial] = useState<{ data: AppData; syncMeta: SyncMeta } | null>(null)
 
   useEffect(() => {
     let cancelled = false
     void requestPersistentStorage()
-    void loadData().then((loaded) => {
+    // Load the journal and its sync sidecar together, so the live store mounts
+    // with both in hand — no second render to wire sync up.
+    void Promise.all([loadData(), loadSyncMeta()]).then(([loaded, meta]) => {
       if (cancelled) return
       // A companion Apple Shortcut can hand Health data to the app via a
       // `?health=` URL parameter; merge it into the loaded data on the very
       // first paint so it lands in state without a follow-up render. The
       // helper strips the parameter so a reload cannot replay a stale import.
       const urlHealth = readHealthFromURL()
-      setInitialData(urlHealth ? { ...loaded, health: urlHealth } : loaded)
+      setInitial({
+        data: urlHealth ? { ...loaded, health: urlHealth } : loaded,
+        syncMeta: meta ?? emptySyncMeta(),
+      })
     })
     return () => {
       cancelled = true
     }
   }, [])
 
-  if (!initialData) return null
-  return <StoreReady initialData={initialData}>{children}</StoreReady>
+  if (!initial) return null
+  return (
+    <StoreReady initialData={initial.data} initialSyncMeta={initial.syncMeta}>
+      {children}
+    </StoreReady>
+  )
 }
 
 /** Holds all app state, persists it to the device, exposes actions. */
-function StoreReady({ initialData, children }: { initialData: AppData; children: ReactNode }) {
+function StoreReady({
+  initialData,
+  initialSyncMeta,
+  children,
+}: {
+  initialData: AppData
+  initialSyncMeta: SyncMeta
+  children: ReactNode
+}) {
   const [data, setData] = useState<AppData>(initialData)
   const route = useRoute()
   const [saveFailed, setSaveFailed] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState(0)
   const latestData = useRef(data)
+
+  // --- Sync state + bookkeeping --------------------------------------------
+  // The sidecar and the "last data we stamped against" live in refs so the
+  // store actions never need to know sync exists — we diff prev→next in the
+  // save effect below and stamp whatever changed.
+  const syncMetaRef = useRef<SyncMeta>(initialSyncMeta)
+  const stampedAgainst = useRef<AppData>(initialData)
+  const [sync, setSync] = useState<SyncState>({
+    configured: isSyncConfigured,
+    signedIn: false,
+    email: null,
+    status: 'idle',
+    lastSyncedAt: null,
+  })
+  // Guards a sync cycle so foreground + online + post-save triggers can't
+  // stack concurrent pulls.
+  const syncInFlight = useRef(false)
+  // Mirrors `sync.signedIn` for the closures that run outside React state.
+  const signedInRef = useRef(false)
+
+  // Apply a merged journal from the server without the save effect mistaking
+  // pulled records for fresh local edits: point the stamp baseline AND the
+  // sidecar at the merged result first, so the ensuing diff is a no-op.
+  const applyMerged = useCallback((merged: { data: AppData; meta: SyncMeta }) => {
+    syncMetaRef.current = merged.meta
+    stampedAgainst.current = merged.data
+    latestData.current = merged.data
+    void saveSyncMeta(merged.meta)
+    setData(merged.data)
+  }, [])
+
+  // Run one sync cycle (pull → merge → push). Safe to call from anywhere;
+  // no-ops when sync isn't configured or nobody is signed in.
+  const syncNow = useCallback(async () => {
+    if (!supabase || !signedInRef.current || syncInFlight.current) return
+    syncInFlight.current = true
+    setSync((s) => ({ ...s, status: 'syncing' }))
+    try {
+      const result = await synchronize(latestData.current, syncMetaRef.current)
+      if (result) {
+        applyMerged(result)
+        setSync((s) => ({ ...s, status: 'idle', lastSyncedAt: Date.now() }))
+      } else {
+        setSync((s) => ({ ...s, status: 'idle' }))
+      }
+    } catch {
+      setSync((s) => ({ ...s, status: 'error' }))
+    } finally {
+      syncInFlight.current = false
+    }
+  }, [applyMerged])
+
+  // Track the auth session: reflect it in `sync`, and kick a sync on sign-in.
+  useEffect(() => {
+    if (!supabase) return
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      signedInRef.current = Boolean(session)
+      setSync((s) => ({ ...s, signedIn: Boolean(session), email: session?.user.email ?? null }))
+      if (session) void syncNow()
+    })
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      signedInRef.current = Boolean(session)
+      setSync((s) => ({
+        ...s,
+        signedIn: Boolean(session),
+        email: session?.user.email ?? null,
+        status: session ? s.status : 'idle',
+      }))
+      if (session) void syncNow()
+    })
+    return () => listener.subscription.unsubscribe()
+  }, [syncNow])
+
+  // Re-sync when the app comes to the foreground or the network returns —
+  // the two moments a phone and a laptop are most likely to have diverged.
+  useEffect(() => {
+    if (!supabase) return
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void syncNow()
+    }
+    const onOnline = () => void syncNow()
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onOnline)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onOnline)
+    }
+  }, [syncNow])
 
   // Persist on change, debounced — a burst of edits becomes one write
   // rather than re-serialising the whole journal on every keystroke. A
@@ -67,14 +181,27 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
   // letting unsaved changes look saved.
   useEffect(() => {
     latestData.current = data
+    // Stamp whatever changed since the last commit into the sync sidecar, so
+    // the next sync knows which records this device touched. When the change
+    // came from applying a remote merge, `stampedAgainst` already points at
+    // this same data, so the diff is empty and nothing is re-stamped.
+    if (data !== stampedAgainst.current) {
+      const nextMeta = stampChanges(stampedAgainst.current, data, syncMetaRef.current)
+      if (nextMeta !== syncMetaRef.current) {
+        syncMetaRef.current = nextMeta
+        void saveSyncMeta(nextMeta)
+      }
+      stampedAgainst.current = data
+    }
     const timer = setTimeout(() => {
       void saveData(data).then((ok) => {
         setSaveFailed(!ok)
         if (ok) setLastSavedAt(Date.now())
       })
+      void syncNow()
     }, SAVE_DEBOUNCE_MS)
     return () => clearTimeout(timer)
-  }, [data])
+  }, [data, syncNow])
 
   // Keep the document's colour theme in sync with the preference.
   useEffect(() => {
@@ -101,6 +228,25 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     }
   }, [])
 
+  // Send a magic-link sign-in email. On clicking the link the user lands back
+  // in the app already authenticated; `onAuthStateChange` then kicks the first
+  // sync. Returns a friendly error string, or null on success.
+  const signIn = useCallback(async (email: string): Promise<string | null> => {
+    if (!supabase) return 'Sync is not configured in this build.'
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.href },
+    })
+    return error ? error.message : null
+  }, [])
+
+  // Sign out — stops syncing; the local journal stays on the device exactly as
+  // the offline-only app always has.
+  const signOut = useCallback(async (): Promise<void> => {
+    if (!supabase) return
+    await supabase.auth.signOut()
+  }, [])
+
   const value: StoreValue = {
     data,
     page: route.page,
@@ -110,6 +256,10 @@ function StoreReady({ initialData, children }: { initialData: AppData; children:
     viewingProgressSection: route.progressSection,
     saveFailed,
     lastSavedAt,
+    sync,
+    signIn,
+    signOut,
+    syncNow,
 
     navigate: (page) => navigateTo(page),
     setViewingDateKey: (key) => navigateTo('today', key),

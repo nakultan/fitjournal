@@ -3,7 +3,8 @@
 A personal fitness journal — workouts, weight, and progress — that runs **fully
 offline** and keeps all data **on your device**. Built as an installable PWA: a
 real desktop app that needs no internet, and that can be added to an iPhone home
-screen for free.
+screen for free. Optionally, **sign in to sync** your journal across your phone
+and laptop — still offline-first, with the device as the source of truth.
 
 **Live:** https://nakultan.github.io/fitjournal/
 
@@ -77,9 +78,10 @@ on top of the full feature set and polish pass.
   nudges (a daily streak-save reminder that fires at your chosen time
   while the app is open — a server-less web app can't notify you while
   fully closed — and a backup-reminder cadence of 1–4 weeks), backup export (JSON or
-  CSV) & restore, and Apple Health sync via a Shortcut (with a JSON file
-  as a fallback). An overdue-backup pill on the Your data card surfaces
-  the cadence at a glance
+  CSV) & restore, optional **multi-device sync** (sign in with a magic
+  link to sync across devices — see below), and Apple Health sync via a
+  Shortcut (with a JSON file as a fallback). An overdue-backup pill on the
+  Your data card surfaces the cadence at a glance
 
 ## Running it
 
@@ -104,9 +106,13 @@ npm run typecheck
   cool near-black (a hint of blue, not a developer-terminal pure black), and
   reorder animations honour your reduced-motion setting.
 - **All data lives on your device** in the browser's IndexedDB storage — no
-  server, no account, no cloud. The app asks the browser to keep that storage
-  durable. Personal records, streaks and stats are *calculated* from your
-  logged workouts, never stored separately.
+  server or account required to use it. The app asks the browser to keep that
+  storage durable. Personal records, streaks and stats are *calculated* from
+  your logged workouts, never stored separately.
+- **Optional multi-device sync** (see below): sign in and your journal
+  reconciles across every device you use, while IndexedDB stays the source of
+  truth — so the app keeps working with no connection and syncs when you're
+  back online. Signed out, FitJournal behaves exactly as the local-only app.
 - **Back up regularly:** Settings → Export downloads a JSON copy of everything,
   and Settings → Import restores one — after first downloading a snapshot of
   your current data, so a restore can be undone. The app nudges you to export
@@ -126,8 +132,8 @@ npm run typecheck
 src/
   components/   AppShell + design-system components (Button, Card, Modal, ...)
   pages/        the five screens
-  data/         types, constants, storage, derived logic, the store
-  lib/          small helpers (dates, ids, routing, class names, backup)
+  data/         types, constants, storage, derived logic, the store, the sync engine
+  lib/          small helpers (dates, ids, routing, class names, backup, supabase client)
   styles/       design tokens + global + component + app styles
 public/         app icons
 ```
@@ -144,12 +150,67 @@ Once loaded, the app caches itself and works with no internet.
   installs with its own icon, runs full-screen, and works offline. No App
   Store, no Apple fee.
 
-**Each install keeps its own data today.** Storage is per-device, so your
-iPhone and your desktop currently hold separate journals. To move data between
-them, use Settings → Export on one device and Settings → Import on the other.
-A real multi-device profile (sign in once, your data follows) is being scoped
-as the next major direction; until it ships, the export/import workflow is the
-bridge.
+**Without signing in, each install keeps its own data.** Storage is per-device,
+so an iPhone and a desktop hold separate journals. You can move data between
+them with Settings → Export / Import — or turn on sync (below) and skip the
+shuffling entirely.
+
+## Multi-device sync (optional)
+
+Sign in and your journal reconciles across every device you use. It stays
+**offline-first** — IndexedDB remains the source of truth, and sync is layered
+on top, so you can log at the gym with no signal and it pushes up when you
+reconnect.
+
+- **How to use it:** Settings → *Your data* → *Sync across devices*. Enter your
+  email; you'll get a one-tap magic link (no password). Open the link on any
+  device to sign that device in. The card then shows who's syncing and the
+  last-synced time, with a manual **Sync now** button.
+- **How it merges:** each record (a workout day, a recipe, a template set, …)
+  carries a last-modified timestamp; on sync the newer version wins, and
+  deletes propagate as tombstones. This is *per-record* — logging a workout on
+  your phone never clobbers a recipe you edited on your laptop.
+- **Privacy:** your rows are private to your account, enforced server-side by
+  Postgres row-level security. Sync runs on [Supabase](https://supabase.com)
+  (managed Postgres + auth). Signing out stops syncing and leaves the local
+  journal untouched.
+
+Sync is **off unless the build is configured** with Supabase credentials
+(`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`). A build without them — or a
+fork — runs as the original local-only app, no sync card shown.
+
+### Setting up your own sync backend
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In the SQL editor, create the records table + row-level security:
+   ```sql
+   create table public.records (
+     user_id    uuid        not null references auth.users (id) on delete cascade,
+     kind       text        not null,
+     id         text        not null,
+     data       jsonb       not null,
+     updated_at timestamptz not null default now(),
+     deleted    boolean     not null default false,
+     primary key (user_id, kind, id)
+   );
+   create index records_user_updated_idx on public.records (user_id, updated_at);
+   alter table public.records enable row level security;
+   create policy "own rows" on public.records
+     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+   ```
+3. Enable the **Email** auth provider (magic link) under Authentication →
+   Providers.
+4. Copy your **Project URL** and **anon/public** key (Project Settings → Data
+   API). The anon key is safe to expose in a browser build — row-level security
+   is what protects the data. Never use the `service_role` key in the frontend.
+5. **Local dev:** copy `.env.example` to `.env.local` and fill both values.
+6. **Deployment:** add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as
+   GitHub repository secrets (Settings → Secrets and variables → Actions); the
+   deploy workflow passes them into the build.
+
+> Because the app talks to Supabase through the standard SDK, moving to a
+> self-hosted Supabase later (e.g. on your own server) is just changing those
+> two environment variables.
 
 ## Deployment
 

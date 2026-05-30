@@ -1,15 +1,19 @@
 # FitJournal — codebase guide
 
 Personal, offline-first fitness journal. React 19 + TypeScript + Vite, shipped
-as an installable PWA. **All data is on-device today** (IndexedDB) — no backend,
-no account, no network dependency at runtime. See `README.md` for the product
-overview.
+as an installable PWA. **IndexedDB is the source of truth**; the app runs fully
+offline with no account required. **Optional multi-device sync** (Supabase) is
+layered on top — when signed in, the on-device journal reconciles with a remote
+`records` table; signed out (or in a build with no Supabase env vars) the app is
+exactly the original local-only PWA. See `README.md` for the product overview
+and the sync setup steps.
 
-> **Direction note (2026-05-24):** the early-phase *privacy-first* non-negotiable
-> has been retired so the product can grow into a multi-device profile via a
-> backend + accounts. Nothing is built yet — the architecture below still
-> describes the live, local-only app. When sync work begins, IndexedDB stays the
-> source of truth and sync is layered on top so offline-first is preserved.
+> **Direction note (2026-05-24, updated 2026-05-30):** the early-phase
+> *privacy-first / no-servers* non-negotiable was retired so the product could
+> grow a multi-device profile. That sync layer is now **built** (see
+> *Multi-device sync* below). The core invariant held: IndexedDB stays the
+> source of truth and sync sits on top, so offline-first is preserved and the
+> 25 store actions were untouched.
 
 ## Commands
 
@@ -28,9 +32,11 @@ Layers, each depending only on the layer below:
 ```
 pages/ (screens)  →  components/ (UI kit)
         ↓
-data/store  (React context — state, actions, persistence)
+data/store  (React context — state, actions, persistence, sync orchestration)
         ↓
-data/logic + data/storage  (derived logic; IndexedDB persistence)
+data/logic + data/storage + data/sync  (derived logic; IndexedDB persistence; sync engine)
+                                                      ↓
+                                          lib/supabase (remote backend seam)
 ```
 
 - **`data/types.ts`** — the entire data model. `AppData` is the single saved
@@ -49,7 +55,17 @@ data/logic + data/storage  (derived logic; IndexedDB persistence)
   templates on a fresh install; `importData()` validates a backup file before
   it can be restored; a versioned `MIGRATIONS` chain upgrades old saves and
   backups. `saveData()` returns `false` only if every storage tier fails, so a
-  silent data loss can never look saved.
+  silent data loss can never look saved. Also persists the **sync sidecar**
+  (`emptySyncMeta()` / `loadSyncMeta()` / `saveSyncMeta()`) under its own
+  IndexedDB key (`syncmeta`, localStorage fallback) — kept *beside* the journal,
+  never inside `AppData`, so JSON backups/exports stay account-free.
+- **`data/sync.ts`** — the **offline-first sync engine** (see *Multi-device
+  sync* below). Pure core (`decompose` / `recompose` / `stampChanges` /
+  `mergeRemote`, all unit-tested) plus a thin `synchronize()` that pulls deltas,
+  merges, and pushes local winners. Per-record last-write-wins with tombstones.
+- **`lib/supabase.ts`** — the single seam to the backend: exports the shared
+  `supabase` client (or `null` when env vars are absent) and `isSyncConfigured`.
+  Swapping to a self-hosted Supabase later is just changing the two env vars.
 - **`data/logic.ts`** — *pure* derived computations: PRs, streaks (rest-day-
   aware, with a one-day grace), weekly & total stats, week-goal progress,
   session summaries, muscle balance, plateaus, insights/milestones, the
@@ -59,12 +75,20 @@ data/logic + data/storage  (derived logic; IndexedDB persistence)
   always recomputed from `workouts`. This file and `storage.ts` have co-located
   `*.test.ts` suites (run with `npm test`); being pure makes them
   straightforward to unit-test.
-- **`data/store.tsx`** — `StoreProvider` loads the journal (async — IndexedDB)
-  and then mounts `StoreReady`, which holds `AppData` in React state, persists
-  it on change (trailing-debounced ~400ms, and flushed immediately when the app
-  is hidden or closed), and exposes typed actions that do immutable updates.
-  The current `page` and viewed day come from the URL hash via `lib/router.ts`;
-  the store also tracks `saveFailed` — true when the most recent persist failed.
+- **`data/store.tsx`** — `StoreProvider` loads the journal *and* the sync
+  sidecar (async — IndexedDB) and then mounts `StoreReady`, which holds `AppData`
+  in React state, persists it on change (trailing-debounced ~400ms, and flushed
+  immediately when the app is hidden or closed), and exposes typed actions that
+  do immutable updates. The current `page` and viewed day come from the URL hash
+  via `lib/router.ts`; the store also tracks `saveFailed` — true when the most
+  recent persist failed. **Sync is wired in here without touching the 25
+  actions:** the save effect diffs the previous vs next `AppData` and stamps
+  changed/deleted records into the sidecar (`stampChanges`), then triggers
+  `synchronize`. A `synchronize` cycle also runs on sign-in, app-foreground
+  (`visibilitychange`), and reconnect (`online`). Exposes `sync` (a `SyncState`),
+  `signIn` (magic link), `signOut`, and `syncNow`. Applying a pulled merge points
+  the stamp baseline at the merged data first, so pulled records aren't
+  re-stamped as local edits.
   Undo-capable delete actions: `restoreExercise` / `restoreCardio` (Today),
   `restoreTemplate` (Plan), `restoreRecipe` (Recipes) — each re-inserts the
   deleted entry at its original index; `removeGoal` undo uses the existing
@@ -165,8 +189,10 @@ action, not from the nav.
 
 ## Data safety
 
-On-device storage has no cloud backup; an IndexedDB record is effectively the
+On-device storage is the source of truth; an IndexedDB record is effectively the
 database, and `navigator.storage.persist()` is requested to keep it durable.
+Multi-device sync (below) adds an *optional* off-device copy, but the local-only
+safeguards still apply for signed-out use.
 
 - **Export / Import** — Settings → Export writes a full JSON copy; Settings →
   Import restores one via `restoreData()`, behind a confirm step. A restore
@@ -176,6 +202,55 @@ database, and `navigator.storage.persist()` is requested to keep it durable.
 - **`BackupReminder`** — a calm, dismissible nudge to export, shown once there
   is data and the user has not backed up in three weeks (`lastBackupAt` tracks
   the last export). Both render globally from `App.tsx`.
+
+## Multi-device sync
+
+Offline-first sync against a Supabase `records` table. **IndexedDB stays the
+source of truth; sync is a layer on top.** Off unless the build has both
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (`.env.local` for dev; GitHub
+Actions secrets for the deployed build, threaded through `deploy.yml`). When
+unset, `lib/supabase.ts` exports a `null` client and the app is the original
+local-only PWA — the Settings sync card returns `null`.
+
+- **Data shape.** One Postgres row per syncable record:
+  `records(user_id, kind, id, data jsonb, updated_at, deleted, pk(user_id,kind,id))`,
+  locked down by a row-level-security policy (`auth.uid() = user_id`). The app's
+  nested objects go into `data` as JSONB untouched — no relational shredding.
+  Collections become many rows: `workout` (id = date), `recipe` (id), and
+  `loggedMeal` (id). Slower-changing pieces are `singleton` rows: `preferences`,
+  `goals`, `weeklyPlan`, `health`, `lastBackupAt`, and `templates` (a singleton
+  so the user's manual template order survives a round-trip).
+- **Decompose / recompose** (`data/sync.ts`, pure). `decompose(AppData)` flattens
+  the journal into `FlatRecord[]`; `recompose(records)` rebuilds it (recipes
+  sorted newest-first by `createdAt` since they carry no manual order). Round-trip
+  is identity — unit-tested.
+- **Local change tracking.** A `SyncMeta` sidecar (in IndexedDB beside the
+  journal, **not** in `AppData`) maps each record key `${kind}:${id}` to an
+  `updatedAt` (and a `deleted` tombstone). The store's save effect calls
+  `stampChanges(prev, next, meta)` — diffing the two `AppData`s — so the 25 store
+  actions never had to learn about sync.
+- **Merge** (`mergeRemote`, pure). Per-record last-write-wins by `updatedAt`,
+  tombstones included; this is *per record*, so logging a workout on one device
+  never clobbers a recipe edited on another. First sync (`lastPulledAt === null`)
+  pushes everything local; the EPOCH default means a remote row wins a tie on a
+  fresh device. Returns the merged journal, the new sidecar, and the rows to push.
+- **Orchestration** (`synchronize`, then the store). Pull deltas
+  (`.gt('updated_at', lastPulledAt)`), merge, upsert local winners stamped with
+  `user_id`. The store runs a cycle on sign-in (`onAuthStateChange`),
+  app-foreground (`visibilitychange`), reconnect (`online`), and after each
+  debounced save; `syncInFlight` prevents overlap, and applying a merge updates
+  the stamp baseline first so pulled records aren't mistaken for local edits.
+- **Auth.** Magic-link email (`signInWithOtp`, no passwords). `StoreValue`
+  exposes `sync: SyncState`, `signIn`, `signOut`, `syncNow`; the UI is the
+  `SyncCard` in `Settings.tsx` (Your data). Sign-out stops syncing and leaves
+  the local journal in place.
+- **Known limitation** (fine for a single user): an edit during the sub-second
+  async sync window can be transiently overwritten by `applyMerged`'s
+  full-snapshot `setData`; it self-heals on the next edit. No CRDT — overkill for
+  one person rarely editing the same record on two devices at once.
+- **Tests:** `data/sync.test.ts` covers decompose/recompose round-trips,
+  stamping, and the merge matrix (remote-only, conflict both directions,
+  tombstones in/out, first-sync push).
 
 ## Project status
 
@@ -808,3 +883,29 @@ spec surfaced two issues, both fixed:
   corrected to say the nudge fires *while the app is open* rather than
   the old "your device will nudge at the chosen time" (which implied a
   closed-app push that a server-less PWA can't deliver).
+
+## Multi-device sync — shipped 2026-05-30
+
+Optional offline-first sync against Supabase, retiring the per-device data
+silo. Design and file-by-file behaviour are documented in the **Multi-device
+sync** section above; this entry records the ship. Build + 104 tests (was 90 —
++14 in `data/sync.test.ts`) + lint + typecheck clean.
+
+- **New:** `lib/supabase.ts` (the client seam + `isSyncConfigured`),
+  `data/sync.ts` (pure decompose/recompose/stampChanges/mergeRemote +
+  `synchronize`), `data/sync.test.ts`, `.env.example`. `@supabase/supabase-js`
+  added.
+- **Changed:** `data/types.ts` (+`RecordMeta`/`SyncMeta` — sidecar types, no
+  `SCHEMA_VERSION` bump since they live outside `AppData`); `data/storage.ts`
+  (generalised `idbGet(key)`/`idbPut(value,key)`, added the syncmeta
+  load/save/empty helpers); `data/store.tsx` (sync orchestration wired into the
+  existing save path — the 25 actions untouched); `data/store-context.ts`
+  (+`SyncState`, `sync`/`signIn`/`signOut`/`syncNow` on `StoreValue`);
+  `pages/Settings.tsx` (`SyncCard` at the top of *Your data*);
+  `.github/workflows/deploy.yml` (passes the two `VITE_SUPABASE_*` secrets into
+  the build).
+- **Decisions:** hosted Supabase (free tier) over self-hosting — migration to a
+  self-hosted instance later is an env-var swap. Per-record LWW + tombstones,
+  not CRDTs (single-user). `templates` synced as one singleton to preserve
+  manual order. Recipe photos sync inside the recipe JSONB (fine at personal
+  scale; could move to Supabase Storage if rows get heavy).

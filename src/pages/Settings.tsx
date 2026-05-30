@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
+  Cloud,
   Download,
   HeartPulse,
   Info,
   Lock,
+  RefreshCw,
   SlidersHorizontal,
   Upload,
 } from 'lucide-react'
@@ -534,6 +536,7 @@ function DataSection() {
 
   return (
     <div className="fj-settings-group">
+      <SyncCard />
       <div className="fj-settings-row">
         <div>
           <div className="fj-settings-row__label">Back up your data</div>
@@ -617,6 +620,133 @@ function DataSection() {
         </Modal>
       )}
     </div>
+  )
+}
+
+/* ---------- Multi-device sync (Supabase) ----------
+ * A calm block at the top of Your data. Signed out, it offers a magic-link
+ * sign-in; signed in, it shows who's syncing, the live status, and a manual
+ * "Sync now". The whole block hides when the build has no Supabase
+ * credentials (`sync.configured` false) so the offline-only app is unchanged. */
+function SyncCard() {
+  const { sync, signIn, signOut, syncNow } = useStore()
+  const { showToast } = useToast()
+  const [email, setEmail] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  if (!sync.configured) return null
+
+  const handleSend = async (): Promise<void> => {
+    const trimmed = email.trim()
+    if (!trimmed) return
+    setSending(true)
+    const err = await signIn(trimmed)
+    setSending(false)
+    if (err) {
+      showToast(err, 'warning')
+    } else {
+      setSent(true)
+      showToast('Check your email for a sign-in link.', 'success')
+    }
+  }
+
+  const statusLabel =
+    sync.status === 'syncing'
+      ? 'Syncing…'
+      : sync.status === 'error'
+        ? 'Sync error — will retry'
+        : sync.lastSyncedAt
+          ? `Last synced ${relativeTime(sync.lastSyncedAt)}`
+          : 'Synced'
+
+  if (!sync.signedIn) {
+    return (
+      <div className="fj-settings-row">
+        <div>
+          <div className="fj-settings-row__label">
+            <Cloud size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+            Sync across devices
+          </div>
+          <div className="fj-settings-row__desc">
+            {sent
+              ? 'Sign-in link sent — open it on this device (or any other) to start syncing. You can request another below.'
+              : 'Sign in to sync your journal between your phone and laptop. We email a one-tap link — no password. Your data stays private to your account.'}
+          </div>
+        </div>
+        <div className="fj-row" style={{ gap: 'var(--space-2)' }}>
+          <input
+            className="fj-input"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@email.com"
+            aria-label="Email for sign-in link"
+            style={{ width: 180 }}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void handleSend()
+            }}
+          />
+          <Button onClick={() => void handleSend()} disabled={sending || !email.trim()}>
+            {sending ? 'Sending…' : sent ? 'Resend' : 'Send link'}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="fj-settings-row">
+        <div>
+          <div className="fj-settings-row__label">
+            <Cloud size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+            Multi-device sync
+          </div>
+          <div className="fj-settings-row__desc">
+            Signed in as {sync.email}. Your journal syncs across every device you sign in on,
+            and keeps working offline — changes sync when you reconnect.
+          </div>
+          <div
+            className="fj-settings-row__desc"
+            style={{
+              marginTop: 4,
+              color: sync.status === 'error' ? 'var(--color-warning)' : 'var(--color-text-dim)',
+            }}
+          >
+            {statusLabel}
+          </div>
+        </div>
+        <div className="fj-row" style={{ gap: 'var(--space-2)' }}>
+          <Button
+            variant="secondary"
+            onClick={() => void syncNow()}
+            disabled={sync.status === 'syncing'}
+          >
+            <RefreshCw size={15} /> Sync now
+          </Button>
+        </div>
+      </div>
+      <div className="fj-settings-row">
+        <div>
+          <div className="fj-settings-row__label">Sign out</div>
+          <div className="fj-settings-row__desc">
+            Stops syncing on this device. Your journal stays here — nothing is deleted.
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            void signOut()
+            showToast('Signed out — this device is local-only again.', 'success')
+          }}
+        >
+          Sign out
+        </Button>
+      </div>
+    </>
   )
 }
 

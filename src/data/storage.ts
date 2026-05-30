@@ -1,4 +1,4 @@
-import type { AppData, Preferences, Recipe, Template, TemplateColor } from './types'
+import type { AppData, Preferences, Recipe, SyncMeta, Template, TemplateColor } from './types'
 import { SCHEMA_VERSION } from './types'
 import { uid } from '@/lib/uid'
 import { todayKey } from '@/lib/dates'
@@ -332,25 +332,26 @@ function openDB(): Promise<IDBDatabase> {
   return dbPromise
 }
 
-/** Read the single journal record from IndexedDB (null if none yet). */
-function idbGet(): Promise<unknown> {
+/** Read a record from IndexedDB by key (null if none yet). Defaults to the
+ *  journal; the sync sidecar lives under its own key in the same store. */
+function idbGet(key: IDBValidKey = RECORD_KEY): Promise<unknown> {
   return openDB().then(
     (db) =>
       new Promise<unknown>((resolve, reject) => {
-        const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(RECORD_KEY)
+        const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(key)
         req.onsuccess = () => resolve(req.result ?? null)
         req.onerror = () => reject(req.error ?? new Error('IndexedDB read failed'))
       }),
   )
 }
 
-/** Write the journal record to IndexedDB; rejects on quota or other failure. */
-function idbPut(data: AppData): Promise<void> {
+/** Write a record to IndexedDB by key; rejects on quota or other failure. */
+function idbPut(value: unknown, key: IDBValidKey = RECORD_KEY): Promise<void> {
   return openDB().then(
     (db) =>
       new Promise<void>((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, 'readwrite')
-        tx.objectStore(STORE_NAME).put(data, RECORD_KEY)
+        tx.objectStore(STORE_NAME).put(value, key)
         tx.oncomplete = () => resolve()
         tx.onerror = () => reject(tx.error ?? new Error('IndexedDB write failed'))
         tx.onabort = () => reject(tx.error ?? new Error('IndexedDB write aborted'))
@@ -437,6 +438,62 @@ export async function saveData(data: AppData): Promise<boolean> {
   } catch (e) {
     console.warn('[fitjournal] IndexedDB write failed — falling back to localStorage', e)
     return writeLocalStorage(data)
+  }
+}
+
+// --- Sync metadata sidecar -------------------------------------------------
+
+/** IndexedDB key (same store) for the per-record sync bookkeeping. */
+const SYNCMETA_KEY = 'syncmeta'
+/** localStorage fallback key, mirroring the journal's own fallback. */
+const SYNCMETA_LS_KEY = 'fitjournal-syncmeta'
+
+/** A valid, empty sync sidecar — nothing synced yet. */
+export function emptySyncMeta(): SyncMeta {
+  return { records: {}, lastPulledAt: null }
+}
+
+/** Coerce unknown storage contents into a valid SyncMeta, or null. */
+function asSyncMeta(value: unknown): SyncMeta | null {
+  if (isObject(value) && isObject(value.records)) {
+    return {
+      records: value.records as SyncMeta['records'],
+      lastPulledAt: typeof value.lastPulledAt === 'string' ? value.lastPulledAt : null,
+    }
+  }
+  return null
+}
+
+/** Load the sync sidecar (null if the device has never synced). Mirrors the
+ *  journal's IndexedDB-then-localStorage fallback so it survives either tier. */
+export async function loadSyncMeta(): Promise<SyncMeta | null> {
+  try {
+    const fromIdb = asSyncMeta(await idbGet(SYNCMETA_KEY))
+    if (fromIdb) return fromIdb
+  } catch {
+    /* IndexedDB unavailable — fall through to localStorage */
+  }
+  try {
+    const raw = localStorage.getItem(SYNCMETA_LS_KEY)
+    if (raw) return asSyncMeta(JSON.parse(raw))
+  } catch {
+    /* ignore — treat as never-synced */
+  }
+  return null
+}
+
+/** Persist the sync sidecar. Returns false only if every storage tier fails. */
+export async function saveSyncMeta(meta: SyncMeta): Promise<boolean> {
+  try {
+    await idbPut(meta, SYNCMETA_KEY)
+    return true
+  } catch {
+    try {
+      localStorage.setItem(SYNCMETA_LS_KEY, JSON.stringify(meta))
+      return true
+    } catch {
+      return false
+    }
   }
 }
 
