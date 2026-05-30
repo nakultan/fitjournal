@@ -99,6 +99,7 @@ function StoreReady({
     email: null,
     status: 'idle',
     lastSyncedAt: null,
+    recovering: false,
   })
   // Guards a sync cycle so foreground + online + post-save triggers can't
   // stack concurrent pulls.
@@ -146,14 +147,19 @@ function StoreReady({
       setSync((s) => ({ ...s, signedIn: Boolean(session), email: session?.user.email ?? null }))
       if (session) void syncNow()
     })
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       signedInRef.current = Boolean(session)
+      const recovering = event === 'PASSWORD_RECOVERY'
       setSync((s) => ({
         ...s,
         signedIn: Boolean(session),
         email: session?.user.email ?? null,
         status: session ? s.status : 'idle',
+        recovering: recovering ? true : session ? s.recovering : false,
       }))
+      // A password-reset link lands the user here in a recovery session; send
+      // them to Settings → Your data so the "set a new password" form is shown.
+      if (recovering) navigateTo('settings', undefined, undefined, 'data')
       if (session) void syncNow()
     })
     return () => listener.subscription.unsubscribe()
@@ -255,6 +261,25 @@ function StoreReady({
     [],
   )
 
+  // Email a password-reset link. The link returns to the app's base URL in a
+  // recovery session; the `PASSWORD_RECOVERY` handler above sets `recovering`
+  // and routes to Settings → Your data, where `updatePassword` finishes it.
+  const resetPassword = useCallback(async (email: string): Promise<string | null> => {
+    if (!supabase) return 'Sync is not configured in this build.'
+    const redirectTo = `${window.location.origin}${window.location.pathname}`
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+    return error ? error.message : null
+  }, [])
+
+  // Set a new password (during recovery, or to change it while signed in).
+  const updatePassword = useCallback(async (password: string): Promise<string | null> => {
+    if (!supabase) return 'Sync is not configured in this build.'
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) return error.message
+    setSync((s) => ({ ...s, recovering: false }))
+    return null
+  }, [])
+
   // Sign out — stops syncing; the local journal stays on the device exactly as
   // the offline-only app always has.
   const signOut = useCallback(async (): Promise<void> => {
@@ -274,6 +299,8 @@ function StoreReady({
     sync,
     signIn,
     signUp,
+    resetPassword,
+    updatePassword,
     signOut,
     syncNow,
 

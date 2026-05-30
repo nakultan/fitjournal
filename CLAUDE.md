@@ -242,12 +242,18 @@ local-only PWA — the Settings sync card returns `null`.
   the stamp baseline first so pulled records aren't mistaken for local edits.
 - **Auth.** Email + password (`signInWithPassword` / `signUp`). `StoreValue`
   exposes `sync: SyncState`, `signIn(email, pw)`, `signUp(email, pw)`,
-  `signOut`, `syncNow`; the UI is the `SyncCard` in `Settings.tsx` (Your data),
-  which toggles between a sign-in and a create-account form. `signUp` returns
-  `needsConfirm` true when the Supabase project has "Confirm email" on (no
-  session until the user confirms once); with it off, the session lands
-  immediately and sync starts. Sign-out stops syncing and leaves the local
-  journal in place.
+  `resetPassword(email)`, `updatePassword(pw)`, `signOut`, `syncNow`; the UI is
+  the `SyncCard` in `Settings.tsx` (Your data), which toggles between sign-in,
+  create-account, and reset forms. `signUp` returns `needsConfirm` true when the
+  Supabase project has "Confirm email" on (no session until the user confirms
+  once); with it off, the session lands immediately and sync starts.
+  **Password reset:** `resetPassword` emails a recovery link (`redirectTo` = the
+  app's base URL, no hash, so the SDK's `detectSessionInUrl` can strip the
+  token cleanly). Following it fires an `onAuthStateChange` `PASSWORD_RECOVERY`
+  event → the store sets `sync.recovering` and routes to Settings → Your data,
+  where `SyncCard` shows the `RecoverPasswordRow` "set a new password" form;
+  `updatePassword` (`auth.updateUser`) finishes it and clears `recovering`.
+  Sign-out stops syncing and leaves the local journal in place.
 - **Known limitation** (fine for a single user): an edit during the sub-second
   async sync window can be transiently overwritten by `applyMerged`'s
   full-snapshot `setData`; it self-heals on the next edit. No CRDT — overkill for

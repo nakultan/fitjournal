@@ -25,6 +25,9 @@ export interface SyncState {
   status: 'idle' | 'syncing' | 'error'
   /** Date.now() of the last successful sync; null before the first. */
   lastSyncedAt: number | null
+  /** True after the user follows a password-reset link, until they set a new
+   *  password (or sign out). Drives the "set a new password" UI. */
+  recovering: boolean
 }
 
 /** Everything a component can read and do with app state. */
@@ -52,6 +55,13 @@ export interface StoreValue {
    *  failure, or `{ needsConfirm }` true when the project requires the user to
    *  confirm via a one-time email before the account is usable. */
   signUp: (email: string, password: string) => Promise<{ error?: string; needsConfirm?: boolean }>
+  /** Email a password-reset link. Clicking it returns to the app in a recovery
+   *  session (`sync.recovering`), where `updatePassword` sets the new one.
+   *  Returns an error message, or null on success. */
+  resetPassword: (email: string) => Promise<string | null>
+  /** Set a new password — used both during recovery and to change it while
+   *  signed in. Clears `sync.recovering`. Returns an error message, or null. */
+  updatePassword: (password: string) => Promise<string | null>
   /** Sign out — stops syncing; the local journal stays on the device. */
   signOut: () => Promise<void>
   /** Trigger a sync cycle now (no-op when signed out or unconfigured). */

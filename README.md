@@ -165,7 +165,9 @@ reconnect.
 - **How to use it:** Settings → *Your data*. Create an account with an email
   and password once, then sign in with that same login on any device — your
   journal syncs automatically. The card then shows who's syncing and the
-  last-synced time, with a manual **Sync now** button.
+  last-synced time, with a manual **Sync now** button. Forgot your password?
+  Use the **Forgot password?** link — you'll get an email link that returns you
+  to the app to set a new one.
 - **How it merges:** each record (a workout day, a recipe, a template set, …)
   carries a last-modified timestamp; on sync the newer version wins, and
   deletes propagate as tombstones. This is *per-record* — logging a workout on

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
@@ -629,9 +630,9 @@ function DataSection() {
  * "Sync now". The whole block hides when the build has no Supabase
  * credentials (`sync.configured` false) so the offline-only app is unchanged. */
 function SyncCard() {
-  const { sync, signIn, signUp, signOut, syncNow } = useStore()
+  const { sync, signIn, signUp, resetPassword, updatePassword, signOut, syncNow } = useStore()
   const { showToast } = useToast()
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -641,7 +642,22 @@ function SyncCard() {
   const handleSubmit = async (): Promise<void> => {
     const e = email.trim()
     const p = password
-    if (!e || !p) return
+    if (!e) return
+
+    if (mode === 'reset') {
+      setBusy(true)
+      const err = await resetPassword(e)
+      setBusy(false)
+      if (err) {
+        showToast(err, 'warning')
+      } else {
+        showToast('Password-reset link sent — check your email.', 'success')
+        setMode('signin')
+      }
+      return
+    }
+
+    if (!p) return
     if (mode === 'signup' && p.length < 6) {
       showToast('Password must be at least 6 characters.', 'warning')
       return
@@ -667,6 +683,12 @@ function SyncCard() {
     }
   }
 
+  // After following a reset link the user lands in a recovery session — prompt
+  // for the new password before anything else.
+  if (sync.recovering) {
+    return <RecoverPasswordRow updatePassword={updatePassword} />
+  }
+
   const statusLabel =
     sync.status === 'syncing'
       ? 'Syncing…'
@@ -677,35 +699,41 @@ function SyncCard() {
           : 'Synced'
 
   if (!sync.signedIn) {
+    const title =
+      mode === 'signin' ? 'Sign in to sync' : mode === 'signup' ? 'Create a sync account' : 'Reset your password'
+    const desc =
+      mode === 'signin'
+        ? 'Sign in with your email and password to sync your journal across every device. Your data stays private to your account.'
+        : mode === 'signup'
+          ? 'Pick an email and password. Use the same login on your phone and laptop and your journal syncs automatically.'
+          : 'Enter your account email and we’ll send a link to set a new password.'
+    const submitLabel = mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'
+    const busyLabel = mode === 'signin' ? 'Signing in…' : mode === 'signup' ? 'Creating…' : 'Sending…'
+
     return (
       <div className="fj-settings-row">
         <div>
           <div className="fj-settings-row__label">
             <Cloud size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
-            {mode === 'signin' ? 'Sign in to sync' : 'Create a sync account'}
+            {title}
           </div>
-          <div className="fj-settings-row__desc">
-            {mode === 'signin'
-              ? 'Sign in with your email and password to sync your journal across every device. Your data stays private to your account.'
-              : 'Pick an email and password. Use the same login on your phone and laptop and your journal syncs automatically.'}
-          </div>
+          <div className="fj-settings-row__desc">{desc}</div>
           <div className="fj-settings-row__desc" style={{ marginTop: 6 }}>
-            {mode === 'signin' ? 'No account yet? ' : 'Already have an account? '}
-            <button
-              type="button"
-              onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                color: 'var(--color-accent)',
-                font: 'inherit',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-              }}
-            >
-              {mode === 'signin' ? 'Create one' : 'Sign in'}
-            </button>
+            {mode === 'signin' && (
+              <>
+                No account yet? <LinkButton onClick={() => setMode('signup')}>Create one</LinkButton>
+                {' · '}
+                <LinkButton onClick={() => setMode('reset')}>Forgot password?</LinkButton>
+              </>
+            )}
+            {mode === 'signup' && (
+              <>
+                Already have an account? <LinkButton onClick={() => setMode('signin')}>Sign in</LinkButton>
+              </>
+            )}
+            {mode === 'reset' && (
+              <LinkButton onClick={() => setMode('signin')}>Back to sign in</LinkButton>
+            )}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
@@ -719,31 +747,30 @@ function SyncCard() {
             style={{ width: 200 }}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            className="fj-input"
-            type="password"
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            placeholder="Password"
-            aria-label="Password"
-            style={{ width: 200 }}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') void handleSubmit()
+              if (e.key === 'Enter' && mode === 'reset') void handleSubmit()
             }}
           />
+          {mode !== 'reset' && (
+            <input
+              className="fj-input"
+              type="password"
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              placeholder="Password"
+              aria-label="Password"
+              style={{ width: 200 }}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleSubmit()
+              }}
+            />
+          )}
           <Button
             onClick={() => void handleSubmit()}
-            disabled={busy || !email.trim() || !password}
+            disabled={busy || !email.trim() || (mode !== 'reset' && !password)}
           >
-            {busy
-              ? mode === 'signin'
-                ? 'Signing in…'
-                : 'Creating…'
-              : mode === 'signin'
-                ? 'Sign in'
-                : 'Create account'}
+            {busy ? busyLabel : submitLabel}
           </Button>
         </div>
       </div>
