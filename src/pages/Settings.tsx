@@ -629,25 +629,41 @@ function DataSection() {
  * "Sync now". The whole block hides when the build has no Supabase
  * credentials (`sync.configured` false) so the offline-only app is unchanged. */
 function SyncCard() {
-  const { sync, signIn, signOut, syncNow } = useStore()
+  const { sync, signIn, signUp, signOut, syncNow } = useStore()
   const { showToast } = useToast()
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
 
   if (!sync.configured) return null
 
-  const handleSend = async (): Promise<void> => {
-    const trimmed = email.trim()
-    if (!trimmed) return
-    setSending(true)
-    const err = await signIn(trimmed)
-    setSending(false)
-    if (err) {
-      showToast(err, 'warning')
+  const handleSubmit = async (): Promise<void> => {
+    const e = email.trim()
+    const p = password
+    if (!e || !p) return
+    if (mode === 'signup' && p.length < 6) {
+      showToast('Password must be at least 6 characters.', 'warning')
+      return
+    }
+    setBusy(true)
+    if (mode === 'signin') {
+      const err = await signIn(e, p)
+      setBusy(false)
+      if (err) showToast(err, 'warning')
+      // On success, onAuthStateChange flips the card to the signed-in view.
     } else {
-      setSent(true)
-      showToast('Check your email for a sign-in link.', 'success')
+      const { error, needsConfirm } = await signUp(e, p)
+      setBusy(false)
+      if (error) {
+        showToast(error, 'warning')
+      } else if (needsConfirm) {
+        showToast('Account created — confirm via the email we sent, then sign in.', 'success')
+        setMode('signin')
+        setPassword('')
+      } else {
+        showToast('Account created — you’re signed in and syncing.', 'success')
+      }
     }
   }
 
@@ -666,31 +682,68 @@ function SyncCard() {
         <div>
           <div className="fj-settings-row__label">
             <Cloud size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
-            Sync across devices
+            {mode === 'signin' ? 'Sign in to sync' : 'Create a sync account'}
           </div>
           <div className="fj-settings-row__desc">
-            {sent
-              ? 'Sign-in link sent — open it on this device (or any other) to start syncing. You can request another below.'
-              : 'Sign in to sync your journal between your phone and laptop. We email a one-tap link — no password. Your data stays private to your account.'}
+            {mode === 'signin'
+              ? 'Sign in with your email and password to sync your journal across every device. Your data stays private to your account.'
+              : 'Pick an email and password. Use the same login on your phone and laptop and your journal syncs automatically.'}
+          </div>
+          <div className="fj-settings-row__desc" style={{ marginTop: 6 }}>
+            {mode === 'signin' ? 'No account yet? ' : 'Already have an account? '}
+            <button
+              type="button"
+              onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: 'var(--color-accent)',
+                font: 'inherit',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              {mode === 'signin' ? 'Create one' : 'Sign in'}
+            </button>
           </div>
         </div>
-        <div className="fj-row" style={{ gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <input
             className="fj-input"
             type="email"
             inputMode="email"
             autoComplete="email"
             placeholder="you@email.com"
-            aria-label="Email for sign-in link"
-            style={{ width: 180 }}
+            aria-label="Email"
+            style={{ width: 200 }}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            className="fj-input"
+            type="password"
+            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+            placeholder="Password"
+            aria-label="Password"
+            style={{ width: 200 }}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') void handleSend()
+              if (e.key === 'Enter') void handleSubmit()
             }}
           />
-          <Button onClick={() => void handleSend()} disabled={sending || !email.trim()}>
-            {sending ? 'Sending…' : sent ? 'Resend' : 'Send link'}
+          <Button
+            onClick={() => void handleSubmit()}
+            disabled={busy || !email.trim() || !password}
+          >
+            {busy
+              ? mode === 'signin'
+                ? 'Signing in…'
+                : 'Creating…'
+              : mode === 'signin'
+                ? 'Sign in'
+                : 'Create account'}
           </Button>
         </div>
       </div>

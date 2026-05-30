@@ -162,9 +162,9 @@ Sign in and your journal reconciles across every device you use. It stays
 on top, so you can log at the gym with no signal and it pushes up when you
 reconnect.
 
-- **How to use it:** Settings → *Your data* → *Sync across devices*. Enter your
-  email; you'll get a one-tap magic link (no password). Open the link on any
-  device to sign that device in. The card then shows who's syncing and the
+- **How to use it:** Settings → *Your data*. Create an account with an email
+  and password once, then sign in with that same login on any device — your
+  journal syncs automatically. The card then shows who's syncing and the
   last-synced time, with a manual **Sync now** button.
 - **How it merges:** each record (a workout day, a recipe, a template set, …)
   carries a last-modified timestamp; on sync the newer version wins, and
@@ -198,8 +198,10 @@ fork — runs as the original local-only app, no sync card shown.
    create policy "own rows" on public.records
      for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
    ```
-3. Enable the **Email** auth provider (magic link) under Authentication →
-   Providers.
+3. Enable the **Email** auth provider under Authentication → Providers. The app
+   uses email + password sign-in. For instant account creation with no email
+   step, turn **off** "Confirm email" in the email provider settings; leave it
+   on if you'd rather verify each new account once via a confirmation link.
 4. Copy your **Project URL** and **anon/public** key (Project Settings → Data
    API). The anon key is safe to expose in a browser build — row-level security
    is what protects the data. Never use the `service_role` key in the frontend.

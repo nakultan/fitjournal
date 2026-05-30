@@ -45,8 +45,13 @@ export interface StoreValue {
   lastSavedAt: number
   /** Live multi-device sync status. */
   sync: SyncState
-  /** Send a magic-link sign-in email. Returns an error message, or null on success. */
-  signIn: (email: string) => Promise<string | null>
+  /** Sign in to an existing account with email + password. Returns an error
+   *  message, or null on success (the session lands immediately). */
+  signIn: (email: string, password: string) => Promise<string | null>
+  /** Create a new account with email + password. Returns `{ error }` on
+   *  failure, or `{ needsConfirm }` true when the project requires the user to
+   *  confirm via a one-time email before the account is usable. */
+  signUp: (email: string, password: string) => Promise<{ error?: string; needsConfirm?: boolean }>
   /** Sign out — stops syncing; the local journal stays on the device. */
   signOut: () => Promise<void>
   /** Trigger a sync cycle now (no-op when signed out or unconfigured). */

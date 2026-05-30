@@ -228,17 +228,32 @@ function StoreReady({
     }
   }, [])
 
-  // Send a magic-link sign-in email. On clicking the link the user lands back
-  // in the app already authenticated; `onAuthStateChange` then kicks the first
-  // sync. Returns a friendly error string, or null on success.
-  const signIn = useCallback(async (email: string): Promise<string | null> => {
+  // Sign in to an existing account with email + password. On success the
+  // session lands immediately and `onAuthStateChange` kicks the first sync.
+  // Returns a friendly error string, or null on success.
+  const signIn = useCallback(async (email: string, password: string): Promise<string | null> => {
     if (!supabase) return 'Sync is not configured in this build.'
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.href },
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     return error ? error.message : null
   }, [])
+
+  // Create a new account. If the project doesn't require email confirmation,
+  // the session lands right away (and sync starts); otherwise Supabase returns
+  // a user with no session and the caller prompts a one-time email confirm.
+  const signUp = useCallback(
+    async (email: string, password: string): Promise<{ error?: string; needsConfirm?: boolean }> => {
+      if (!supabase) return { error: 'Sync is not configured in this build.' }
+      const { data: result, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.href },
+      })
+      if (error) return { error: error.message }
+      // No active session means the project has "Confirm email" on.
+      return { needsConfirm: !result.session }
+    },
+    [],
+  )
 
   // Sign out — stops syncing; the local journal stays on the device exactly as
   // the offline-only app always has.
@@ -258,6 +273,7 @@ function StoreReady({
     lastSavedAt,
     sync,
     signIn,
+    signUp,
     signOut,
     syncNow,
 
