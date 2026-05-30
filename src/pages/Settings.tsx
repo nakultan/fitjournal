@@ -624,11 +624,106 @@ function DataSection() {
   )
 }
 
+/** A text button styled as an inline link — used for the sign-in/up/reset
+ *  mode toggles in the sync card. */
+function LinkButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        color: 'var(--color-accent)',
+        font: 'inherit',
+        cursor: 'pointer',
+        textDecoration: 'underline',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+/** Shown after the user follows a password-reset link (recovery session):
+ *  a single "set a new password" form. On success the store clears
+ *  `sync.recovering` and the normal signed-in view returns. */
+function RecoverPasswordRow({
+  updatePassword,
+}: {
+  updatePassword: (password: string) => Promise<string | null>
+}) {
+  const { showToast } = useToast()
+  const [pw, setPw] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (): Promise<void> => {
+    if (pw.length < 6) {
+      showToast('Password must be at least 6 characters.', 'warning')
+      return
+    }
+    if (pw !== confirm) {
+      showToast('Those passwords don’t match.', 'warning')
+      return
+    }
+    setBusy(true)
+    const err = await updatePassword(pw)
+    setBusy(false)
+    if (err) showToast(err, 'warning')
+    else showToast('Password updated — you’re signed in.', 'success')
+  }
+
+  return (
+    <div className="fj-settings-row">
+      <div>
+        <div className="fj-settings-row__label">
+          <Cloud size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+          Set a new password
+        </div>
+        <div className="fj-settings-row__desc">
+          Choose a new password for your account. You’ll stay signed in on this device.
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        <input
+          className="fj-input"
+          type="password"
+          autoComplete="new-password"
+          placeholder="New password"
+          aria-label="New password"
+          style={{ width: 200 }}
+          value={pw}
+          onChange={(e) => setPw(e.target.value)}
+        />
+        <input
+          className="fj-input"
+          type="password"
+          autoComplete="new-password"
+          placeholder="Confirm password"
+          aria-label="Confirm password"
+          style={{ width: 200 }}
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void submit()
+          }}
+        />
+        <Button onClick={() => void submit()} disabled={busy || !pw || !confirm}>
+          {busy ? 'Updating…' : 'Update password'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 /* ---------- Multi-device sync (Supabase) ----------
- * A calm block at the top of Your data. Signed out, it offers a magic-link
- * sign-in; signed in, it shows who's syncing, the live status, and a manual
- * "Sync now". The whole block hides when the build has no Supabase
- * credentials (`sync.configured` false) so the offline-only app is unchanged. */
+ * A calm block at the top of Your data. Signed out, it offers email + password
+ * sign-in / account creation / reset; signed in, it shows who's syncing, the
+ * live status, and a manual "Sync now". The whole block hides when the build
+ * has no Supabase credentials (`sync.configured` false) so the offline-only
+ * app is unchanged. */
 function SyncCard() {
   const { sync, signIn, signUp, resetPassword, updatePassword, signOut, syncNow } = useStore()
   const { showToast } = useToast()
