@@ -32,14 +32,45 @@ describe('decompose / recompose', () => {
     expect(recompose(decompose(d))).toEqual(d)
   })
 
-  it('emits one record per workout, recipe, meal plus the singletons', () => {
+  it('emits one record per workout, recipe, meal plus the non-null singletons', () => {
     const d = sampleData()
     const flat = decompose(d)
     expect(flat.filter((r) => r.kind === 'workout')).toHaveLength(1)
     expect(flat.filter((r) => r.kind === 'recipe')).toHaveLength(3)
     expect(flat.filter((r) => r.kind === 'loggedMeal')).toHaveLength(1)
-    // preferences, goals, weeklyPlan, health, lastBackupAt, templates
-    expect(flat.filter((r) => r.kind === 'singleton')).toHaveLength(6)
+    // preferences, goals, weeklyPlan, templates — health and lastBackupAt are
+    // null on a default account and are filtered out (the remote `data` column
+    // is NOT NULL, so a null record would reject the whole upsert batch).
+    expect(flat.filter((r) => r.kind === 'singleton')).toHaveLength(4)
+  })
+
+  it('never emits a null-valued record, but recompose still restores it', () => {
+    const d = sampleData()
+    expect(d.health).toBeNull()
+    expect(d.lastBackupAt).toBeNull()
+    const flat = decompose(d)
+    expect(flat.some((r) => r.id === 'health')).toBe(false)
+    expect(flat.some((r) => r.id === 'lastBackupAt')).toBe(false)
+    // Round-trip is still lossless — recompose rebuilds them as null.
+    const back = recompose(flat)
+    expect(back.health).toBeNull()
+    expect(back.lastBackupAt).toBeNull()
+  })
+
+  it('emits health + lastBackupAt once they hold a value', () => {
+    const d = sampleData()
+    d.lastBackupAt = '2026-05-30T00:00:00.000Z'
+    d.health = {
+      steps: 1000,
+      distanceMi: 1,
+      flightsClimbed: 2,
+      importedAt: '2026-05-30T00:00:00.000Z',
+      fileName: null,
+    }
+    const flat = decompose(d)
+    expect(flat.some((r) => r.id === 'health')).toBe(true)
+    expect(flat.some((r) => r.id === 'lastBackupAt')).toBe(true)
+    expect(recompose(flat)).toEqual(d)
   })
 
   it('keeps the user-defined template order (templates are one singleton)', () => {

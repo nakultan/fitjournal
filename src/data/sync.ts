@@ -81,7 +81,12 @@ export function decompose(data: AppData): FlatRecord[] {
   out.push({ kind: 'singleton', id: 'health', data: data.health })
   out.push({ kind: 'singleton', id: 'lastBackupAt', data: data.lastBackupAt })
   out.push({ kind: 'singleton', id: 'templates', data: data.templates })
-  return out
+  // Never emit a null-valued record: the remote `data` column is NOT NULL, so
+  // a null (e.g. `health`/`lastBackupAt` on a fresh account) would reject the
+  // whole upsert batch. `recompose` rebuilds these from defaults when absent,
+  // and a value later going null becomes a tombstone (pushed with data `{}`),
+  // so omitting nulls here is lossless.
+  return out.filter((r) => r.data !== null && r.data !== undefined)
 }
 
 /** Rebuild a journal from its surviving (non-deleted) records. Missing
