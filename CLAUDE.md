@@ -147,6 +147,16 @@ action, not from the nav.
 - **Responsive:** a single `@media (max-width: 768px)` block at the end of
   `app.css` / `components.css` holds the phone layout (bottom nav, bottom-sheet
   modals, `env(safe-area-inset-*)`). The desktop layout is the default.
+- **Installed-web-app title bar.** When FitJournal runs as a macOS "Add to
+  Dock" web app (`black-translucent` status bar + `viewport-fit=cover` in
+  `index.html`), the translucent window title bar overlaps the viewport, so the
+  desktop shell reserves room for it up top: `.fj-sidebar` pads
+  `calc(var(--space-7) + env(safe-area-inset-top))` and `.fj-main`
+  `calc(var(--space-4) + env(safe-area-inset-top))` (the sidebar gets the larger
+  pad so the logo lands clear of the bar and level with the page-header titles).
+  `env(safe-area-inset-top)` is `0` in a normal browser tab, so this is inert
+  there — it only engages in the installed web-app window. See the
+  *macOS web-app title-bar clearance* ship entry below.
 
 ## Conventions & gotchas
 
@@ -1109,3 +1119,47 @@ workers → Unregister, then close + reopen the PWA window. On iOS, force-
 quit the Home Screen app and reopen after a few seconds (iOS evicts the
 stuck SW when no client controls it). After that, the *Reload* button
 behaves normally on every future deploy.
+
+## macOS web-app title-bar clearance — shipped 2026-05-31
+
+CSS-only fix (`src/styles/app.css`) for the installed **macOS "Add to
+Dock" web app**. `index.html` already declares
+`apple-mobile-web-app-status-bar-style: black-translucent` +
+`viewport-fit=cover`, so the translucent window title bar overlaps the
+web viewport. The `env(safe-area-inset-*)` compensation only lived in the
+`@media (max-width: 768px)` phone block, so the **desktop** shell (the
+default layout) rendered the sidebar logo and the page-header titles at
+`y=0` — the title bar clipped the "FitJournal" logo and the screen
+titles/dates.
+
+Shipped in two passes the same day:
+
+- **Pass 1 (`c2114a9`).** Reserve the inset on the desktop shell:
+  `.fj-sidebar` top pad → `calc(var(--space-4) + env(safe-area-inset-top))`,
+  `.fj-main` → `padding-top: env(safe-area-inset-top)`. Dropped the now-
+  redundant `.fj-main` `padding-top` from the mobile block (the base rule
+  is the single source of truth; the mobile rule keeps only its
+  `padding-bottom` bottom-nav clearance). The full-width Session/Train-Mode
+  view is covered too, since it renders through `.fj-main`.
+- **Pass 2 (`dd7be55`).** Real-device feedback: the titles cleared but
+  *grazed* the bar, and the logo was **still** clipped — because the logo
+  only got `env() + space-4` (16px) while the page headers sit at
+  `env()` + the screen's `space-6` top padding (~32px), landing the logo
+  ~20px higher. The title bar also under-reports its height via the inset
+  on this surface, so the inset alone wasn't enough for the logo. Bumped
+  `.fj-sidebar` to `calc(var(--space-7) + env(safe-area-inset-top))` (logo
+  drops clear of the bar and lands level with the titles) and added
+  `var(--space-4)` of breathing room to `.fj-main`
+  (`calc(var(--space-4) + env(safe-area-inset-top))`) so the headers sit
+  below the bar instead of grazing it.
+
+`env(safe-area-inset-top)` is `0` in a normal browser tab, so the change
+is inert there (verified — no spurious top gap, layout unchanged); it only
+engages in the installed web-app window. Verified at a simulated 44px inset
+via Playwright against the running app: logo and titles both shift down to
+clear the bar. The extra `space-4` on `.fj-main` also gives mobile content
+a touch more room below the status-bar notch — harmless and consistent.
+
+Note this is distinct from the SW *Reload* fix above: an install on the
+pre-`e828538` service worker won't surface a working *Reload* prompt for
+this (or any) deploy until the one-time SW unstick is done.
