@@ -21,6 +21,18 @@ declare const self: ServiceWorkerGlobalScope & {
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
+// vite-plugin-pwa's registerType: 'prompt' updateServiceWorker(true) flow
+// posts this message to the waiting SW. Without a handler it sits in
+// `waiting` forever, the page never reloads, and the "new version
+// available" banner has no effect — exactly the "Reload doesn't work"
+// symptom. Activating here lets the page's controllerchange listener
+// trigger the reload.
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if ((event.data as { type?: string } | undefined)?.type === 'SKIP_WAITING') {
+    void self.skipWaiting()
+  }
+})
+
 const ICON_URL = self.registration.scope + 'pwa-192.png'
 const OPEN_URL = self.registration.scope + '#/today'
 
