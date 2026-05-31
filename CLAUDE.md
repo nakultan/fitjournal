@@ -1003,7 +1003,10 @@ in-session timer.
   *"Don't break your streak — log today's workout."* When today already
   *is* logged it silently returns (no celebratory ping). The
   `notificationclick` listener focuses an existing tab or opens a new one
-  at `#/today`.
+  at `#/today`. A `message` listener handles
+  `{type:'SKIP_WAITING'}` (posted by `UpdatePrompt`'s
+  `updateServiceWorker(true)`) by calling `self.skipWaiting()` — without
+  this the new SW gets stuck in `waiting` and the *Reload* button no-ops.
 - **`src/lib/useStreakReminder.ts`** — the hook gained a
   `syncPushSubscription` helper that reconciles the device's push state
   with the (enabled, signed-in, permission) triple. Re-runs on toggle
@@ -1085,3 +1088,24 @@ the +5 tests cover the new conflict-detection rules in `mergeRemote`).
   enough at one silent push per "logged" day to stay under the spam
   threshold. Worst case on Chromium: push permission is eventually
   revoked and the user re-grants it.
+
+## SW SKIP_WAITING handler — shipped 2026-05-31
+
+Same-day follow-up to the closed-app reminder ship. The new SW was going
+into `waiting` state on every deploy and never activating — the *Reload*
+button on the update-available banner posted a
+`{type:'SKIP_WAITING'}` message to the waiting SW, but `src/sw.ts` had no
+`message` listener (a missing recipe step from the `generateSW` →
+`injectManifest` switch). Symptom: tapping *Reload* did nothing, the
+banner stayed up, the page never reloaded. Fix is two lines: a `message`
+listener that calls `self.skipWaiting()` when it receives the expected
+payload. The page's `controllerchange` event then fires from the
+auto-registration code and the reload happens normally.
+
+Existing installs from before this fix can't pick it up via the same
+*Reload* flow (chicken-and-egg — their current SW is the buggy one).
+One-time unstick: on the laptop, DevTools → Application → Service
+workers → Unregister, then close + reopen the PWA window. On iOS, force-
+quit the Home Screen app and reopen after a few seconds (iOS evicts the
+stuck SW when no client controls it). After that, the *Reload* button
+behaves normally on every future deploy.
