@@ -266,9 +266,12 @@ local-only PWA — the Settings sync card returns `null`.
 
 All five build phases are done, plus a Vitest suite over the data/logic
 layer and five rounds of post-audit fixes. The original single-file app has
-been retired to `../archive/`. Background (closed-app) scheduled reminders
-are deliberately deferred — a server-less PWA can't fire them reliably; the
-streak-save reminder instead nudges in-session (see P2.5).
+been retired to `../archive/`. Closed-app streak nudges ship via Web Push +
+a Supabase Edge Function (see *Closed-app streak reminder* below): when
+signed in, the PWA subscribes and the server fires the nudge at the chosen
+time even when the app is fully closed. Signed out, the reminder still
+fires in-session as a fallback. The service worker reads IndexedDB to
+decide the copy, so daily workout state never leaves the device.
 
 Since the audit, the core has been re-modelled for **per-set logging**: an
 `ExerciseEntry` holds a `SetEntry[]` (each set its own reps and weight),
@@ -781,16 +784,31 @@ select (1 / 2 / 3 / 4 weeks). `BackupReminder` now reads
 `.fj-settings-card__pill` "N wks since backup" / "never backed up"
 amber chip when overdue.
 
-The streak-save reminder fires **in-session** (see the post-P3 review
-entry below): `useStreakReminder` (mounted in `AppShell`) schedules a
-one-shot timer for the next chosen `HH:mm`; on fire, if today still
-isn't logged, it shows the notification (service-worker
-`showNotification`, falling back to the `Notification` constructor) then
-reschedules for the next day. Opening the app *after* the time has
-passed waits until tomorrow, so it never double-fires. Closed-app
-delivery still needs Web Push + a server (deferred — it would break the
-no-account / no-servers promise); the toast + row copy are honest that
-the nudge fires only while FitJournal is open.
+The streak-save reminder runs **two channels** through `useStreakReminder`
+(mounted in `AppShell`):
+
+1. **In-session timer** — always active when the reminder is enabled and
+   permission is granted. A one-shot `setTimeout` fires at the next chosen
+   `HH:mm`; if today still isn't logged, shows the notification via the
+   service worker. Opening the app *after* the time has passed waits until
+   tomorrow, so the in-session channel never double-fires.
+2. **Closed-app via Web Push** — when the user is signed in AND
+   `VITE_VAPID_PUBLIC_KEY` is set, the hook also calls
+   `pushManager.subscribe()` and upserts the subscription into the
+   `push_subscriptions` table. A Supabase Edge Function
+   (`send-streak-nudges`, scheduled by `pg_cron` once a minute) queries
+   `subs_due_now()` and pushes to every subscription whose local time
+   matches its `reminder_time`. The service worker (`src/sw.ts`) reads
+   IndexedDB at push time to choose the copy — *"Don't break your streak"*
+   when today isn't logged, *"Workout logged. Streak holding"* when it is
+   — so daily workout state never leaves the device.
+
+Signed out (or in a build without `VITE_VAPID_PUBLIC_KEY`), only the
+in-session channel runs and the Settings row description carries a
+*"sign in to get nudged even when the app is closed"* hint. Sign-out (or
+toggling the reminder off) runs the inverse: unsubscribes the device and
+deletes its row from `push_subscriptions`. The hook re-reconciles on
+auth changes via `supabase.auth.onAuthStateChange`.
 
 **v2 P3 — shipped 2026-05-25** (build + 90 tests + lint + typecheck
 clean — P3 is UI/animation polish, so no new pure logic to unit-test).
@@ -919,3 +937,111 @@ sync** section above; this entry records the ship. Build + 104 tests (was 90 —
   not CRDTs (single-user). `templates` synced as one singleton to preserve
   manual order. Recipe photos sync inside the recipe JSONB (fine at personal
   scale; could move to Supabase Storage if rows get heavy).
+
+## Closed-app streak reminder — shipped 2026-05-30
+
+Closes the P2.5 follow-through. The in-session reminder shipped on
+2026-05-28 was honest but limited — it only fires while the tab is open.
+For signed-in users, the nudge now fires **even when FitJournal is fully
+closed**, via Web Push routed through the existing Supabase backend.
+
+The privacy story holds: the server never learns whether you logged
+today. It only knows your push endpoint, your chosen `HH:mm`, and your
+IANA timezone — just enough to know *when* to ping. The service worker
+opens IndexedDB at push time and reads `workouts[todayKey()]` itself to
+decide the copy. Signed out, the reminder degrades cleanly to the
+in-session timer.
+
+### Architecture
+
+```
+   user toggle (Settings)
+           ↓
+   useStreakReminder
+   ├── in-session setTimeout  ──→  notification (when tab open)
+   └── pushManager.subscribe  ──→  push_subscriptions table
+                                          ↑
+                                          │
+   pg_cron (* * * * *)                    │
+           ↓                              │
+   send-streak-nudges (Edge Function) ────┘
+           ↓
+   web-push to every due endpoint
+           ↓
+   src/sw.ts `push` event handler
+           ↓
+   IndexedDB lookup → copy decision → showNotification
+```
+
+### What's in the repo
+
+- **`supabase/migrations/20260530215552_push_subscriptions.sql`** — table
+  with per-user RLS, `subs_due_now()` SECURITY DEFINER function, index on
+  `(timezone, reminder_time)`.
+- **`supabase/migrations/20260530220108_schedule_streak_nudges.sql`** —
+  enables `pg_cron` + `pg_net`, schedules `streak-nudges` to fire every
+  minute via `net.http_post` against the Edge Function URL. Idempotent
+  (`cron.schedule(name, ...)` is upsert-by-name).
+- **`supabase/functions/send-streak-nudges/index.ts`** — calls
+  `subs_due_now()`, sends a `{"type":"streak"}` push to each row via
+  `web-push@3.6.7`, prunes any endpoint that returns 404/410 (browser
+  unsubscribed). Deployed with `--no-verify-jwt` since the only caller is
+  the cron and the payload is non-sensitive.
+- **`src/sw.ts`** — owns the service worker (vite-plugin-pwa is in
+  `injectManifest` mode now). Precaches via
+  `precacheAndRoute(self.__WB_MANIFEST)` + `cleanupOutdatedCaches`; the
+  `push` listener reads IndexedDB to pick *"Don't break your streak"* vs
+  *"Workout logged. Streak holding"*; the `notificationclick` listener
+  focuses an existing tab or opens a new one at `#/today`. Chrome's
+  `userVisibleOnly` requires *every* push to show a notification, which is
+  why even the "logged" case still shows one (just with a celebratory
+  body).
+- **`src/lib/useStreakReminder.ts`** — the hook gained a
+  `syncPushSubscription` helper that reconciles the device's push state
+  with the (enabled, signed-in, permission) triple. Re-runs on toggle
+  changes AND on `supabase.auth.onAuthStateChange`. Sign-out → unsubscribe
+  + delete row. Re-enable → re-subscribe + upsert.
+- **`src/lib/vapidKey.ts`** — `urlBase64ToUint8Array` helper, typed
+  `Uint8Array<ArrayBuffer>` so `pushManager.subscribe`'s
+  `applicationServerKey` type check passes.
+- **`vite.config.ts`** — switched from `generateSW` to `injectManifest`
+  pointing at `src/sw.ts`. While there, fixed a latent preview bug: the
+  `base` conditional now also includes `isPreview`, so `npm run preview`
+  matches the prod build's `/fitjournal/` base instead of falling back to
+  `/` and 404-ing every hashed asset.
+- **`.github/workflows/deploy.yml`** — passes
+  `VITE_VAPID_PUBLIC_KEY` (Actions secret) into the build step.
+- **`.env.example`** — documents `VITE_VAPID_PUBLIC_KEY` as optional;
+  absent → in-session reminder only, graceful degrade.
+
+### Environment
+
+- **Build-time (client):** `VITE_VAPID_PUBLIC_KEY` — repo Actions secret +
+  `.env.local` for dev.
+- **Runtime (Edge Function):** `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`,
+  `VAPID_SUBJECT` — Supabase function secrets (`supabase secrets set`).
+  `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` are auto-injected by
+  Supabase.
+
+### Decisions
+
+- **Privacy boundary stays at the device.** The server doesn't know
+  whether you logged today; the SW makes that decision locally. Cheap and
+  correct — no extra round-trips, no leaking workout state.
+- **Always show a notification per push.** Chrome's `userVisibleOnly`
+  policy revokes push permission if you silently drop. So both copies
+  ("Don't break" / "Workout logged") are real notifications — the second
+  is just a small win celebration.
+- **Cron every minute.** Overkill for a daily nudge but trivially cheap
+  on Supabase's `pg_cron`, and it gives `HH:mm` precision across
+  timezones with no extra logic — the SQL just does
+  `to_char(now() at time zone timezone, 'HH24:MI') = reminder_time`.
+- **Per-endpoint rows, not per-user.** A signed-in user with three
+  installs (phone, laptop, tablet) gets three subscriptions. Each pushes
+  independently. Sign-out cleans them all per-device via the SW
+  registration.
+- **`--no-verify-jwt` on the function.** Trade-off accepted: the function
+  reads no input from its caller, sends only a literal payload to every
+  due endpoint, and isn't sensitive. Requiring a JWT for the cron call
+  would mean stashing the service-role key inside the cron SQL, which is
+  worse.

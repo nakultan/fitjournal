@@ -367,7 +367,7 @@ function PreferencesSection() {
  * existing `BackupReminder` banner asks the lifter to export. Both ship
  * additively — defaults preserve the prior behaviour. */
 function NudgesGroup() {
-  const { data, savePreferences } = useStore()
+  const { data, savePreferences, sync } = useStore()
   const { showToast } = useToast()
   const prefs = data.preferences
   const streak = prefs.streakNudge ?? { enabled: false, time: '19:00' }
@@ -377,6 +377,11 @@ function NudgesGroup() {
   // honest instead of silently failing.
   const canNotify = typeof Notification !== 'undefined'
   const permission = canNotify ? Notification.permission : 'denied'
+  // Signed-in users get closed-app delivery via Web Push (the in-session
+  // timer in `useStreakReminder` upserts a subscription on enable; the
+  // Supabase Edge Function fires the nudge at the chosen time). Signed-out
+  // users keep the in-session-only fallback, with a sign-in hint below.
+  const signedIn = sync.signedIn
 
   const setStreak = (next: { enabled: boolean; time: string }): void => {
     savePreferences({ ...prefs, streakNudge: next })
@@ -388,7 +393,12 @@ function NudgesGroup() {
       const result = await Notification.requestPermission()
       if (result === 'granted') {
         setStreak({ enabled: true, time: streak.time })
-        showToast(`Reminder on — we'll nudge you at ${streak.time} when today isn't logged.`, 'success')
+        showToast(
+          signedIn
+            ? `Reminder on — we'll nudge you at ${streak.time} every day, even when FitJournal is closed.`
+            : `Reminder on — we'll nudge you at ${streak.time} when today isn't logged.`,
+          'success',
+        )
       } else {
         setStreak({ enabled: false, time: streak.time })
         showToast('Reminder needs notification permission — try again later.', 'warning')
@@ -413,9 +423,16 @@ function NudgesGroup() {
         <div>
           <div className="fj-settings-row__label">Streak-save reminder</div>
           <div className="fj-settings-row__desc">
-            A nudge at your chosen time when today isn't logged yet. It fires
-            while FitJournal is open — a web app can't alert you while fully
-            closed. Needs notification permission; off by default.
+            A nudge at your chosen time when today isn't logged yet.{' '}
+            {signedIn ? (
+              <>It fires even when FitJournal is closed.</>
+            ) : (
+              <>
+                It fires while FitJournal is open — sign in to get nudged even
+                when the app is closed.
+              </>
+            )}{' '}
+            Needs notification permission; off by default.
           </div>
           {canNotify && permission === 'denied' && streak.enabled && (
             <div

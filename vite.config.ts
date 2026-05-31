@@ -4,10 +4,11 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => {
-  // GitHub Pages serves this project at /fitjournal/.
-  // Local dev (`npm run dev`) stays at the root /.
-  const base = command === 'build' ? '/fitjournal/' : '/'
+export default defineConfig(({ command, isPreview }) => {
+  // GitHub Pages serves this project at /fitjournal/, and `vite preview`
+  // serves the prod build (which has that base baked into asset URLs).
+  // Local `npm run dev` stays at the root / for convenience.
+  const base = command === 'build' || isPreview ? '/fitjournal/' : '/'
 
   return {
     base,
@@ -25,8 +26,15 @@ export default defineConfig(({ command }) => {
       VitePWA({
         // 'prompt' = we ask the user before applying an update (see UpdatePrompt).
         registerType: 'prompt',
-        // Lets us test offline behaviour during `npm run dev`.
-        devOptions: { enabled: true },
+        // We own the service worker (src/sw.ts) so we can add a `push` handler
+        // for the closed-app streak-save reminder. Workbox precaching still
+        // happens — it's just called from our SW rather than auto-generated.
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
+        // Lets us test offline behaviour during `npm run dev`. `type: 'module'`
+        // is required so the dev SW can use ES module imports.
+        devOptions: { enabled: true, type: 'module' },
         includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
         manifest: {
           name: 'FitJournal',
@@ -50,10 +58,10 @@ export default defineConfig(({ command }) => {
             { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
           ],
         },
-        workbox: {
-          // Pre-cache the whole app so it works fully offline after first load.
+        // In injectManifest mode the workbox config moves under `injectManifest`
+        // (only the precache glob applies here — cleanup is done in our SW).
+        injectManifest: {
           globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-          cleanupOutdatedCaches: true,
         },
       }),
     ],

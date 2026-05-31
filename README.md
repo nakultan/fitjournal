@@ -75,13 +75,14 @@ on top of the full feature set and polish pass.
   with three starter recipes (Salmon rice, Tuna pasta, Oats & whey),
   each marked `seed` so you can clearly see which are yours
 - **Settings** — preferences (units, goals, a light/dark theme), opt-in
-  nudges (a daily streak-save reminder that fires at your chosen time
-  while the app is open — a server-less web app can't notify you while
-  fully closed — and a backup-reminder cadence of 1–4 weeks), backup export (JSON or
-  CSV) & restore, optional **multi-device sync** (sign in with a magic
-  link to sync across devices — see below), and Apple Health sync via a
-  Shortcut (with a JSON file as a fallback). An overdue-backup pill on the
-  Your data card surfaces the cadence at a glance
+  nudges (a daily streak-save reminder at your chosen time — when you're
+  signed in, it fires even with the app fully closed via Web Push; signed
+  out, it fires while the app is open as a fallback — plus a
+  backup-reminder cadence of 1–4 weeks), backup export (JSON or CSV) &
+  restore, optional **multi-device sync** (sign in with a magic link to
+  sync across devices — see below), and Apple Health sync via a Shortcut
+  (with a JSON file as a fallback). An overdue-backup pill on the Your
+  data card surfaces the cadence at a glance
 
 ## Running it
 
