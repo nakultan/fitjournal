@@ -179,6 +179,24 @@ export interface MergeResult {
   data: AppData
   meta: SyncMeta
   toPush: PushRow[]
+  /** Per-record-LWW conflicts surfaced this merge — both sides edited the
+   *  same record since the last successful pull, and the remote won. The
+   *  caller decides what to surface (the UI banner shows them to the user
+   *  so they can re-make any lost edit). Empty array when nothing collided. */
+  conflicts: ConflictInfo[]
+}
+
+/** A record whose local edit was overwritten by a newer remote edit during
+ *  the most recent merge. Identifies the record only — the lost data is *not*
+ *  preserved (LWW deliberately discards it). The UI uses (kind, id) to render
+ *  a human-readable label so the user can navigate to the record and check. */
+export interface ConflictInfo {
+  kind: RecordKind
+  id: string
+  /** ISO timestamp of the local edit that lost. */
+  localUpdatedAt: string
+  /** ISO timestamp of the remote edit that won. */
+  remoteUpdatedAt: string
 }
 
 interface CellState {
@@ -217,18 +235,36 @@ export function mergeRemote(
       state.set(key, { record: null, updatedAt: m.updatedAt, deleted: true, source: 'local' })
     }
   }
-  // Fold in remote rows — newer timestamp wins (tombstone included).
+  // Fold in remote rows — newer timestamp wins (tombstone included). A
+  // conflict is recorded when the local cell *also* changed since the last
+  // pull (so the local edit is being overwritten by a remote one that
+  // raced it) AND the data actually differs (a no-op republish from
+  // another device shouldn't trip the alert).
+  const conflicts: ConflictInfo[] = []
   for (const row of remoteRows) {
     const key = `${row.kind}:${row.id}`
     const cur = state.get(key)
-    if (!cur || row.updated_at > cur.updatedAt) {
-      state.set(key, {
-        record: row.deleted ? null : { kind: row.kind as RecordKind, id: row.id, data: row.data },
-        updatedAt: row.updated_at,
-        deleted: row.deleted,
-        source: 'remote',
+    const remoteWins = !cur || row.updated_at > cur.updatedAt
+    if (!remoteWins) continue
+    if (
+      cur &&
+      meta.lastPulledAt !== null &&
+      cur.updatedAt > meta.lastPulledAt &&
+      !sameData(cur.record?.data ?? null, row.deleted ? null : row.data)
+    ) {
+      conflicts.push({
+        kind: row.kind as RecordKind,
+        id: row.id,
+        localUpdatedAt: cur.updatedAt,
+        remoteUpdatedAt: row.updated_at,
       })
     }
+    state.set(key, {
+      record: row.deleted ? null : { kind: row.kind as RecordKind, id: row.id, data: row.data },
+      updatedAt: row.updated_at,
+      deleted: row.deleted,
+      source: 'remote',
+    })
   }
 
   // Surviving records rebuild the journal; the sidecar mirrors every cell.
@@ -261,7 +297,7 @@ export function mergeRemote(
 
   const data = recompose(survivors)
   const lastPulledAt = highWater(meta.lastPulledAt, remoteRows, toPush)
-  return { data, meta: { records, lastPulledAt }, toPush }
+  return { data, meta: { records, lastPulledAt }, toPush, conflicts }
 }
 
 /** Newest ISO timestamp across the old mark, pulled rows and pushed rows, so
@@ -302,7 +338,7 @@ async function pushRows(userId: string, rows: PushRow[]): Promise<void> {
 export async function synchronize(
   localData: AppData,
   meta: SyncMeta,
-): Promise<{ data: AppData; meta: SyncMeta } | null> {
+): Promise<{ data: AppData; meta: SyncMeta; conflicts: ConflictInfo[] } | null> {
   if (!supabase) return null
   const { data: auth } = await supabase.auth.getUser()
   const user = auth.user
@@ -313,5 +349,5 @@ export async function synchronize(
   if (merged.toPush.length > 0) {
     await pushRows(user.id, merged.toPush)
   }
-  return { data: merged.data, meta: merged.meta }
+  return { data: merged.data, meta: merged.meta, conflicts: merged.conflicts }
 }

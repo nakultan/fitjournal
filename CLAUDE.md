@@ -233,7 +233,12 @@ local-only PWA — the Settings sync card returns `null`.
   tombstones included; this is *per record*, so logging a workout on one device
   never clobbers a recipe edited on another. First sync (`lastPulledAt === null`)
   pushes everything local; the EPOCH default means a remote row wins a tie on a
-  fresh device. Returns the merged journal, the new sidecar, and the rows to push.
+  fresh device. Returns the merged journal, the new sidecar, the rows to push,
+  and a `conflicts: ConflictInfo[]` list of records whose local edits were
+  overwritten by a newer remote edit (both sides changed since `lastPulledAt`
+  and the data differs). The store appends these into `sync.conflicts` and
+  `SyncConflictBanner` (top of every screen) surfaces them — the lost local
+  data isn't preserved (LWW discards it), but the user knows what to re-make.
 - **Orchestration** (`synchronize`, then the store). Pull deltas
   (`.gt('updated_at', lastPulledAt)`), merge, upsert local winners stamped with
   `user_id`. The store runs a cycle on sign-in (`onAuthStateChange`),
@@ -799,9 +804,13 @@ The streak-save reminder runs **two channels** through `useStreakReminder`
    (`send-streak-nudges`, scheduled by `pg_cron` once a minute) queries
    `subs_due_now()` and pushes to every subscription whose local time
    matches its `reminder_time`. The service worker (`src/sw.ts`) reads
-   IndexedDB at push time to choose the copy — *"Don't break your streak"*
-   when today isn't logged, *"Workout logged. Streak holding"* when it is
-   — so daily workout state never leaves the device.
+   IndexedDB at push time — when today *isn't* logged it shows
+   *"Don't break your streak — log today's workout."*; when today *is*
+   already logged it silently swallows the push (no notification). Daily
+   workout state never leaves the device. Safari/WebKit doesn't enforce
+   the userVisibleOnly "show a notification per push" rule, and
+   Chromium's enforcement is loose enough at one silent push per "logged"
+   day to stay well under the spam threshold.
 
 Signed out (or in a build without `VITE_VAPID_PUBLIC_KEY`), only the
 in-session channel runs and the Settings row description carries a
@@ -990,12 +999,11 @@ in-session timer.
 - **`src/sw.ts`** — owns the service worker (vite-plugin-pwa is in
   `injectManifest` mode now). Precaches via
   `precacheAndRoute(self.__WB_MANIFEST)` + `cleanupOutdatedCaches`; the
-  `push` listener reads IndexedDB to pick *"Don't break your streak"* vs
-  *"Workout logged. Streak holding"*; the `notificationclick` listener
-  focuses an existing tab or opens a new one at `#/today`. Chrome's
-  `userVisibleOnly` requires *every* push to show a notification, which is
-  why even the "logged" case still shows one (just with a celebratory
-  body).
+  `push` listener reads IndexedDB and, when today *isn't* logged, shows
+  *"Don't break your streak — log today's workout."* When today already
+  *is* logged it silently returns (no celebratory ping). The
+  `notificationclick` listener focuses an existing tab or opens a new one
+  at `#/today`.
 - **`src/lib/useStreakReminder.ts`** — the hook gained a
   `syncPushSubscription` helper that reconciles the device's push state
   with the (enabled, signed-in, permission) triple. Re-runs on toggle
@@ -1028,10 +1036,13 @@ in-session timer.
 - **Privacy boundary stays at the device.** The server doesn't know
   whether you logged today; the SW makes that decision locally. Cheap and
   correct — no extra round-trips, no leaking workout state.
-- **Always show a notification per push.** Chrome's `userVisibleOnly`
-  policy revokes push permission if you silently drop. So both copies
-  ("Don't break" / "Workout logged") are real notifications — the second
-  is just a small win celebration.
+- **Skip the nudge when today is already logged.** Chrome's
+  `userVisibleOnly` policy can revoke push permission if you silently
+  drop pushes — but its actual enforcement is loose, and one silent push
+  per "logged" day stays well under the spam threshold. Safari/WebKit
+  doesn't enforce userVisibleOnly at all. So the SW just returns when
+  it's not needed; worst case on Chromium the user re-grants permission
+  if it ever gets revoked.
 - **Cron every minute.** Overkill for a daily nudge but trivially cheap
   on Supabase's `pg_cron`, and it gives `HH:mm` precision across
   timezones with no extra logic — the SQL just does
@@ -1045,3 +1056,32 @@ in-session timer.
   due endpoint, and isn't sensitive. Requiring a JWT for the cron call
   would mean stashing the service-role key inside the cron SQL, which is
   worse.
+
+## Sync conflict alert + quieter push — shipped 2026-05-31
+
+Two follow-ups in one round (build + 111 tests + lint + typecheck clean —
+the +5 tests cover the new conflict-detection rules in `mergeRemote`).
+
+- **Sync conflict alert.** `mergeRemote` now also returns a
+  `conflicts: ConflictInfo[]` — records where the local cell was edited
+  *since the last successful pull* and a newer remote edit overwrote it
+  (so a genuine cross-device race, not a stale local cell being caught
+  up). `synchronize` passes them through. The store appends each cycle's
+  conflicts into `sync.conflicts` (capped at 50) and exposes
+  `dismissSyncConflicts`. A new `<SyncConflictBanner>` — mounted in
+  `App.tsx` next to `SaveErrorBanner` — shows a top-fixed amber strip
+  *"N edits from another device replaced what you had on this one"*,
+  opens a modal listing each by human-readable label
+  (`Workout on May 31`, `Recipe "Salmon rice"`, `Weekly plan`, etc.), and
+  clears the list on *Got it*. Lost local data isn't preserved (LWW
+  discards it by design) — the alert exists so the user re-makes the
+  edit instead of being silently surprised. No closed-app push for
+  conflicts (sync runs only when the app is open anyway; an in-app
+  banner is the natural surface).
+- **Drop the "workout logged" celebratory push.** The SW's `push`
+  listener returns early when `isTodayLogged()` is true — no
+  notification fires once you've trained for the day. Safari/WebKit
+  doesn't enforce userVisibleOnly; Chromium's enforcement is loose
+  enough at one silent push per "logged" day to stay under the spam
+  threshold. Worst case on Chromium: push permission is eventually
+  revoked and the user re-grants it.

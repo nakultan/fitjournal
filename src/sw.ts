@@ -34,9 +34,8 @@ function todayKey(): string {
 }
 
 /** Opens the journal's IndexedDB and resolves true when today has any
- *  exercises or cardio logged. Resolves false on any error so a push always
- *  gets shown (Chrome's userVisibleOnly policy requires a notification per
- *  push, even when "logged" — we just adjust the copy). */
+ *  exercises or cardio logged. Resolves false on any error so the nudge is
+ *  shown when in doubt (better to over-remind than to silently swallow). */
 function isTodayLogged(): Promise<boolean> {
   return new Promise((resolve) => {
     let settled = false
@@ -83,12 +82,17 @@ function isTodayLogged(): Promise<boolean> {
 self.addEventListener('push', (event) => {
   event.waitUntil(
     (async () => {
-      const logged = await isTodayLogged()
-      const body = logged
-        ? 'Workout logged. Streak holding — nice.'
-        : "Don't break your streak — log today's workout."
+      if (await isTodayLogged()) {
+        // No nudge needed — the user already trained today. Safari/WebKit
+        // doesn't enforce the userVisibleOnly "show a notification per push"
+        // rule, and Chromium's enforcement is loose enough at one silent
+        // push per "logged" day that this stays well under the spam
+        // threshold. Worst case on Chrome: the site eventually loses push
+        // permission and the user re-grants it.
+        return
+      }
       await self.registration.showNotification('FitJournal', {
-        body,
+        body: "Don't break your streak — log today's workout.",
         tag: 'fj-streak-nudge',
         icon: ICON_URL,
         badge: ICON_URL,

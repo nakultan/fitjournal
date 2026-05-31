@@ -100,6 +100,7 @@ function StoreReady({
     status: 'idle',
     lastSyncedAt: null,
     recovering: false,
+    conflicts: [],
   })
   // Guards a sync cycle so foreground + online + post-save triggers can't
   // stack concurrent pulls.
@@ -135,7 +136,18 @@ function StoreReady({
       const result = await synchronize(latestData.current, syncMetaRef.current)
       if (result) {
         applyMerged(result)
-        setSync((s) => ({ ...s, status: 'idle', lastSyncedAt: Date.now() }))
+        setSync((s) => ({
+          ...s,
+          status: 'idle',
+          lastSyncedAt: Date.now(),
+          // Append fresh conflicts; cap at 50 so a runaway cycle can't grow
+          // the list unbounded. Empty result.conflicts → keep the reference
+          // stable so consumers don't re-render unnecessarily.
+          conflicts:
+            result.conflicts.length > 0
+              ? [...s.conflicts, ...result.conflicts].slice(-50)
+              : s.conflicts,
+        }))
       } else {
         setSync((s) => ({ ...s, status: 'idle' }))
       }
@@ -310,6 +322,8 @@ function StoreReady({
     updatePassword,
     signOut,
     syncNow,
+    dismissSyncConflicts: () =>
+      setSync((s) => (s.conflicts.length === 0 ? s : { ...s, conflicts: [] })),
 
     navigate: (page) => navigateTo(page),
     setViewingDateKey: (key) => navigateTo('today', key),

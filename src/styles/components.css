@@ -551,6 +551,68 @@
   color: var(--color-danger);
 }
 
+/* ---- Sync conflict banner ---------------------------------- */
+/* Amber, dismissible — surfaced when LWW overwrote a local edit. */
+.fj-sync-conflict {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px var(--space-4);
+  padding-top: calc(12px + env(safe-area-inset-top));
+  background: var(--color-warning-soft);
+  border-bottom: 1.5px solid var(--color-warning);
+  backdrop-filter: blur(12px);
+  color: var(--color-text);
+  font: var(--text-body);
+  text-align: left;
+  cursor: pointer;
+  border: none;
+  z-index: 145;
+}
+.fj-sync-conflict:hover {
+  background: var(--color-warning-soft);
+  filter: brightness(1.05);
+}
+.fj-sync-conflict__icon {
+  flex-shrink: 0;
+  color: var(--color-warning);
+}
+.fj-sync-conflict__msg {
+  flex: 1;
+}
+.fj-sync-conflict__msg strong {
+  color: var(--color-warning);
+}
+.fj-sync-conflict__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fj-sync-conflict__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+}
+.fj-sync-conflict__label {
+  font-weight: 600;
+}
+.fj-sync-conflict__when {
+  color: var(--color-text-dim);
+  font: var(--text-caption);
+  white-space: nowrap;
+}
+
 /* ---- Backup reminder --------------------------------------- */
 /* Calm, dismissible nudge to export a backup. */
 .fj-backup-reminder {

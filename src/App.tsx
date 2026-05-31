@@ -6,6 +6,7 @@ import {
   InstallHint,
   ResumeSessionPill,
   SaveErrorBanner,
+  SyncConflictBanner,
   UpdatePrompt,
 } from '@/components'
 
@@ -13,6 +14,7 @@ export default function App() {
   return (
     <StoreProvider>
       <SaveErrorBanner />
+      <SyncConflictBanner />
       <AppShell />
       <ResumeSessionPill />
       <FirstRun />

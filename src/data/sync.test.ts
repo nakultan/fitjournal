@@ -190,6 +190,78 @@ describe('mergeRemote', () => {
     const tomb = res.toPush.find((r) => r.kind === 'recipe' && r.id === 'gone')
     expect(tomb).toMatchObject({ deleted: true })
   })
+
+  describe('conflict detection', () => {
+    it('flags a true conflict — both sides edited since last pull, data differs', () => {
+      const local = { ...defaultData(), workouts: { d: workout('d', 100) } }
+      // Local edited at 08:00; last successful sync was 06:00.
+      const meta = metaAt(local, '2026-05-29T08:00:00.000Z', '2026-05-29T06:00:00.000Z')
+      const res = mergeRemote(
+        local,
+        meta,
+        // Remote edited at 10:00 → wins, and differs.
+        [{ kind: 'workout', id: 'd', data: workout('d', 200), updated_at: '2026-05-29T10:00:00.000Z', deleted: false }],
+        NOW,
+      )
+      expect(res.conflicts).toHaveLength(1)
+      expect(res.conflicts[0]).toMatchObject({
+        kind: 'workout',
+        id: 'd',
+        localUpdatedAt: '2026-05-29T08:00:00.000Z',
+        remoteUpdatedAt: '2026-05-29T10:00:00.000Z',
+      })
+    })
+
+    it('no conflict when the local cell has not changed since last pull', () => {
+      const local = { ...defaultData(), workouts: { d: workout('d', 100) } }
+      // Local last edited at 2020; last pull at 2021 → local is stale, not fresh.
+      const meta = metaAt(local, '2020-01-01T00:00:00.000Z', '2021-01-01T00:00:00.000Z')
+      const res = mergeRemote(
+        local,
+        meta,
+        [{ kind: 'workout', id: 'd', data: workout('d', 200), updated_at: '2026-05-28T00:00:00.000Z', deleted: false }],
+        NOW,
+      )
+      expect(res.conflicts).toEqual([])
+    })
+
+    it('no conflict on a first sync (lastPulledAt is null)', () => {
+      const local = { ...defaultData(), workouts: { d: workout('d', 100) } }
+      const meta = metaAt(local, '2026-05-29T08:00:00.000Z', null)
+      const res = mergeRemote(
+        local,
+        meta,
+        [{ kind: 'workout', id: 'd', data: workout('d', 200), updated_at: '2026-05-29T10:00:00.000Z', deleted: false }],
+        NOW,
+      )
+      expect(res.conflicts).toEqual([])
+    })
+
+    it('no conflict when the remote republishes identical data', () => {
+      const same = workout('d', 100)
+      const local = { ...defaultData(), workouts: { d: same } }
+      const meta = metaAt(local, '2026-05-29T08:00:00.000Z', '2026-05-29T06:00:00.000Z')
+      const res = mergeRemote(
+        local,
+        meta,
+        [{ kind: 'workout', id: 'd', data: same, updated_at: '2026-05-29T10:00:00.000Z', deleted: false }],
+        NOW,
+      )
+      expect(res.conflicts).toEqual([])
+    })
+
+    it('no conflict when the local side wins', () => {
+      const local = { ...defaultData(), workouts: { d: workout('d', 100) } }
+      const meta = metaAt(local, '2026-05-29T12:00:00.000Z', '2026-05-29T06:00:00.000Z')
+      const res = mergeRemote(
+        local,
+        meta,
+        [{ kind: 'workout', id: 'd', data: workout('d', 200), updated_at: '2026-05-29T10:00:00.000Z', deleted: false }],
+        NOW,
+      )
+      expect(res.conflicts).toEqual([])
+    })
+  })
 })
 
 describe('recompose recipe ordering', () => {

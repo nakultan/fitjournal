@@ -12,6 +12,7 @@ import type {
   TemplateExercise,
 } from './types'
 import type { ProgressSection, SettingsSection } from '@/lib/router'
+import type { ConflictInfo } from './sync'
 
 /** Live multi-device sync status, surfaced to the Settings UI. */
 export interface SyncState {
@@ -28,6 +29,10 @@ export interface SyncState {
   /** True after the user follows a password-reset link, until they set a new
    *  password (or sign out). Drives the "set a new password" UI. */
   recovering: boolean
+  /** Per-record-LWW conflicts surfaced by the last sync cycles since the
+   *  user last dismissed them — both sides edited the same record and the
+   *  remote won. Drives the SyncConflictBanner. */
+  conflicts: ConflictInfo[]
 }
 
 /** Everything a component can read and do with app state. */
@@ -66,6 +71,9 @@ export interface StoreValue {
   signOut: () => Promise<void>
   /** Trigger a sync cycle now (no-op when signed out or unconfigured). */
   syncNow: () => Promise<void>
+  /** Clear the unviewed-conflict list (called from the banner's *Got it*
+   *  button). Conflicts surfaced after this still re-fill the list. */
+  dismissSyncConflicts: () => void
 
   // navigation
   navigate: (page: PageId) => void
