@@ -13,7 +13,10 @@
   flex-shrink: 0;
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
-  padding: var(--space-4) var(--space-3);
+  /* When installed as a macOS "Add to Dock" web app, the translucent window
+     title bar overlaps the viewport (black-translucent + viewport-fit=cover),
+     so reserve its height up top — otherwise it clips the logo. */
+  padding: calc(var(--space-4) + env(safe-area-inset-top)) var(--space-3) var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -71,6 +74,9 @@
   flex: 1;
   overflow-y: auto;
   min-width: 0;
+  /* Same title-bar reservation for the scrollable content column, so the
+     page-header titles aren't hidden under the macOS web-app title bar. */
+  padding-top: env(safe-area-inset-top);
 }
 .fj-main:focus {
   outline: none;
@@ -3065,7 +3071,8 @@
     color: var(--color-accent);
   }
   .fj-main {
-    padding-top: env(safe-area-inset-top);
+    /* Top inset now comes from the base .fj-main rule; only the bottom-nav
+       clearance is phone-specific. */
     padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 
